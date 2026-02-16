@@ -13,21 +13,21 @@ function startLogoCleanupJob() {
   // Schedule: 0 3 * * * = At 3:00 AM every day
   cron.schedule('0 3 * * *', async () => {
     console.log('[Logo Cleanup] Starting daily cleanup job...');
-    
+
     try {
       const now = new Date();
       let deletedCount = 0;
       let usersUpdated = 0;
-      
+
       // Find all users with generated logos
       const users = await User.find({
         'generatedLogos.0': { $exists: true }
       });
-      
+
       for (const user of users) {
         const expiredLogos = [];
         const validLogos = [];
-        
+
         // Separate expired and valid logos
         for (const logo of user.generatedLogos) {
           if (new Date(logo.expiresAt) < now) {
@@ -36,7 +36,7 @@ function startLogoCleanupJob() {
             validLogos.push(logo);
           }
         }
-        
+
         if (expiredLogos.length > 0) {
           // Delete files from disk
           for (const logo of expiredLogos) {
@@ -51,25 +51,25 @@ function startLogoCleanupJob() {
               console.error(`[Logo Cleanup] Error deleting file ${logo.filePath}:`, err.message);
             }
           }
-          
+
           // Check if any expired logo was the current business logo
           const currentLogoExpired = expiredLogos.some(
             logo => user.businessLogo === logo.url
           );
-          
+
           // Update user's generated logos array
           user.generatedLogos = validLogos;
-          
+
           // If current business logo was expired, clear it
           if (currentLogoExpired) {
             user.businessLogo = null;
           }
-          
+
           await user.save();
           usersUpdated++;
         }
       }
-      
+
       console.log(`[Logo Cleanup] Complete. Deleted ${deletedCount} files, updated ${usersUpdated} users.`);
     } catch (error) {
       console.error('[Logo Cleanup] Error during cleanup:', error);
@@ -78,7 +78,7 @@ function startLogoCleanupJob() {
     scheduled: true,
     timezone: 'UTC'
   });
-  
+
   console.log('[Logo Cleanup] Job scheduled to run daily at 3:00 AM UTC');
 }
 
@@ -87,20 +87,20 @@ function startLogoCleanupJob() {
  */
 async function manualCleanup() {
   console.log('[Logo Cleanup] Running manual cleanup...');
-  
+
   try {
     const now = new Date();
     let deletedCount = 0;
     let usersUpdated = 0;
-    
+
     const users = await User.find({
       'generatedLogos.0': { $exists: true }
     });
-    
+
     for (const user of users) {
       const expiredLogos = [];
       const validLogos = [];
-      
+
       for (const logo of user.generatedLogos) {
         if (new Date(logo.expiresAt) < now) {
           expiredLogos.push(logo);
@@ -108,7 +108,7 @@ async function manualCleanup() {
           validLogos.push(logo);
         }
       }
-      
+
       if (expiredLogos.length > 0) {
         for (const logo of expiredLogos) {
           try {
@@ -122,22 +122,22 @@ async function manualCleanup() {
             console.error(`[Logo Cleanup] Error deleting file ${logo.filePath}:`, err.message);
           }
         }
-        
+
         const currentLogoExpired = expiredLogos.some(
           logo => user.businessLogo === logo.url
         );
-        
+
         user.generatedLogos = validLogos;
-        
+
         if (currentLogoExpired) {
           user.businessLogo = null;
         }
-        
+
         await user.save();
         usersUpdated++;
       }
     }
-    
+
     console.log(`[Logo Cleanup] Manual cleanup complete. Deleted ${deletedCount} files, updated ${usersUpdated} users.`);
     return { deletedCount, usersUpdated };
   } catch (error) {
@@ -155,17 +155,17 @@ async function deleteLogo(userId, logoId) {
     if (!user) {
       throw new Error('User not found');
     }
-    
+
     const logoIndex = user.generatedLogos.findIndex(
-      logo => logo.logoId === logoId
+      logo => logo.logoId === logoId || logo._id.toString() === logoId
     );
-    
+
     if (logoIndex === -1) {
       throw new Error('Logo not found');
     }
-    
+
     const logo = user.generatedLogos[logoIndex];
-    
+
     // Delete file from disk
     try {
       const filePath = path.join(process.cwd(), logo.filePath);
@@ -176,16 +176,16 @@ async function deleteLogo(userId, logoId) {
     } catch (err) {
       console.error(`[Logo Cleanup] Error deleting file ${logo.filePath}:`, err.message);
     }
-    
+
     // If this was the current business logo, clear it
     if (user.businessLogo === logo.url) {
       user.businessLogo = null;
     }
-    
+
     // Remove from array
     user.generatedLogos.splice(logoIndex, 1);
     await user.save();
-    
+
     return true;
   } catch (error) {
     console.error('[Logo Cleanup] Error deleting logo:', error);

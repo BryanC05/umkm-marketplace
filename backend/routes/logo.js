@@ -252,8 +252,8 @@ router.put('/select/:logoId', auth, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Find the logo in generated logos
-    const logo = user.generatedLogos.find(l => l.logoId === logoId);
+    // Find the logo in generated logos (check both logoId and _id for backward compat)
+    const logo = user.generatedLogos.find(l => l.logoId === logoId || l._id.toString() === logoId);
 
     if (!logo) {
       return res.status(404).json({

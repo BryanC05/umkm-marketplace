@@ -76,27 +76,28 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product'
   }],
-  
+
   // Logo generation fields
   logoGenerationCount: {
     count: { type: Number, default: 0 },
     lastResetDate: { type: Date, default: Date.now }
   },
-  
+
   generatedLogos: [{
     _id: { type: mongoose.Schema.Types.ObjectId, auto: true },
+    logoId: { type: String },
     url: { type: String, required: true },
     prompt: { type: String, required: true },
     filePath: { type: String, required: true },
     createdAt: { type: Date, default: Date.now },
     expiresAt: { type: Date, default: () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) }
   }],
-  
+
   businessLogo: {
     type: String,
     default: null
   },
-  
+
   hasCustomLogo: {
     type: Boolean,
     default: false
@@ -107,13 +108,13 @@ const userSchema = new mongoose.Schema({
 
 userSchema.index({ location: '2dsphere' });
 
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
-userSchema.methods.comparePassword = async function(candidatePassword) {
+userSchema.methods.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
