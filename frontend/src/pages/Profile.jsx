@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
+import { getBackendUrl } from "@/config";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -164,7 +165,7 @@ const ProfileOrders = () => {
                         <div className="w-10 h-10 rounded-md overflow-hidden bg-secondary flex-shrink-0">
                           {item.product?.images?.[0] ? (
                             <img
-                              src={item.product.images[0].startsWith('http') ? item.product.images[0] : `${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '')}${item.product.images[0]}`}
+                              src={item.product.images[0].startsWith('http') ? item.product.images[0] : `${getBackendUrl()}${item.product.images[0]}`}
                               alt=""
                               className="w-full h-full object-cover"
                             />

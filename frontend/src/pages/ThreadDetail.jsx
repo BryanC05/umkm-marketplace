@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Heart, MessageSquare, Clock, Edit2, Trash2, Paperclip, Send, Image, File, ThumbsUp } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import api from '../utils/api';
+import { getBackendUrl } from '../config';
 import Layout from '@/components/layout/Layout';
 import './Forum.css';
 
@@ -176,7 +177,7 @@ function ThreadDetail() {
                                     {thread.attachments.map((att, i) => (
                                         <a
                                             key={i}
-                                            href={`${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '')}${att.url}`}
+                                            href={`${getBackendUrl()}${att.url}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="attachment-item flex items-center gap-2 bg-background border p-2 rounded hover:border-primary transition-colors max-w-xs"
@@ -243,7 +244,7 @@ function ThreadDetail() {
                                             {reply.attachments.map((att, i) => (
                                                 <a
                                                     key={i}
-                                                    href={`${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '')}${att.url}`}
+                                                    href={`${getBackendUrl()}${att.url}`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="inline-flex items-center gap-1 text-xs bg-muted px-2 py-1 rounded hover:bg-muted/80"

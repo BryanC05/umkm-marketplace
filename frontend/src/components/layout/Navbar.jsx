@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { getBackendUrl } from "@/config";
 import {
     Store,
     Search,
@@ -77,7 +78,7 @@ const Navbar = () => {
                 {/* Logo */}
                 <Link to="/" className="flex items-center gap-2">
                     <img
-                        src={`${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '')}/uploads/TroliTokoLogo.png`}
+                        src={`${getBackendUrl()}/uploads/TroliTokoLogo.png`}
                         alt="TroliToko"
                         className="h-10 w-auto object-contain transition-transform hover:scale-105"
                     />

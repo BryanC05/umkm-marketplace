@@ -9,12 +9,13 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { useLogoGenerator } from '@/hooks/useLogoGenerator';
 import { useAuthStore } from '@/store/authStore';
+import { getBackendUrl } from '@/config';
 import Layout from '@/components/layout/Layout';
 import LogoGallery from '@/components/logo/LogoGallery';
 import LogoUpload from '@/components/logo/LogoUpload';
 import PromptSuggestions from '@/components/logo/PromptSuggestions';
 
-const BACKEND_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+const BACKEND_URL = getBackendUrl();
 
 const getLogoUrl = (url) => {
   if (!url) return '';

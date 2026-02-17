@@ -3,6 +3,7 @@ import { useAuthStore, useCartStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import { useLanguageStore } from '../store/languageStore';
 import { useTranslation } from '../hooks/useTranslation';
+import { getBackendUrl } from '../config';
 import { MapPin, ShoppingBag, Store, User, LogOut, Sun, Moon, Globe, MessageCircle } from 'lucide-react';
 import './Navbar.css';
 
@@ -24,7 +25,7 @@ function Navbar() {
     <nav className="navbar">
       <div className="navbar-brand">
         <Link to="/">
-          <img src={`${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '')}/uploads/TroliTokoLogo.png`} alt="TroliToko" className="logo-image" />
+          <img src={`${getBackendUrl()}/uploads/TroliTokoLogo.png`} alt="TroliToko" className="logo-image" />
         </Link>
       </div>
 

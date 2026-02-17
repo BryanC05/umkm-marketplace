@@ -7,6 +7,7 @@ import {
   Smartphone, Building2, ChevronDown, ChevronUp, Calendar
 } from 'lucide-react';
 import api from '../utils/api';
+import { getBackendUrl } from '../config';
 import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../hooks/useTranslation';
 import Layout from '@/components/layout/Layout';
@@ -221,7 +222,7 @@ function Orders() {
                             <div className="item-image">
                               {item.product?.images?.[0] ? (
                                 <img
-                                  src={item.product.images[0].startsWith('http') ? item.product.images[0] : `${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '')}${item.product.images[0]}`}
+                                  src={item.product.images[0].startsWith('http') ? item.product.images[0] : `${getBackendUrl()}${item.product.images[0]}`}
                                   alt={item.product.name}
                                 />
                               ) : (

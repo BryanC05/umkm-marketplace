@@ -16,10 +16,11 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import api from '../utils/api';
+import { getBackendUrl } from '../config';
 import Layout from '@/components/layout/Layout';
 import './Chat.css';
 
-const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+const SOCKET_URL = getBackendUrl();
 
 function Chat() {
   const navigate = useNavigate();
