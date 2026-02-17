@@ -123,6 +123,11 @@ mobile/
 - Android Studio (for Android builds)
 - Xcode (for iOS builds, macOS only)
 
+### Build Android by Expo Go
+```bash
+npx eas-cli build --platform android --profile preview
+```
+
 ### Installation
 
 1. Navigate to the mobile directory:

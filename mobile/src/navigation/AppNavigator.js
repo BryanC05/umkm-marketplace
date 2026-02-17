@@ -72,6 +72,26 @@ function HomeStackNavigator() {
 function ProductsStackNavigator() {
     const { colors } = useThemeStore();
     const { t } = useLanguageStore();
+
+    const ProductsWrapper = ({ navigation }) => {
+        React.useEffect(() => {
+            const unsubscribe = navigation.addListener('focus', () => {
+                const parent = navigation.getParent();
+                if (parent) {
+                    const state = parent.getState();
+                    const productsRoute = state?.routes?.find(r => r.name === 'ProductsTab');
+                    if (productsRoute?.params?.reset) {
+                        parent.setParams({ reset: undefined });
+                        navigation.popToTop();
+                    }
+                }
+            });
+            return unsubscribe;
+        }, [navigation]);
+
+        return <ProductsScreen />;
+    };
+
     return (
         <ProductsStack.Navigator
             screenOptions={{
@@ -81,7 +101,7 @@ function ProductsStackNavigator() {
         >
             <ProductsStack.Screen
                 name="Products"
-                component={ProductsScreen}
+                component={ProductsWrapper}
                 options={{
                     title: t.navProducts,
                     headerStyle: { backgroundColor: colors.card },
@@ -324,7 +344,21 @@ export default function AppNavigator() {
 
     return (
         <Tab.Navigator
-            screenOptions={({ route }) => ({
+            screenOptions={({ route, navigation }) => ({
+                tabBarOnPress: ({ defaultHandler }) => {
+                    const isFocused = navigation.isFocused();
+                    if (isFocused && route.name === 'ProductsTab') {
+                        navigation.navigate('ProductsTab', { screen: 'Products', params: { reset: true } });
+                    } else if (isFocused && route.name === 'HomeTab') {
+                        navigation.navigate('HomeTab', { screen: 'Home', params: { reset: true } });
+                    } else if (isFocused && route.name === 'CartTab') {
+                        navigation.navigate('CartTab', { screen: 'CartMain', params: { reset: true } });
+                    } else if (isFocused && route.name === 'ProfileTab') {
+                        navigation.navigate('ProfileTab', { screen: 'ProfileMain', params: { reset: true } });
+                    } else {
+                        defaultHandler();
+                    }
+                },
                 headerShown: false,
                 tabBarIcon: ({ focused, color, size }) => {
                     let iconName;
