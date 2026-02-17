@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "mobile",
+    "slug": "mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.msmemarketplace.mobile",
+      "config": {
+        "googleMapsApiKey": "AIzaSyCCaG_ffRnoh2Vjtu6BnkM_MLCgQivH0M4"
+      },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "We need your location to show nearby sellers and products",
+        "NSLocationAlwaysUsageDescription": "We need your location to show nearby sellers and products"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.msmemarketplace.mobile",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCCaG_ffRnoh2Vjtu6BnkM_MLCgQivH0M4"
+        }
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "034edfa1-ecd5-47df-b050-47725a620224"
+      }
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow MSME Marketplace to use your location to show nearby sellers and products."
+        }
+      ]
+    ]
+  }
+}
