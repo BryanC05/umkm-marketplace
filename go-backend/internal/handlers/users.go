@@ -104,6 +104,17 @@ func (h *UserHandler) GetNearbySellers(c *gin.Context) {
 		return
 	}
 
+	latFloat, err := strconv.ParseFloat(lat, 64)
+	if err != nil {
+		c.JSON(400, gin.H{"message": "Invalid latitude"})
+		return
+	}
+	lngFloat, err := strconv.ParseFloat(lng, 64)
+	if err != nil {
+		c.JSON(400, gin.H{"message": "Invalid longitude"})
+		return
+	}
+
 	radius, err := strconv.Atoi(radiusStr)
 	if err != nil {
 		radius = 10000
@@ -117,7 +128,7 @@ func (h *UserHandler) GetNearbySellers(c *gin.Context) {
 			"$near": bson.M{
 				"$geometry": bson.M{
 					"type":        "Point",
-					"coordinates": []interface{}{lng, lat},
+					"coordinates": []float64{lngFloat, latFloat},
 				},
 				"$maxDistance": radius,
 			},
