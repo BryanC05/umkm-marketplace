@@ -7,7 +7,7 @@ import (
 )
 
 type ForumThread struct {
-	ID          primitive.ObjectID   `bson:"_id,omitempty" json:"id"`
+	ID          primitive.ObjectID   `bson:"_id,omitempty" json:"_id"`
 	Title       string               `bson:"title" json:"title"`
 	Content     string               `bson:"content" json:"content"`
 	Author      primitive.ObjectID   `bson:"author" json:"author"`
@@ -23,7 +23,7 @@ type ForumThread struct {
 }
 
 type ForumReply struct {
-	ID          primitive.ObjectID   `bson:"_id,omitempty" json:"id"`
+	ID          primitive.ObjectID   `bson:"_id,omitempty" json:"_id"`
 	Content     string               `bson:"content" json:"content"`
 	Author      primitive.ObjectID   `bson:"author" json:"author"`
 	Thread      primitive.ObjectID   `bson:"thread" json:"thread"`

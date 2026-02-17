@@ -8,7 +8,7 @@ import (
 )
 
 type Workflow struct {
-	ID             primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	ID             primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
 	Seller         primitive.ObjectID `bson:"seller" json:"seller"`
 	Name           string             `bson:"name" json:"name"`
 	Type           string             `bson:"type" json:"type"`

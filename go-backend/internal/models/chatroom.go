@@ -7,7 +7,7 @@ import (
 )
 
 type ChatRoom struct {
-	ID          primitive.ObjectID  `bson:"_id,omitempty" json:"id"`
+	ID          primitive.ObjectID  `bson:"_id,omitempty" json:"_id"`
 	Order       *primitive.ObjectID `bson:"order" json:"order"`
 	Buyer       primitive.ObjectID  `bson:"buyer" json:"buyer"`
 	Seller      primitive.ObjectID  `bson:"seller" json:"seller"`
@@ -24,7 +24,7 @@ type UnreadCount struct {
 }
 
 type Message struct {
-	ID          primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	ID          primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
 	ChatRoom    primitive.ObjectID `bson:"chatRoom" json:"chatRoom"`
 	Sender      primitive.ObjectID `bson:"sender" json:"sender"`
 	Content     string             `bson:"content" json:"content"`
