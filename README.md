@@ -30,6 +30,7 @@ A full-stack web application connecting Micro, Small, and Medium Enterprises (MS
 - Manage business profile
 - Participate in community forums
 - Real-time messaging with buyers
+- AI-powered logo generation
 
 ### Technical Features
 - Geolocation-based search for nearby sellers
@@ -39,7 +40,7 @@ A full-stack web application connecting Micro, Small, and Medium Enterprises (MS
 - Responsive design for mobile and desktop
 - Image upload support
 - Category-based product filtering
-- Real-time chat with Socket.io
+- Real-time chat with WebSocket
 - Community forum system
 - Multi-language i18n support
 - Theme management (dark/light mode)
@@ -47,125 +48,131 @@ A full-stack web application connecting Micro, Small, and Medium Enterprises (MS
 
 ## Tech Stack
 
-### Backend
-- Node.js with Express
-- MongoDB with Mongoose
+### Backend (Go)
+- Go with Gin framework
+- MongoDB with official Go driver
 - JWT for authentication
-- bcryptjs for password hashing
-- Socket.io for real-time chat
+- bcrypt for password hashing
+- Gorilla WebSocket for real-time chat
 - Geospatial queries with MongoDB 2dsphere indexes
-- Multer for file uploads
 
 ### Frontend
 - React with Vite
 - React Router for navigation
 - TanStack Query (React Query) for data fetching
 - Zustand for state management
-- Socket.io-client for real-time chat
+- Native WebSocket for real-time chat
 - Leaflet with React-Leaflet for maps
 - shadcn/ui component library
 - Lucide React for icons
-- CSS3 with Tailwind CSS
-- i18n for multi-language support
+- Tailwind CSS
+- i18next for multi-language support
 
 ## Project Structure
 
 ```
 msme-marketplace/
-├── backend/
-│   ├── models/
-│   │   ├── User.js
-│   │   ├── Product.js
-│   │   ├── Order.js
-│   │   ├── ChatRoom.js
-│   │   ├── Message.js
-│   │   ├── ForumThread.js
-│   │   └── ForumReply.js
-│   ├── routes/
-│   │   ├── auth.js
-│   │   ├── products.js
-│   │   ├── users.js
-│   │   ├── orders.js
-│   │   ├── chat.js
-│   │   └── forum.js
-│   ├── middleware/
-│   │   └── auth.js
+├── go-backend/
+│   ├── cmd/
+│   │   └── server/
+│   │       └── main.go
+│   ├── internal/
+│   │   ├── config/
+│   │   │   └── config.go
+│   │   ├── database/
+│   │   │   └── mongo.go
+│   │   ├── handlers/
+│   │   │   ├── auth.go
+│   │   │   ├── users.go
+│   │   │   ├── products.go
+│   │   │   ├── orders.go
+│   │   │   ├── chat.go
+│   │   │   ├── forum.go
+│   │   │   ├── workflows.go
+│   │   │   ├── logo.go
+│   │   │   └── webhooks.go
+│   │   ├── middleware/
+│   │   │   └── auth.go
+│   │   ├── models/
+│   │   │   ├── user.go
+│   │   │   ├── product.go
+│   │   │   ├── order.go
+│   │   │   ├── chatroom.go
+│   │   │   ├── forum.go
+│   │   │   └── workflow.go
+│   │   └── websocket/
+│   │       └── hub.go
 │   ├── uploads/
-│   ├── server.js
-│   ├── package.json
+│   ├── Dockerfile
+│   ├── go.mod
+│   ├── go.sum
 │   └── .env
-└── frontend/
-    ├── src/
-    │   ├── components/
-    │   │   ├── Navbar.jsx
-    │   │   ├── ProductCard.jsx
-    │   │   ├── LocationPicker.jsx
-    │   │   ├── ScrollToTop.jsx
-    │   │   ├── forums/
-    │   │   │   └── ForumPostCard.jsx
-    │   │   ├── layout/
-    │   │   │   ├── Layout.jsx
-    │   │   │   ├── Navbar.jsx
-    │   │   │   └── Footer.jsx
-    │   │   ├── products/
-    │   │   │   └── ProductCard.jsx
-    │   │   └── ui/
-    │   │       └── (shadcn/ui components)
-    │   ├── pages/
-    │   │   ├── Home.jsx
-    │   │   ├── Products.jsx
-    │   │   ├── ProductDetail.jsx
-    │   │   ├── Login.jsx
-    │   │   ├── Register.jsx
-    │   │   ├── SellerDashboard.jsx
-    │   │   ├── SellerStore.jsx
-    │   │   ├── Sell.jsx
-    │   │   ├── AddProduct.jsx
-    │   │   ├── Orders.jsx
-    │   │   ├── Profile.jsx
-    │   │   ├── NearbyMap.jsx
-    │   │   ├── Cart.jsx
-    │   │   ├── SavedProducts.jsx
-    │   │   ├── Chat.jsx
-    │   │   ├── Messages.jsx
-    │   │   ├── Forums.jsx
-    │   │   ├── Forum.jsx
-    │   │   ├── ThreadDetail.jsx
-    │   │   ├── NewThread.jsx
-    │   │   └── EditThread.jsx
-    │   ├── store/
-    │   │   ├── authStore.js
-    │   │   ├── languageStore.js
-    │   │   ├── savedProductsStore.js
-    │   │   └── themeStore.js
-    │   ├── hooks/
-    │   │   ├── use-mobile.js
-    │   │   └── useTranslation.js
-    │   ├── utils/
-    │   │   └── api.js
-    │   ├── App.jsx
-    │   ├── App.css
-    │   └── main.jsx
-    ├── package.json
-    └── index.html
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── Navbar.jsx
+│   │   │   ├── ProductCard.jsx
+│   │   │   ├── LocationPicker.jsx
+│   │   │   ├── NearbyMap.jsx
+│   │   │   ├── ScrollToTop.jsx
+│   │   │   ├── forums/
+│   │   │   ├── layout/
+│   │   │   ├── products/
+│   │   │   ├── logo/
+│   │   │   └── ui/
+│   │   ├── pages/
+│   │   │   ├── Home.jsx
+│   │   │   ├── Products.jsx
+│   │   │   ├── ProductDetail.jsx
+│   │   │   ├── Login.jsx
+│   │   │   ├── Register.jsx
+│   │   │   ├── SellerDashboard.jsx
+│   │   │   ├── SellerStore.jsx
+│   │   │   ├── Sell.jsx
+│   │   │   ├── AddProduct.jsx
+│   │   │   ├── Orders.jsx
+│   │   │   ├── Profile.jsx
+│   │   │   ├── NearbyMap.jsx
+│   │   │   ├── Cart.jsx
+│   │   │   ├── SavedProducts.jsx
+│   │   │   ├── Chat.jsx
+│   │   │   ├── Messages.jsx
+│   │   │   ├── Forums.jsx
+│   │   │   ├── Forum.jsx
+│   │   │   ├── ThreadDetail.jsx
+│   │   │   ├── NewThread.jsx
+│   │   │   ├── LogoGenerator.jsx
+│   │   │   └── EditThread.jsx
+│   │   ├── store/
+│   │   ├── hooks/
+│   │   ├── utils/
+│   │   ├── config/
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   ├── package.json
+│   ├── vite.config.js
+│   └── .env
+└── mobile/
+    └── (React Native/Expo mobile app)
 ```
 
 ## Setup Instructions
 
 ### Prerequisites
-- Node.js (v16 or higher)
+- Node.js (v18 or higher)
+- Go (v1.21 or higher)
 - MongoDB (local or cloud instance like MongoDB Atlas)
 
-### Backend Setup
+### Backend Setup (Go)
 
 1. Navigate to the backend directory:
 ```bash
-cd msme-marketplace/backend
+cd msme-marketplace/go-backend
 ```
 
 2. Install dependencies:
 ```bash
-npm install
+go mod download
 ```
 
 3. Configure environment variables:
@@ -175,62 +182,22 @@ PORT=5000
 MONGODB_URI=mongodb://localhost:27017/msme_marketplace
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 NODE_ENV=development
+HUGGINGFACE_API_KEY=your-huggingface-api-key
+DEEPAI_API_KEY=your-deepai-api-key
+POLLINATIONS_API_KEY=your-pollinations-api-key
 ```
 
-4. Start the backend server:
+4. Run the backend:
 ```bash
-# Development mode with auto-reload
-npm run dev
+# Build and run
+go build -o server ./cmd/server
+./server
 
-# OR Production mode
-npm start
+# Or run directly
+go run ./cmd/server
 ```
 
 The backend will run on http://localhost:5000
-
-### Stopping the Backend
-
-To stop the backend server, use one of these methods:
-
-**Method 1: Using Keyboard (Recommended)**
-```bash
-# In the terminal where the backend is running, press:
-Ctrl + C
-```
-
-**Method 2: Find and Kill Process (Linux/Mac)**
-```bash
-# Find the Node.js process running on port 5000
-lsof -i :5000
-
-# Kill the process (replace <PID> with the actual process ID)
-kill -9 <PID>
-
-# Or kill all Node processes (use with caution)
-pkill -f "node server.js"
-```
-
-**Method 3: Using Command Line (Windows)**
-```cmd
-# Find process using port 5000
-netstat -ano | findstr :5000
-
-# Kill the process (replace <PID> with the actual process ID)
-taskkill /PID <PID> /F
-```
-
-**Method 4: Kill Script**
-Save this as `kill-backend.sh`:
-```bash
-#!/bin/bash
-PID=$(lsof -t -i:5000)
-if [ -n "$PID" ]; then
-  kill -9 $PID
-  echo "Backend stopped (PID: $PID)"
-else
-  echo "No backend running on port 5000"
-fi
-```
 
 ### Frontend Setup
 
@@ -244,57 +211,102 @@ cd msme-marketplace/frontend
 npm install
 ```
 
-3. Start the development server:
+3. Configure environment variables:
+   - Create or update `.env`:
+```env
+VITE_API_URL=http://localhost:5000/api
+```
+
+4. Start the development server:
 ```bash
 npm run dev
 ```
 
 The frontend will run on http://localhost:5173
 
-4. Build for production:
+5. Build for production:
 ```bash
 npm run build
 ```
+
+## Deployment
+
+### Deploying to Railway
+
+#### Backend (Go)
+
+1. Create a new project on Railway
+2. Connect your GitHub repository
+3. Add the following environment variables:
+   - `PORT` = `8080`
+   - `MONGODB_URI` = your MongoDB connection string
+   - `JWT_SECRET` = your JWT secret
+   - `HUGGINGFACE_API_KEY` = (optional)
+   - `DEEPAI_API_KEY` = (optional)
+   - `POLLINATIONS_API_KEY` = (optional)
+4. Railway will automatically detect the Dockerfile and build
+
+#### Frontend
+
+1. Build the frontend:
+```bash
+npm run build
+```
+
+2. Deploy the `dist` folder to Railway, Vercel, or any static hosting
 
 ## API Endpoints
 
 ### Authentication
 - `POST /api/auth/register` - Register new user (buyer or seller)
 - `POST /api/auth/login` - User login
+- `PUT /api/auth/profile` - Update profile (authenticated)
 
 ### Products
 - `GET /api/products` - Get all products (with filters, pagination, geolocation)
 - `GET /api/products/:id` - Get single product
 - `GET /api/products/seller/:sellerId` - Get products by seller
+- `GET /api/products/my-products` - Get seller's products (authenticated)
 - `POST /api/products` - Create product (seller only)
 - `PUT /api/products/:id` - Update product (seller only)
 - `DELETE /api/products/:id` - Delete product (seller only)
 
 ### Users
 - `GET /api/users/nearby-sellers` - Get nearby sellers by geolocation
-- `GET /api/users/profile` - Get user profile
-- `PUT /api/users/profile` - Update user profile
+- `GET /api/users/profile` - Get user profile (authenticated)
+- `PUT /api/users/profile` - Update user profile (authenticated)
+- `GET /api/users/sellers/count` - Get total seller count
 
 ### Orders
-- `GET /api/orders/my-orders` - Get user's orders
+- `GET /api/orders/my-orders` - Get user's orders (authenticated)
+- `GET /api/orders/:id` - Get order by ID
 - `POST /api/orders` - Create new order
 - `PUT /api/orders/:id/status` - Update order status
+- `PUT /api/orders/:id/payment` - Update payment status
 
 ### Chat
-- `GET /api/chat` - Get user's chat rooms
-- `GET /api/chat/:userId` - Get or create chat room with user
-- `GET /api/chat/:roomId/messages` - Get messages in a chat room
-- `POST /api/chat/:roomId/messages` - Send message in chat room
+- `GET /api/chat/rooms` - Get user's chat rooms
+- `POST /api/chat/rooms` - Create chat room
+- `POST /api/chat/rooms/direct` - Create direct chat room
+- `GET /api/chat/rooms/:roomId/messages` - Get messages
+- `POST /api/chat/rooms/:roomId/messages` - Send message
+- `WS /ws` - WebSocket for real-time chat
 
 ### Forum
 - `GET /api/forum` - Get all forum threads
 - `GET /api/forum/:id` - Get single thread with replies
-- `POST /api/forum` - Create new thread
-- `PUT /api/forum/:id` - Update thread
-- `DELETE /api/forum/:id` - Delete thread
-- `POST /api/forum/:id/replies` - Add reply to thread
-- `PUT /api/forum/replies/:replyId` - Update reply
-- `DELETE /api/forum/replies/:replyId` - Delete reply
+- `POST /api/forum` - Create new thread (authenticated)
+- `PUT /api/forum/:id` - Update thread (authenticated)
+- `DELETE /api/forum/:id` - Delete thread (authenticated)
+- `POST /api/forum/:id/reply` - Add reply (authenticated)
+- `POST /api/forum/:id/like` - Like thread (authenticated)
+
+### Logo Generation
+- `POST /api/logo/generate` - Generate logo (authenticated)
+- `GET /api/logo/history` - Get logo history (authenticated)
+- `GET /api/logo/status` - Get generation status (authenticated)
+- `PUT /api/logo/select/:logoId` - Select logo (authenticated)
+- `DELETE /api/logo/:logoId` - Delete logo (authenticated)
 
 ## Key Features Explained
 
@@ -319,30 +331,24 @@ Orders flow through statuses:
 5. **Delivered** - Order completed
 6. **Cancelled** - Order cancelled
 
-### Cart System
-- Add products to cart while browsing
-- Adjust quantities or remove items
-- View total price calculation
-- Proceed to checkout from cart
-- Cart persists across sessions
-
-### Saved Products
-- Save products to a wishlist for later
-- Quick access to saved items from profile
-- Remove items from saved list
-
 ### Real-Time Chat
-- Direct messaging between buyers and sellers
+- WebSocket-based messaging between buyers and sellers
 - Persistent chat rooms per conversation
-- Real-time message updates via Socket.io
-- View chat history
+- Real-time message updates
+- Typing indicators
 
 ### Community Forums
 - Create discussion threads on various topics
 - Reply to threads and engage with community
 - Browse forums by category
 - Edit and delete own posts
-- View thread activity and replies
+- Like posts and replies
+
+### AI Logo Generation
+- Generate logos using AI (Flux/HuggingFace)
+- Custom logo upload support
+- Rate limiting (5 logos per user)
+- Logo history and selection
 
 ### Multi-Language Support
 - Toggle between English and Hindi
@@ -356,38 +362,55 @@ Orders flow through statuses:
 
 ## Development Notes
 
+### Running Both Frontend and Backend
+
+**Terminal 1 - Backend:**
+```bash
+cd go-backend
+go run ./cmd/server
+```
+
+**Terminal 2 - Frontend:**
+```bash
+cd frontend
+npm run dev
+```
+
 ### Adding New Features
-1. Backend: Add routes in appropriate route file
-2. Backend: Update models if needed
-3. Frontend: Create/update pages in `/src/pages/`
-4. Frontend: Add routes in `App.jsx`
-5. Frontend: Add navigation links in `Navbar.jsx`
+1. Backend: Add handlers in `internal/handlers/`
+2. Backend: Update models if needed in `internal/models/`
+3. Backend: Register routes in `cmd/server/main.go`
+4. Frontend: Create/update pages in `src/pages/`
+5. Frontend: Add routes in `App.jsx`
 
-### Styling
-- Global styles in `App.css`
-- Component-specific styles in `.css` files next to components
-- CSS variables for consistent theming
-- Responsive design with mobile-first approach
+### Environment Variables
 
-### State Management
-- Zustand for auth and cart state
-- React Query for server state
-- Local state with React useState for form inputs
+**Backend (.env):**
+| Variable | Description |
+|----------|-------------|
+| PORT | Server port (default: 5000) |
+| MONGODB_URI | MongoDB connection string |
+| JWT_SECRET | Secret for JWT signing |
+| NODE_ENV | development or production |
+| LOGO_MODEL | Logo model to use (flux) |
+
+**Frontend (.env):**
+| Variable | Description |
+|----------|-------------|
+| VITE_API_URL | Backend API URL |
 
 ## Future Enhancements
 
-- [x] Payment gateway integration (Razorpay/Stripe)
 - [x] Real-time chat between buyers and sellers
 - [x] Community forum system
 - [x] Multi-language support (English/Hindi)
 - [x] Dark/light theme support
+- [x] Mobile app (React Native/Expo)
 - [ ] Review and rating system
 - [ ] Push notifications for order updates
-- [ ] Mobile app (React Native)
 - [ ] Advanced analytics for sellers
 - [ ] Delivery tracking system
-- [ ] SMS notifications
-- [ ] Email notifications
+- [ ] Payment gateway integration
 
 ## Contributing
 
