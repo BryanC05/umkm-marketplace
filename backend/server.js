@@ -39,7 +39,9 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors({
   origin: "*",
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json({ limit: '50mb' }));
 
@@ -57,6 +59,14 @@ app.use(helmet({
     }
   },
   crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+
+// Explicit preflight handling
+app.options('*', cors({
+  origin: "*",
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 // Create uploads directories if they don't exist
 const fs = require('fs');
