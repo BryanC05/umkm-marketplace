@@ -176,7 +176,7 @@ function ThreadDetail() {
                                     {thread.attachments.map((att, i) => (
                                         <a
                                             key={i}
-                                            href={`http://localhost:5000${att.url}`}
+                                            href={`${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '')}${att.url}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="attachment-item flex items-center gap-2 bg-background border p-2 rounded hover:border-primary transition-colors max-w-xs"
@@ -243,7 +243,7 @@ function ThreadDetail() {
                                             {reply.attachments.map((att, i) => (
                                                 <a
                                                     key={i}
-                                                    href={`http://localhost:5000${att.url}`}
+                                                    href={`${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '')}${att.url}`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="inline-flex items-center gap-1 text-xs bg-muted px-2 py-1 rounded hover:bg-muted/80"

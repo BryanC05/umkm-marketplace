@@ -221,7 +221,7 @@ function Orders() {
                             <div className="item-image">
                               {item.product?.images?.[0] ? (
                                 <img
-                                  src={item.product.images[0].startsWith('http') ? item.product.images[0] : `http://localhost:5000${item.product.images[0]}`}
+                                  src={item.product.images[0].startsWith('http') ? item.product.images[0] : `${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '')}${item.product.images[0]}`}
                                   alt={item.product.name}
                                 />
                               ) : (

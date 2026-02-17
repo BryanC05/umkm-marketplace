@@ -77,7 +77,7 @@ const Navbar = () => {
                 {/* Logo */}
                 <Link to="/" className="flex items-center gap-2">
                     <img
-                        src="http://localhost:5000/uploads/TroliTokoLogo.png"
+                        src={`${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '')}/uploads/TroliTokoLogo.png`}
                         alt="TroliToko"
                         className="h-10 w-auto object-contain transition-transform hover:scale-105"
                     />

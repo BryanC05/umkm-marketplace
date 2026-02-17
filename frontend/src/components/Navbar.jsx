@@ -24,7 +24,7 @@ function Navbar() {
     <nav className="navbar">
       <div className="navbar-brand">
         <Link to="/">
-          <img src="http://localhost:5000/uploads/TroliTokoLogo.png" alt="TroliToko" className="logo-image" />
+          <img src={`${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '')}/uploads/TroliTokoLogo.png`} alt="TroliToko" className="logo-image" />
         </Link>
       </div>
 

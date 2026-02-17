@@ -71,7 +71,7 @@ if (!fs.existsSync(logosDir)) {
   fs.mkdirSync(logosDir, { recursive: true });
 }
 
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/msme_marketplace')
   .then(() => console.log('✅ Connected to MongoDB'))
