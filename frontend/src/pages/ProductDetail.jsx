@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { PLACEHOLDER_IMAGE } from '@/utils/constants';
+import { resolveImageUrl } from '@/utils/imageUrl';
 
 function ProductDetail() {
   const { id } = useParams();
@@ -145,7 +146,9 @@ function ProductDetail() {
     );
   }
 
-  const productImages = product.images?.length > 0 ? product.images : [PLACEHOLDER_IMAGE];
+  const productImages = product.images?.length > 0
+    ? product.images.map((img) => resolveImageUrl(img) || PLACEHOLDER_IMAGE)
+    : [PLACEHOLDER_IMAGE];
 
   return (
     <Layout>

@@ -11,6 +11,7 @@ import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { resolveImageUrl } from '@/utils/imageUrl';
 import './SellerProductTracking.css';
 
 const statusConfig = {
@@ -231,7 +232,7 @@ function SellerProductTracking() {
                     <div className="product-image w-16 h-16 rounded-lg border overflow-hidden flex-shrink-0">
                       {item.product.images?.[0] ? (
                         <img 
-                          src={item.product.images[0]} 
+                          src={resolveImageUrl(item.product.images[0])} 
                           alt={item.product.name || 'Product'}
                           className="w-full h-full object-cover"
                         />

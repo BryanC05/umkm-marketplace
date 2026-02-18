@@ -7,12 +7,12 @@ import {
   Smartphone, Building2, ChevronDown, ChevronUp, Calendar
 } from 'lucide-react';
 import api from '../utils/api';
-import { getBackendUrl } from '../config';
 import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../hooks/useTranslation';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { resolveImageUrl } from '@/utils/imageUrl';
 import './Orders.css';
 
 const statusConfig = {
@@ -222,7 +222,7 @@ function Orders() {
                             <div className="item-image">
                               {item.product?.images?.[0] ? (
                                 <img
-                                  src={item.product.images[0].startsWith('http') ? item.product.images[0] : `${getBackendUrl()}${item.product.images[0]}`}
+                                  src={resolveImageUrl(item.product.images[0])}
                                   alt={item.product.name}
                                 />
                               ) : (

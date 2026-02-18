@@ -39,6 +39,7 @@ A full-stack web application connecting Micro, Small, and Medium Enterprises (MS
 - JWT-based authentication
 - Responsive design for mobile and desktop
 - Image upload support
+- Product photo enhancement via Claid (manual per image)
 - Category-based product filtering
 - Real-time chat with WebSocket
 - Community forum system
@@ -185,6 +186,12 @@ NODE_ENV=development
 HUGGINGFACE_API_KEY=your-huggingface-api-key
 DEEPAI_API_KEY=your-deepai-api-key
 POLLINATIONS_API_KEY=your-pollinations-api-key
+CLAID_API_KEY=your-claid-api-key
+CLAID_BASE_URL=https://api.claid.ai/v1
+CLAID_TIMEOUT_SECONDS=45
+PRODUCT_IMAGE_MAX_SIZE_MB=5
+PRODUCT_IMAGE_MAX_COUNT=4
+PRODUCT_ENHANCE_DAILY_LIMIT=20
 ```
 
 4. Run the backend:
@@ -244,6 +251,12 @@ npm run build
    - `HUGGINGFACE_API_KEY` = (optional)
    - `DEEPAI_API_KEY` = (optional)
    - `POLLINATIONS_API_KEY` = (optional)
+   - `CLAID_API_KEY` = (optional, enables product image enhancement)
+   - `CLAID_BASE_URL` = (optional, default `https://api.claid.ai/v1`)
+   - `CLAID_TIMEOUT_SECONDS` = (optional, default `45`)
+   - `PRODUCT_IMAGE_MAX_SIZE_MB` = (optional, default `5`)
+   - `PRODUCT_IMAGE_MAX_COUNT` = (optional, default `4`)
+   - `PRODUCT_ENHANCE_DAILY_LIMIT` = (optional, default `20`)
 4. Railway will automatically detect the Dockerfile and build
 
 #### Frontend
@@ -270,6 +283,10 @@ npm run build
 - `POST /api/products` - Create product (seller only)
 - `PUT /api/products/:id` - Update product (seller only)
 - `DELETE /api/products/:id` - Delete product (seller only)
+
+### Product Images
+- `POST /api/product-images/process` - Upload and optionally enhance product image (authenticated)
+- `DELETE /api/product-images/cleanup` - Best-effort cleanup of uploaded product images (authenticated)
 
 ### Users
 - `GET /api/users/nearby-sellers` - Get nearby sellers by geolocation

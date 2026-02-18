@@ -12,6 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { PLACEHOLDER_IMAGE } from '@/utils/constants';
+import { resolveImageUrl } from '@/utils/imageUrl';
 
 function Cart() {
     const navigate = useNavigate();
@@ -106,7 +107,7 @@ function Cart() {
                                         <CardContent className="p-4 flex gap-4">
                                             <div className="h-24 w-24 rounded-md overflow-hidden border shrink-0">
                                                 <img
-                                                    src={item.product.images?.[0] || PLACEHOLDER_IMAGE}
+                                                    src={resolveImageUrl(item.product.images?.[0]) || PLACEHOLDER_IMAGE}
                                                     alt={item.product.name}
                                                     className="h-full w-full object-cover"
                                                 />

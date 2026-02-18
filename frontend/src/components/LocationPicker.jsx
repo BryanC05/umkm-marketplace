@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { MapPin, Search, Navigation } from 'lucide-react';
-import api from '../utils/api';
 import './LocationPicker.css';
 
 function LocationPicker({ onLocationSelect, initialLocation }) {
@@ -15,19 +14,22 @@ function LocationPicker({ onLocationSelect, initialLocation }) {
     const mapContainerRef = useRef(null);
     const mapRef = useRef(null);
     const markerRef = useRef(null);
+    const isInitializingRef = useRef(false);
 
     // Initialize Map
     useEffect(() => {
-        const container = mapContainerRef.current;
-        if (!container) return;
+        const containerEl = mapContainerRef.current;
+        if (!containerEl || mapRef.current || isInitializingRef.current) return;
 
-        // Check if map is already initialized on this container
-        if (container._leaflet_id) return;
+        let cancelled = false;
+        isInitializingRef.current = true;
 
         const initMap = async () => {
             try {
                 const L = (await import('leaflet')).default;
                 await import('leaflet/dist/leaflet.css');
+
+                if (cancelled || mapRef.current) return;
 
                 // Fix marker icons
                 const markerIcon = await import('leaflet/dist/images/marker-icon.png');
@@ -43,7 +45,12 @@ function LocationPicker({ onLocationSelect, initialLocation }) {
                 L.Marker.prototype.options.icon = DefaultIcon;
 
                 const container = mapContainerRef.current;
-                if (!container) return;
+                if (!container || cancelled || mapRef.current) return;
+
+                // In dev strict mode/hot-reload, a stale leaflet id can remain.
+                if (container._leaflet_id) {
+                    delete container._leaflet_id;
+                }
 
                 // Try to get user's current location first
                 let startPos;
@@ -100,6 +107,11 @@ function LocationPicker({ onLocationSelect, initialLocation }) {
                     handlePositionChange(e.latlng.lat, e.latlng.lng);
                 });
 
+                if (cancelled) {
+                    map.remove();
+                    return;
+                }
+
                 mapRef.current = map;
                 markerRef.current = marker;
                 setMapReady(true);
@@ -107,18 +119,25 @@ function LocationPicker({ onLocationSelect, initialLocation }) {
                 // Don't auto-request location - let user click the map or use "Locate Me" button
 
             } catch (err) {
-                console.error('Error initializing map:', err);
-                setMapError(err.message);
+                if (!cancelled) {
+                    console.error('Error initializing map:', err);
+                    setMapError(err.message);
+                }
+            } finally {
+                isInitializingRef.current = false;
             }
         };
 
         initMap();
 
         return () => {
+            cancelled = true;
+            isInitializingRef.current = false;
             if (mapRef.current) {
                 mapRef.current.remove();
                 mapRef.current = null;
             }
+            markerRef.current = null;
         };
     }, []);
 

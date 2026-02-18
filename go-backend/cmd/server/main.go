@@ -53,6 +53,7 @@ func main() {
 	workflowHandler := handlers.NewWorkflowHandler()
 	logoHandler := handlers.NewLogoHandler()
 	webhookHandler := handlers.NewWebhookHandler()
+	productImageHandler := handlers.NewProductImageHandler(cfg)
 
 	api := r.Group("/api")
 	{
@@ -90,6 +91,13 @@ func main() {
 			products.DELETE("/:id", middleware.AuthRequired(cfg.JWTSecret), productHandler.DeleteProduct)
 
 			products.GET("/my-products", middleware.AuthRequired(cfg.JWTSecret), productHandler.GetMyProducts)
+		}
+
+		productImages := api.Group("/product-images")
+		productImages.Use(middleware.AuthRequired(cfg.JWTSecret))
+		{
+			productImages.POST("/process", productImageHandler.ProcessImage)
+			productImages.DELETE("/cleanup", productImageHandler.Cleanup)
 		}
 
 		orders := api.Group("/orders")
@@ -160,6 +168,7 @@ func main() {
 	}
 
 	os.MkdirAll("./uploads/logos", 0755)
+	os.MkdirAll("./uploads/products", 0755)
 	os.MkdirAll("./uploads/forum", 0755)
 
 	port := cfg.Port

@@ -6,11 +6,12 @@ import { Link } from "react-router-dom";
 import { useSavedProductsStore } from "@/store/savedProductsStore";
 import { useAuthStore } from "@/store/authStore";
 import { PLACEHOLDER_IMAGE } from "@/utils/constants";
+import { resolveImageUrl } from "@/utils/imageUrl";
 
 const ProductCard = ({ product }) => {
     // Handle both API data structure and mock data structure
     const productId = product._id || product.id;
-    const productImage = product.images?.[0] || product.image || PLACEHOLDER_IMAGE;
+    const productImage = resolveImageUrl(product.images?.[0] || product.image) || PLACEHOLDER_IMAGE;
     const sellerName = product.seller?.businessName || product.seller?.name || 'Local Seller';
     const sellerRating = product.seller?.rating || product.rating || 4.5;
 

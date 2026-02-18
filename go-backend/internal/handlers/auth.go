@@ -93,6 +93,10 @@ func (h *AuthHandler) Register(c *gin.Context) {
 			Count:         0,
 			LastResetDate: time.Now(),
 		},
+		ImageEnhancementCount: models.ImageEnhancementCount{
+			Count:         0,
+			LastResetDate: time.Now(),
+		},
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}

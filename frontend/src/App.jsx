@@ -74,6 +74,7 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/seller/dashboard" element={<SellerDashboard />} />
             <Route path="/seller/add-product" element={<AddProduct />} />
+            <Route path="/add-product" element={<Navigate to="/seller/add-product" replace />} />
             <Route path="/seller/product-tracking" element={<SellerProductTracking />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/profile" element={<Profile />} />

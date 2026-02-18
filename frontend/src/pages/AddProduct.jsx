@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Upload, Plus, X, MapPin, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Upload, Plus, X, Trash2, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import api from '../utils/api';
 import LocationPicker from '../components/LocationPicker';
 import Layout from '@/components/layout/Layout';
@@ -19,14 +19,20 @@ const categories = [
   { id: 'other', name: 'Others' },
 ];
 
+const MAX_IMAGES = 4;
+const MAX_IMAGE_SIZE_MB = 5;
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
 function AddProduct() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [images, setImages] = useState([]);
+  const [imageItems, setImageItems] = useState([]);
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState('');
   const [currentLocation, setCurrentLocation] = useState(null);
   const [, setLocationStatus] = useState('getting');
+  const [imageError, setImageError] = useState('');
+  const [uploadWarnings, setUploadWarnings] = useState([]);
 
   // Variant state
   const [hasVariants, setHasVariants] = useState(false);
@@ -79,49 +85,183 @@ function AddProduct() {
     },
   });
 
+  const validateImageFile = (file) => {
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      return `${file.name}: Unsupported image format`;
+    }
+    if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
+      return `${file.name}: File exceeds ${MAX_IMAGE_SIZE_MB}MB`;
+    }
+    return null;
+  };
+
+  const processProductImage = async (file, enhance) => {
+    const formPayload = new FormData();
+    formPayload.append('image', file);
+    formPayload.append('enhance', enhance ? 'true' : 'false');
+
+    const response = await api.post('/product-images/process', formPayload, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+
+    if (!response.data?.success || !response.data?.image?.url) {
+      throw new Error('Failed to process image');
+    }
+
+    return {
+      url: response.data.image.url,
+      warning: response.data.warning || null,
+    };
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    addMutation.reset();
+    setImageError('');
+    setUploadWarnings([]);
+    setImageItems((prev) => prev.map((item) => ({ ...item, error: null })));
 
-    const productData = {
-      ...formData,
-      price: Number(formData.price),
-      stock: Number(formData.stock),
-      images,
-      tags,
-      currentLocation,
-      hasVariants,
-      variants: hasVariants ? variants.map(v => ({
-        name: v.name,
-        price: Number(v.price),
-        stock: Number(v.stock)
-      })) : [],
-      optionGroups: optionGroups.map(g => ({
-        name: g.name,
-        required: g.required,
-        multiple: g.multiple,
-        options: g.options.map(o => ({
-          name: o.name,
-          priceAdjust: Number(o.priceAdjust) || 0
+    if (imageItems.length === 0) {
+      setImageError('Please upload at least one product image');
+      return;
+    }
+
+    const uploadedUrls = [];
+
+    try {
+      for (const imageItem of imageItems) {
+        setImageItems((prev) =>
+          prev.map((item) =>
+            item.id === imageItem.id
+              ? { ...item, uploadState: 'uploading', warning: null, error: null }
+              : item
+          )
+        );
+
+        const processed = await processProductImage(imageItem.file, imageItem.enhance);
+        uploadedUrls.push(processed.url);
+
+        setImageItems((prev) =>
+          prev.map((item) =>
+            item.id === imageItem.id
+              ? {
+                ...item,
+                uploadState: 'done',
+                uploadedUrl: processed.url,
+                warning: processed.warning?.message || null,
+                error: null,
+              }
+              : item
+          )
+        );
+
+        if (processed.warning?.message) {
+          setUploadWarnings((prev) => [...prev, processed.warning.message]);
+        }
+      }
+
+      const productData = {
+        ...formData,
+        price: Number(formData.price),
+        stock: Number(formData.stock),
+        images: uploadedUrls,
+        tags,
+        currentLocation,
+        hasVariants,
+        variants: hasVariants ? variants.map(v => ({
+          name: v.name,
+          price: Number(v.price),
+          stock: Number(v.stock)
+        })) : [],
+        optionGroups: optionGroups.map(g => ({
+          name: g.name,
+          required: g.required,
+          multiple: g.multiple,
+          options: g.options.map(o => ({
+            name: o.name,
+            priceAdjust: Number(o.priceAdjust) || 0
+          }))
         }))
-      }))
-    };
+      };
 
-    addMutation.mutate(productData);
+      await addMutation.mutateAsync(productData);
+    } catch (err) {
+      setImageError(err.response?.data?.message || err.message || 'Failed to process images');
+      setImageItems((prev) =>
+        prev.map((item) =>
+          item.uploadState === 'uploading'
+            ? { ...item, uploadState: 'error', error: 'Upload failed' }
+            : item
+        )
+      );
+
+      if (uploadedUrls.length > 0) {
+        try {
+          await api.delete('/product-images/cleanup', { data: { urls: uploadedUrls } });
+        } catch (cleanupErr) {
+          console.error('Failed to cleanup uploaded images:', cleanupErr);
+        }
+      }
+    }
   };
 
   const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files);
-    files.forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImages(prev => [...prev, reader.result]);
-      };
-      reader.readAsDataURL(file);
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    setImageError('');
+    const remainingSlots = MAX_IMAGES - imageItems.length;
+    const filesToProcess = files.slice(0, Math.max(remainingSlots, 0));
+    const validationErrors = [];
+
+    if (files.length > remainingSlots) {
+      validationErrors.push(`Only ${MAX_IMAGES} images are allowed`);
+    }
+
+    const nextItems = filesToProcess.reduce((acc, file) => {
+      const validationError = validateImageFile(file);
+      if (validationError) {
+        validationErrors.push(validationError);
+        return acc;
+      }
+
+      acc.push({
+        id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+        file,
+        preview: URL.createObjectURL(file),
+        enhance: false,
+        uploadedUrl: null,
+        uploadState: 'pending',
+        warning: null,
+        error: null,
+      });
+      return acc;
+    }, []);
+
+    setImageItems((prev) => [...prev, ...nextItems]);
+    if (validationErrors.length > 0) {
+      setImageError(validationErrors.join(' | '));
+    }
+
+    e.target.value = '';
+  };
+
+  const removeImage = (id) => {
+    setImageItems((prev) => {
+      const target = prev.find((item) => item.id === id);
+      if (target?.preview?.startsWith('blob:')) {
+        URL.revokeObjectURL(target.preview);
+      }
+      return prev.filter((item) => item.id !== id);
     });
   };
 
-  const removeImage = (index) => {
-    setImages(prev => prev.filter((_, i) => i !== index));
+  const toggleEnhance = (id) => {
+    setImageItems((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, enhance: !item.enhance } : item
+      )
+    );
   };
 
   const addTag = (e) => {
@@ -533,6 +673,9 @@ function AddProduct() {
             {/* Images */}
             <div className="form-section p-6 border rounded-lg bg-card">
               <h3 className="text-xl font-semibold mb-6 pb-2 border-b">Product Images</h3>
+              <p className="text-sm text-muted-foreground mb-3">
+                Up to {MAX_IMAGES} images, max {MAX_IMAGE_SIZE_MB}MB each (JPEG, PNG, WEBP)
+              </p>
 
               <div className="image-upload mb-4">
                 <label htmlFor="images" className="upload-btn inline-flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary transition-colors">
@@ -542,22 +685,51 @@ function AddProduct() {
                 <input
                   type="file"
                   id="images"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp"
                   multiple
                   onChange={handleImageUpload}
+                  disabled={imageItems.length >= MAX_IMAGES || addMutation.isPending}
                   style={{ display: 'none' }}
                 />
               </div>
 
-              {images.length > 0 && (
+              {imageError && (
+                <div className="mb-3 p-2 border rounded text-sm text-destructive border-destructive/30 bg-destructive/5">
+                  {imageError}
+                </div>
+              )}
+
+              {uploadWarnings.length > 0 && (
+                <div className="mb-3 p-2 border rounded text-sm text-amber-700 border-amber-300 bg-amber-50">
+                  {uploadWarnings.join(' | ')}
+                </div>
+              )}
+
+              {imageItems.length > 0 && (
                 <div className="image-preview-grid grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {images.map((img, index) => (
-                    <div key={index} className="image-preview relative w-32 h-32 border rounded-lg overflow-hidden group">
-                      <img src={img} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
+                  {imageItems.map((item, index) => (
+                    <div key={item.id} className="image-preview image-preview-enhance relative w-32 h-44 border rounded-lg overflow-hidden group">
+                      <img src={item.preview} alt={`Preview ${index + 1}`} className="image-preview-media w-full h-28 object-cover" />
+                      <div className="p-2 border-t text-[11px] space-y-1">
+                        <button
+                          type="button"
+                          className={`inline-flex w-full items-center justify-center gap-1 px-2 py-1 rounded border ${item.enhance ? 'bg-primary/10 border-primary text-primary' : 'border-muted-foreground/30 text-muted-foreground'}`}
+                          onClick={() => toggleEnhance(item.id)}
+                          disabled={addMutation.isPending}
+                        >
+                          <Sparkles size={12} />
+                          {item.enhance ? 'Enhance ON' : 'Enhance OFF'}
+                        </button>
+                        {item.uploadState === 'uploading' && <p className="text-blue-600">Uploading...</p>}
+                        {item.uploadState === 'done' && <p className="text-green-600">Ready</p>}
+                        {item.warning && <p className="text-amber-700">{item.warning}</p>}
+                        {item.error && <p className="text-destructive">{item.error}</p>}
+                      </div>
                       <button
                         type="button"
-                        className="remove-image absolute top-1 right-1 p-1 bg-background/80 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => removeImage(index)}
+                        className="remove-image absolute top-1 right-1 p-1 bg-background/80 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                        onClick={() => removeImage(item.id)}
+                        disabled={addMutation.isPending}
                       >
                         <X size={16} />
                       </button>
@@ -615,7 +787,7 @@ function AddProduct() {
               <button
                 type="submit"
                 className="btn-primary flex-1 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-                disabled={addMutation.isPending}
+                disabled={addMutation.isPending || imageItems.length === 0}
               >
                 {addMutation.isPending ? 'Adding Product...' : 'Add Product'}
               </button>

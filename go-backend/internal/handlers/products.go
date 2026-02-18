@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"os"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -12,10 +13,18 @@ import (
 	"msme-marketplace/internal/models"
 )
 
-type ProductHandler struct{}
+type ProductHandler struct {
+	MaxImageCount int
+}
 
 func NewProductHandler() *ProductHandler {
-	return &ProductHandler{}
+	maxImageCount := 4
+	if raw := os.Getenv("PRODUCT_IMAGE_MAX_COUNT"); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil && parsed > 0 {
+			maxImageCount = parsed
+		}
+	}
+	return &ProductHandler{MaxImageCount: maxImageCount}
 }
 
 func (h *ProductHandler) GetProducts(c *gin.Context) {
@@ -161,6 +170,14 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 		return
 	}
 
+	if len(req.Images) > h.MaxImageCount {
+		c.JSON(400, gin.H{
+			"message":       "Too many images",
+			"maxImageCount": h.MaxImageCount,
+		})
+		return
+	}
+
 	usersCollection := database.GetDB().Collection("users")
 	var user models.User
 	err = usersCollection.FindOne(context.Background(), bson.M{"_id": userObjID}).Decode(&user)
@@ -252,6 +269,27 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 	if err := c.ShouldBindJSON(&updates); err != nil {
 		c.JSON(400, gin.H{"message": err.Error()})
 		return
+	}
+
+	if imagesRaw, ok := updates["images"]; ok {
+		switch typed := imagesRaw.(type) {
+		case []interface{}:
+			if len(typed) > h.MaxImageCount {
+				c.JSON(400, gin.H{
+					"message":       "Too many images",
+					"maxImageCount": h.MaxImageCount,
+				})
+				return
+			}
+		case []string:
+			if len(typed) > h.MaxImageCount {
+				c.JSON(400, gin.H{
+					"message":       "Too many images",
+					"maxImageCount": h.MaxImageCount,
+				})
+				return
+			}
+		}
 	}
 
 	collection := database.GetDB().Collection("products")

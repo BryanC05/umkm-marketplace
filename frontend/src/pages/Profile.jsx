@@ -52,6 +52,7 @@ import {
 import { useAuthStore } from "@/store/authStore";
 import { useTranslation } from "@/hooks/useTranslation";
 import api from "@/utils/api";
+import { resolveImageUrl } from "@/utils/imageUrl";
 
 const statusConfig = {
   pending: { icon: Clock, color: '#ed8936', label: 'Pending' },
@@ -171,7 +172,7 @@ const ProfileOrders = () => {
                         <div className="w-10 h-10 rounded-md overflow-hidden bg-secondary flex-shrink-0">
                           {item.product?.images?.[0] ? (
                             <img
-                              src={item.product.images[0].startsWith('http') ? item.product.images[0] : `${getBackendUrl()}${item.product.images[0]}`}
+                              src={resolveImageUrl(item.product.images[0])}
                               alt=""
                               className="w-full h-full object-cover"
                             />
@@ -720,7 +721,7 @@ const Profile = () => {
                 <h2 className="text-xl font-semibold">
                   My Products ({myProducts.length})
                 </h2>
-                <Button className="gap-2" onClick={() => navigate("/add-product")}>
+                <Button className="gap-2" onClick={() => navigate("/seller/add-product")}>
                   <Package className="h-4 w-4" />
                   {t('profile.addNewProduct')}
                 </Button>
@@ -738,7 +739,7 @@ const Profile = () => {
                     <p className="text-muted-foreground mb-4">
                       {t('profile.noProductsYet')}
                     </p>
-                    <Button onClick={() => navigate("/add-product")}>
+                    <Button onClick={() => navigate("/seller/add-product")}>
                       {t('profile.addFirstProduct')}
                     </Button>
                   </CardContent>

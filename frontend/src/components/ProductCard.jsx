@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { MapPin, Store, Star } from 'lucide-react';
+import { resolveImageUrl } from '@/utils/imageUrl';
 import './ProductCard.css';
 
 function ProductCard({ product }) {
@@ -19,7 +20,7 @@ function ProductCard({ product }) {
     <Link to={`/product/${product._id}`} className="product-card card">
       <div className="product-image-container">
         {product.images?.[0] ? (
-          <img src={product.images[0]} alt={product.name} className="product-image" />
+          <img src={resolveImageUrl(product.images[0])} alt={product.name} className="product-image" />
         ) : (
           <div className="product-image-placeholder">
             <span>📷</span>

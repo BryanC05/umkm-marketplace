@@ -6,6 +6,7 @@ import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../hooks/useTranslation';
 import api from '../utils/api';
 import Layout from '@/components/layout/Layout';
+import { resolveImageUrl } from '@/utils/imageUrl';
 import './SellerDashboard.css';
 
 function SellerDashboard() {
@@ -241,7 +242,7 @@ function SellerDashboard() {
                         <div className="flex items-center gap-3">
                           <div className="product-thumbnail w-12 h-12 rounded border overflow-hidden shrink-0">
                             {product.images?.[0] ? (
-                              <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                              <img src={resolveImageUrl(product.images[0])} alt={product.name} className="w-full h-full object-cover" />
                             ) : (
                               <div className="placeholder w-full h-full bg-muted flex items-center justify-center text-xs">📷</div>
                             )}
