@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -75,7 +76,7 @@ func (h *LogoHandler) GenerateLogo(c *gin.Context) {
 	}
 
 	logoID := generateUUID()
-	filename := "${userID}-${time.Now().Unix()}-${logoID}.png"
+	filename := fmt.Sprintf("%s-%d-%s.svg", userID, time.Now().Unix(), logoID)
 	logosDir := filepath.Join(".", "uploads", "logos")
 	os.MkdirAll(logosDir, 0755)
 	outputPath := filepath.Join(logosDir, filename)
@@ -327,10 +328,10 @@ func (h *LogoHandler) UploadCustomLogo(c *gin.Context) {
 	logosDir := filepath.Join(".", "uploads", "logos")
 	os.MkdirAll(logosDir, 0755)
 
-	filename := "${userID}-custom-" + filepath.Ext(file.Filename)
-	filepath := filepath.Join(logosDir, filename)
+	filename := fmt.Sprintf("%s-custom-%d%s", userID, time.Now().Unix(), filepath.Ext(file.Filename))
+	filePath := filepath.Join(logosDir, filename)
 
-	err = c.SaveUploadedFile(file, filepath)
+	err = c.SaveUploadedFile(file, filePath)
 	if err != nil {
 		c.JSON(500, gin.H{"message": "Failed to save file"})
 		return

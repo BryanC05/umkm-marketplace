@@ -64,6 +64,12 @@ const statusConfig = {
 
 const formatCurrency = (amount) => `Rp ${(amount || 0).toLocaleString('id-ID')}`;
 
+const getAssetUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('http') || url.startsWith('data:') || url.startsWith('blob:')) return url;
+  return `${getBackendUrl()}${url}`;
+};
+
 const ProfileOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -647,7 +653,7 @@ const Profile = () => {
                 <div className="flex items-center gap-6">
                   <div className="relative">
                     <img
-                      src={profile.businessLogo}
+                      src={getAssetUrl(profile.businessLogo)}
                       alt="Business Logo"
                       className="w-32 h-32 object-contain border rounded-lg bg-white"
                     />
