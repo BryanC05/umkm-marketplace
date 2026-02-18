@@ -5,8 +5,13 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -76,12 +81,29 @@ func (h *LogoHandler) GenerateLogo(c *gin.Context) {
 	}
 
 	logoID := generateUUID()
-	filename := fmt.Sprintf("%s-%d-%s.svg", userID, time.Now().Unix(), logoID)
+	baseFilename := fmt.Sprintf("%s-%d-%s", userID, time.Now().Unix(), logoID)
 	logosDir := filepath.Join(".", "uploads", "logos")
 	os.MkdirAll(logosDir, 0755)
+	filename := baseFilename + ".png"
 	outputPath := filepath.Join(logosDir, filename)
+	generationSource := "pollinations"
 
-	err = generateSvgLogo(req.Prompt, outputPath)
+	pollinationsKey := strings.TrimSpace(os.Getenv("POLLINATIONS_API_KEY"))
+	if pollinationsKey != "" {
+		err = generateWithPollinations(req.Prompt, outputPath, pollinationsKey)
+		if err != nil {
+			log.Printf("Pollinations failed, falling back to SVG: %v", err)
+			filename = baseFilename + ".svg"
+			outputPath = filepath.Join(logosDir, filename)
+			generationSource = "svg-fallback"
+			err = generateSvgLogo(req.Prompt, outputPath)
+		}
+	} else {
+		filename = baseFilename + ".svg"
+		outputPath = filepath.Join(logosDir, filename)
+		generationSource = "svg-fallback"
+		err = generateSvgLogo(req.Prompt, outputPath)
+	}
 	if err != nil {
 		c.JSON(500, gin.H{
 			"success": false,
@@ -119,6 +141,7 @@ func (h *LogoHandler) GenerateLogo(c *gin.Context) {
 		"success":              true,
 		"logo":                 logoEntry,
 		"remainingGenerations": h.DailyLimit - user.LogoGenerationCount.Count,
+		"source":               generationSource,
 		"message":              "Logo generated successfully",
 	})
 }
@@ -362,6 +385,57 @@ func generateUUID() string {
 	return hex.EncodeToString(b)
 }
 
+func generateWithPollinations(prompt, outputPath, apiKey string) error {
+	enhancedPrompt := fmt.Sprintf(
+		"Professional minimalist logo design: %s, vector style, clean, modern, white background, suitable for business branding, high quality, no text",
+		prompt,
+	)
+	seed := time.Now().UnixNano() % 1000000
+	imageURL := fmt.Sprintf(
+		"https://gen.pollinations.ai/image/%s?seed=%d&width=1024&height=1024&nologo=true&model=flux&negative_prompt=text,words,letters,watermark,signature,typography&key=%s",
+		url.PathEscape(enhancedPrompt),
+		seed,
+		url.QueryEscape(apiKey),
+	)
+
+	client := &http.Client{Timeout: 120 * time.Second}
+	req, err := http.NewRequest(http.MethodGet, imageURL, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Accept", "image/*,*/*")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; MSMELogoBot/1.0)")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("pollinations request failed with status %d", resp.StatusCode)
+	}
+
+	contentType := strings.ToLower(resp.Header.Get("Content-Type"))
+	if strings.HasPrefix(contentType, "text/") || strings.Contains(contentType, "json") {
+		bodyPreview, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		return fmt.Errorf("pollinations returned non-image response (%s): %s", contentType, string(bodyPreview))
+	}
+
+	file, err := os.Create(outputPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	if _, err := io.Copy(file, resp.Body); err != nil {
+		_ = os.Remove(outputPath)
+		return err
+	}
+
+	return nil
+}
+
 func generateSvgLogo(prompt, outputPath string) error {
 	colors := []struct{ bg, text, accent string }{
 		{"#3B82F6", "#FFFFFF", "#1D4ED8"},
@@ -373,18 +447,28 @@ func generateSvgLogo(prompt, outputPath string) error {
 
 	palette := colors[0]
 
-	words := []string{}
-	for _, w := range []string{"logo", "design", "for", "the", "and", "with"} {
-		if len(prompt) > len(w) {
-			words = append(words, w)
+	stopWords := map[string]bool{
+		"logo": true, "design": true, "for": true, "the": true, "and": true, "with": true,
+		"a": true, "an": true, "of": true, "business": true,
+	}
+	parts := strings.Fields(strings.ToLower(prompt))
+	words := make([]string, 0, len(parts))
+	for _, part := range parts {
+		clean := strings.Trim(part, ".,:;!?-_()[]{}\"'")
+		if len(clean) > 1 && !stopWords[clean] {
+			words = append(words, clean)
 		}
 	}
 
 	initials := "LG"
 	if len(words) >= 2 {
-		initials = string(words[0][0]) + string(words[1][0])
+		initials = strings.ToUpper(string(words[0][0]) + string(words[1][0]))
 	} else if len(words) == 1 {
-		initials = words[0][:2]
+		if len(words[0]) >= 2 {
+			initials = strings.ToUpper(words[0][:2])
+		} else {
+			initials = strings.ToUpper(words[0])
+		}
 	}
 
 	svg := `<?xml version="1.0" encoding="UTF-8"?>
