@@ -144,7 +144,7 @@ docker-compose restart n8n
 
 **Problem:** "Connection refused"
 - Is your marketplace backend running on port 5000?
-- Run: `npm run dev` in backend folder
+- Run: `cd go-backend && go run ./cmd/server`
 
 ---
 

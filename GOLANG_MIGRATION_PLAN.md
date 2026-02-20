@@ -37,7 +37,9 @@ This document outlines the plan to migrate the MSME Marketplace backend from **N
 
 ---
 
-## Current Architecture (Node.js)
+## Current Architecture (Node.js, Legacy Reference)
+
+> This section documents the previous Node.js layout for migration context only.
 
 ```
 msme-marketplace/backend/
@@ -308,7 +310,7 @@ Existing data is fully preserved — zero migration needed.
 
 ## Deployment Comparison
 
-### Current (Node.js)
+### Legacy (Node.js, archived reference)
 ```bash
 # Install dependencies
 npm install
@@ -411,11 +413,11 @@ MONGODB_URI=mongodb://localhost:27018/test go test -tags=integration ./...
 During migration, both backends can run side-by-side:
 
 ```bash
-# Old backend on port 5000
-cd backend && node server.js
+# Go backend on port 5000 (primary)
+cd go-backend && PORT=5000 go run ./cmd/server
 
-# New Go backend on port 5001
-cd go-backend && go run ./cmd/server
+# Go backend on port 5001 (staging/comparison)
+cd go-backend && PORT=5001 go run ./cmd/server
 
 # Point frontends at either one to compare
 API_HOST=http://localhost:5001  # Switch to Go to test

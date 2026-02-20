@@ -223,13 +223,13 @@ func (h *OrderHandler) GetMyOrders(c *gin.Context) {
 	}
 	defer cursor.Close(context.Background())
 
-	var orders []models.Order
+	orders := make([]models.Order, 0)
 	if err := cursor.All(context.Background(), &orders); err != nil {
 		c.JSON(500, gin.H{"message": err.Error()})
 		return
 	}
 
-	var filteredOrders []models.Order
+	filteredOrders := make([]models.Order, 0)
 	userIDStr := userID
 	for _, order := range orders {
 		buyerStr := order.Buyer.Hex()

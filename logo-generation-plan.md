@@ -47,7 +47,7 @@ The logo generator now supports multiple AI providers with automatic fallback:
 - **Detection**: Automatic language detection in prompts
 
 ### Storage & Retention
-- **Location**: `/backend/uploads/logos/`
+- **Location**: `/go-backend/uploads/logos/`
 - **Format**: `{userId}-{timestamp}-{uuid}.png`
 - **Retention**: 7 days auto-delete (cron job or TTL index)
 - **Max History**: Keep last 20 generated logos per user in DB
@@ -61,54 +61,42 @@ The logo generator now supports multiple AI providers with automatic fallback:
 
 ## 2. Database Schema Changes
 
-### User Model Updates (`/backend/models/User.js`)
+### User Model Updates (`/go-backend/internal/models/user.go`)
 
-```javascript
-logoGenerationCount: {
-  count: { type: Number, default: 0 },
-  lastResetDate: { type: Date, default: Date.now }
-},
-
-generatedLogos: [{
-  _id: { type: mongoose.Schema.Types.ObjectId, auto: true },
-  url: { type: String, required: true },
-  prompt: { type: String, required: true },
-  filePath: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now },
-  expiresAt: { type: Date, default: () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) }
-}],
-
-businessLogo: {
-  type: String,
-  default: null
-},
-
-hasCustomLogo: {
-  type: Boolean,
-  default: false
+```go
+LogoGenerationCount struct {
+  Count         int
+  LastResetDate time.Time
 }
+
+GeneratedLogos []GeneratedLogo // logoId, url, prompt, filePath, createdAt, expiresAt
+
+BusinessLogo  *string
+HasCustomLogo bool
 ```
 
 ---
 
 ## 3. Backend Implementation
 
-### New Files
+### Backend Files (Go)
 
-#### `/backend/routes/logo.js`
-**Routes:**
+#### `/go-backend/internal/handlers/logo.go`
+**Routes and responsibilities:**
 - `POST /api/logo/generate` - Generate new logo
 - `GET /api/logo/history` - Get user's logo history
 - `PUT /api/logo/select/:logoId` - Select logo as business logo
 - `DELETE /api/logo/:logoId` - Delete specific logo
 - `GET /api/logo/status` - Check daily limits
-- `POST /api/logo/upload` - Upload custom logo (Multer)
+- `POST /api/logo/upload` - Upload custom logo (multipart form)
+- `POST /api/logo/reset-limit` - Reset own daily logo limit
+- Includes daily limit checks and provider fallback logic
 
-#### `/backend/middleware/logoLimiter.js`
-**Purpose**: Check and enforce daily generation limits
+#### `/go-backend/internal/models/user.go`
+**Purpose**: Stores logo usage counters and generated logo metadata
 
-#### `/backend/utils/logoGenerator.js`
-**Purpose**: Multi-provider AI logo generation with Indonesian language support
+#### `/go-backend/cmd/server/main.go`
+**Purpose**: Registers logo routes under `/api/logo`
 
 **Features:**
 - **Multi-Provider Support**: Automatically tries OpenAI → Pollinations → SVG Generator
@@ -132,12 +120,10 @@ hasCustomLogo: {
 2. Pollinations AI (if POLLINATIONS_API_KEY is set)
 3. SVG Generator (always works)
 
-#### `/backend/utils/logoCleanup.js`
-**Purpose**: Cron job for 7-day auto-delete
-
 ### Dependencies to Install
 ```bash
-cd backend && npm install node-cron
+cd go-backend
+go mod tidy
 ```
 
 ---
@@ -376,14 +362,13 @@ VITE_API_URL=http://localhost:5000/api
 
 ---
 
-## 10. Cron Job Setup
+## 10. Cleanup Behavior
 
-### Cleanup Job (`/backend/utils/logoCleanup.js`)
-Runs daily at 3 AM:
-1. Find all logos with `expiresAt < now`
-2. Delete files from `/uploads/logos/`
-3. Remove from user's `generatedLogos` array
-4. If deleted logo was user's `businessLogo`, set to null
+### Expired Logo Handling (`/go-backend/internal/handlers/logo.go`)
+Current behavior:
+1. Expired logos are filtered out when history is fetched.
+2. Invalid/legacy logo references are removed from user records.
+3. `businessLogo` is cleared when the referenced logo becomes invalid.
 
 ---
 
@@ -457,10 +442,10 @@ Runs daily at 3 AM:
 
 1. **Phase 1: Backend Foundation** ✓
    - ✅ Update User model with logo fields
-   - ✅ Create logo routes (`/backend/routes/logo.js`)
+   - ✅ Create logo routes (`/go-backend/internal/handlers/logo.go`)
    - ✅ Implement multi-provider AI integration (Pollinations + OpenAI + SVG)
    - ✅ Add Bahasa Indonesia translation support (100+ words)
-   - ✅ Add rate limiter middleware (`/backend/middleware/logoLimiter.js`)
+   - ✅ Add rate limiter middleware (`/go-backend/internal/handlers/logo.go`)
    - ✅ Set up file upload support
    - ✅ Create logo generator utility with fallback chain
 
@@ -477,7 +462,7 @@ Runs daily at 3 AM:
    - ✅ Style with Tailwind
 
 4. **Phase 4: Cleanup & Testing** ✓
-   - ✅ Implement cron job for auto-cleanup (`/backend/utils/logoCleanup.js`)
+   - ✅ Implement cron job for auto-cleanup (`/go-backend/internal/handlers/logo.go`)
    - ✅ Add error handling
    - ✅ Test Indonesian language support
    - ✅ Test multi-provider fallback
@@ -528,13 +513,11 @@ This ensures logos can always be generated even without AI API keys.
 ### ✅ Completed Files
 
 #### Backend Files
-1. ✅ `/backend/routes/logo.js` - Logo generation routes
-2. ✅ `/backend/middleware/logoLimiter.js` - Daily limit enforcement
-3. ✅ `/backend/utils/logoGenerator.js` - Multi-provider AI with Indonesian translation
-4. ✅ `/backend/utils/logoCleanup.js` - 7-day auto-cleanup cron job
-5. ✅ `/backend/utils/reset-logo-limit.js` - Manual limit reset utility
-6. ✅ `/backend/utils/migrate-logo-fields.js` - Database migration for logo fields
-7. ✅ `/backend/test-logo-generator.js` - Testing utility
+1. ✅ `/go-backend/internal/handlers/logo.go` - Logo generation routes
+2. ✅ `/go-backend/internal/handlers/logo.go` - Daily limit enforcement
+3. ✅ `/go-backend/internal/handlers/logo.go` - Multi-provider AI fallback (Pollinations + SVG)
+4. ✅ `/go-backend/internal/handlers/logo.go` - Limit reset endpoint (`/api/logo/reset-limit`)
+5. ✅ `/go-backend/internal/models/user.go` - Logo fields in user model
 
 #### Frontend Files
 8. ✅ `/frontend/src/pages/LogoGenerator.jsx` - Main logo generation page
@@ -544,8 +527,8 @@ This ensures logos can always be generated even without AI API keys.
 12. ✅ `/frontend/src/components/logo/LogoCard.jsx` - Individual logo display
 
 #### Modified Files
-13. ✅ `/backend/models/User.js` - Logo fields added
-14. ✅ `/backend/server.js` - Logo routes mounted
+13. ✅ `/go-backend/internal/models/user.go` - Logo fields added
+14. ✅ `/go-backend/cmd/server/main.go` - Logo routes mounted
 15. ✅ `/frontend/src/App.jsx` - Logo route added
 
 ---
@@ -560,24 +543,11 @@ This ensures logos can always be generated even without AI API keys.
 
 ### Manual Reset (Admin)
 
-The project includes a utility script to manually reset user limits:
+Use the API endpoint (authenticated):
 
-#### Reset a Specific User
 ```bash
-cd backend
-node reset-logo-limit.js user@example.com
-```
-
-#### Reset ALL Users
-```bash
-cd backend
-node reset-logo-limit.js --all
-```
-
-#### Example Output
-```
-✅ Connected to MongoDB
-✅ Reset logo limit for user: user@example.com
+curl -X POST http://localhost:5000/api/logo/reset-limit \
+  -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
 ### Programmatic Reset (In Code)
@@ -634,31 +604,35 @@ Users can check their remaining generations via the API:
 
 **Reset User Limit:**
 ```bash
-# Reset specific user
-node reset-logo-limit.js user@example.com
+# Reset current authenticated user limit
+curl -X POST http://localhost:5000/api/logo/reset-limit \
+  -H "Authorization: Bearer YOUR_TOKEN"
 
-# Reset all users
-node reset-logo-limit.js --all
+# Reset all users (MongoDB shell example)
+db.users.updateMany(
+  {},
+  { $set: { "logoGenerationCount.count": 0, "logoGenerationCount.lastResetDate": new Date() } }
+)
 ```
 
 ### For Developers
 
 **Setup:**
 1. Get free API key from https://enter.pollinations.ai
-2. Add to `backend/.env`: `POLLINATIONS_API_KEY=your_key`
+2. Add to `go-backend/.env`: `POLLINATIONS_API_KEY=your_key`
 3. Restart backend server
 4. Logo generator works immediately
 
 **Optional - Add OpenAI for better quality:**
 ```bash
-# Add to backend/.env
+# Add to go-backend/.env
 OPENAI_API_KEY=sk-your-key
 ```
 
 **Testing:**
 ```bash
-cd backend
-node test-logo-generator.js
+curl -X GET http://localhost:5000/api/logo/status \
+  -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
 ---

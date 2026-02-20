@@ -1,5 +1,8 @@
 # MSME Marketplace – Mobile App Guide
 
+For Play Store publishing, use:
+- [`PLAY_STORE_RELEASE_CHECKLIST.md`](./PLAY_STORE_RELEASE_CHECKLIST.md)
+
 ## Development Mode (Local Testing)
 
 ### Prerequisites
@@ -11,9 +14,9 @@
 
 ```bash
 # 1. Start the backend
-cd backend
-npm install
-npm start
+cd go-backend
+go mod download
+go run ./cmd/server
 
 # 2. Start the mobile app (in a separate terminal)
 cd mobile
@@ -56,7 +59,7 @@ Choose a cloud hosting provider:
 1. Push your project to GitHub
 2. Go to [railway.app](https://railway.app) and sign in with GitHub
 3. Create a new project → "Deploy from GitHub Repo"
-4. Select your repository and point it to the `/backend` folder
+4. Select your repository and point it to the `/go-backend` folder
 5. Add environment variables:
    - `MONGODB_URI` – your MongoDB Atlas connection string
    - `JWT_SECRET` – a secure random string

@@ -45,7 +45,7 @@ Before you begin, ensure you have the following installed and ready:
 | **Gmail Account**    | With 2FA enabled | For SMTP email sending    |
 
 > [!IMPORTANT]
-> Your MSME Marketplace **backend** must be running on `http://localhost:5000` before n8n can communicate with it. Start it with `npm run dev` inside the `backend/` folder.
+> Your MSME Marketplace **backend** must be running on `http://localhost:5000` before n8n can communicate with it. Start it with `go run ./cmd/server` inside the `go-backend/` folder.
 
 ### Verify Backend is Running
 
@@ -64,7 +64,7 @@ curl http://localhost:5000/api/health
 │                                                         │
 │  ┌──────────┐    ┌──────────────┐    ┌───────────────┐  │
 │  │ Frontend │───▶│   Backend    │───▶│  MongoDB      │  │
-│  │ (React)  │    │ (Express.js) │    │  (Atlas/Local)│  │
+│  │ (React)  │    │ (Go + Gin)   │    │  (Atlas/Local)│  │
 │  │ :5173    │    │ :5000        │    │               │  │
 │  └──────────┘    └──────┬───────┘    └───────────────┘  │
 │                         │                                │
@@ -90,11 +90,11 @@ curl http://localhost:5000/api/health
 ### How It Works
 
 1. **Buyer places an order** → Backend creates the order in MongoDB
-2. **Backend's `webhookService`** finds the seller's active workflow and sends a **webhook POST** to n8n
+2. **Go backend** finds the seller's active workflow and sends a **webhook POST** to n8n
 3. **n8n receives the webhook** via the `MSME Trigger` custom node
 4. **n8n executes the workflow**: sends confirmation email via SMTP (Gmail)
 5. **n8n calls back** to the backend via the `MSME Action` node to update order status
-6. The webhook service has a **retry mechanism** (3 attempts with exponential backoff)
+6. n8n can call back to backend endpoints for status updates and post-processing
 
 ### Key Files
 
@@ -106,10 +106,9 @@ curl http://localhost:5000/api/health
 | `n8n-custom-nodes/credentials/`             | MSME API credential definition       |
 | `n8n-workflows/order-confirmation.json`     | Pre-built order confirmation workflow|
 | `n8n-workflows/order-status-update.json`    | Pre-built status update workflow     |
-| `backend/services/webhookService.js`        | Sends webhooks to n8n                |
-| `backend/routes/webhooks.js`                | Receives callbacks from n8n          |
-| `backend/routes/workflows.js`               | CRUD for seller workflow configs     |
-| `backend/models/Workflow.js`                | Workflow data model (Mongoose)       |
+| `go-backend/internal/handlers/webhooks.go`  | Receives callbacks from n8n          |
+| `go-backend/internal/handlers/workflows.go` | CRUD for seller workflow configs     |
+| `go-backend/internal/models/workflow.go`    | Workflow data model                  |
 | `frontend/src/pages/Automation/`            | Seller automation dashboard UI       |
 
 ---
@@ -307,7 +306,7 @@ This is a **webhook-based trigger** that listens for marketplace events:
 
 **How it works:**
 - Creates a webhook endpoint (e.g., `http://localhost:5678/webhook/<unique-id>`)
-- Receives POST requests from the backend's `webhookService`
+- Receives POST requests from the Go backend workflow webhook flow
 - Filters events by the selected `eventType` – only matching events pass through
 - Outputs the full event payload to the next node
 
@@ -590,16 +589,15 @@ The project includes ready-to-import workflow JSON files in `n8n-workflows/`:
 
 ### 13.1 Understanding the Webhook Flow
 
-The backend's `webhookService.js` handles all outbound webhook communication:
+The Go backend workflow + webhook handlers drive outbound/inbound webhook communication:
 
 ```
-Order Created → webhookService.triggerOrderConfirmation()
-                    │
-                    ├── Finds seller's active workflow in DB
-                    ├── Builds event payload (order + buyer + seller data)
-                    ├── Sends POST to workflow.webhookUrl (n8n)
-                    ├── Retries up to 3 times with exponential backoff
-                    └── Updates workflow execution count on success
+Order Event in app
+    │
+    ├── Backend reads active seller workflow from `workflows` collection
+    ├── Backend sends POST to `workflow.webhookUrl` (n8n)
+    ├── n8n runs automation (email/updates/alerts)
+    └── n8n calls back to `/api/webhooks/n8n/callback` when needed
 ```
 
 ### 13.2 Enable Automation for a Seller
@@ -714,7 +712,7 @@ The marketplace frontend includes a seller **Automation Dashboard** at `/automat
 1. **Start all services:**
    ```bash
    # Terminal 1: Backend
-   cd backend && npm run dev
+   cd go-backend && go run ./cmd/server
 
    # Terminal 2: Frontend
    cd frontend && npm run dev
@@ -1244,7 +1242,7 @@ cp package.json dist/
 
 | Symptom                        | Likely Cause                              | Quick Fix                              |
 | ------------------------------ | ----------------------------------------- | -------------------------------------- |
-| "Connection refused"           | Backend not running on port 5000          | `cd backend && npm run dev`            |
+| "Connection refused"           | Backend not running on port 5000          | `cd go-backend && go run ./cmd/server` |
 | "Authentication failed"        | JWT token expired                          | Re-login and update credential         |
 | "Custom nodes not found"       | `dist/` missing or n8n not restarted       | Rebuild dist + `docker-compose restart` |
 | "Email not sent"               | Wrong Gmail App Password                   | Regenerate from Google account         |
@@ -1252,6 +1250,6 @@ cp package.json dist/
 
 **Debugging order of operations:**
 1. Browser console → JavaScript errors
-2. Backend logs → API errors (`npm run dev` output)
+2. Backend logs → API errors (`go run ./cmd/server` output)
 3. n8n execution logs → Workflow errors (http://localhost:5678)
 4. Docker logs → Container issues (`docker-compose logs`)

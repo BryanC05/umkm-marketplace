@@ -38,6 +38,20 @@ const filterTabs = [
   { key: 'completed', label: 'Completed' },
 ];
 
+const normalizeOrdersPayload = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.orders)) return payload.orders;
+  return [];
+};
+
+const resolveOrderId = (order, fallback = '') => {
+  if (!order) return fallback;
+  if (typeof order._id === 'string') return order._id;
+  if (typeof order?.id === 'string') return order.id;
+  if (typeof order?._id?.$oid === 'string') return order._id.$oid;
+  return fallback;
+};
+
 function Orders() {
   const { user } = useAuthStore();
   const { t } = useTranslation();
@@ -46,14 +60,15 @@ function Orders() {
   const [expandedOrders, setExpandedOrders] = useState({});
 
   const hasToken = !!localStorage.getItem('token');
-  const { data: orders = [], isLoading } = useQuery({
+  const { data: rawOrders, isLoading } = useQuery({
     queryKey: ['orders', user?.id],
     queryFn: async () => {
       const response = await api.get('/orders/my-orders');
-      return response.data;
+      return normalizeOrdersPayload(response.data);
     },
     enabled: !!user?.id && hasToken,
   });
+  const orders = normalizeOrdersPayload(rawOrders);
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ orderId, status }) => {
@@ -74,7 +89,7 @@ function Orders() {
     return null;
   };
 
-  const filteredOrders = orders.filter(order => {
+  const filteredOrders = orders.filter((order) => {
     if (activeFilter === 'active') {
       return !['delivered', 'cancelled'].includes(order.status);
     }
@@ -176,22 +191,23 @@ function Orders() {
               <p>No {activeFilter} orders found</p>
             </div>
           ) : (
-            filteredOrders.map((order) => {
+            filteredOrders.map((order, orderIndex) => {
+              const orderId = resolveOrderId(order, `order-${orderIndex}`);
               const status = statusConfig[order.status] || statusConfig.pending;
               const StatusIcon = status.icon;
               const nextStatus = getNextStatus(order.status);
-              const isExpanded = expandedOrders[order._id];
+              const isExpanded = !!expandedOrders[orderId];
               const payment = paymentIcons[order.paymentMethod] || paymentIcons.cash;
               const PaymentIcon = payment.icon;
 
               return (
-                <div key={order._id} className={`order-card ${order.status}`}>
+                <div key={orderId} className={`order-card ${order.status}`}>
                   {/* Order Header */}
-                  <div className="order-header" onClick={() => toggleExpand(order._id)}>
+                  <div className="order-header" onClick={() => toggleExpand(orderId)}>
                     <div className="order-header-left">
                       <div className="order-id-section">
                         <span className="order-label">{t('orders.order')}</span>
-                        <span className="order-id">#{order._id.slice(-8).toUpperCase()}</span>
+                        <span className="order-id">#{orderId.slice(-8).toUpperCase()}</span>
                       </div>
                       <div className="order-date">
                         <Calendar size={14} />
@@ -217,8 +233,8 @@ function Orders() {
                     <div className="order-body">
                       {/* Items */}
                       <div className="order-items">
-                        {order.products.map((item, itemIndex) => {
-                          const itemKey = `${order._id}-${item._id || item.product?._id || 'item'}-${itemIndex}`;
+                        {(order.products || []).map((item, itemIndex) => {
+                          const itemKey = `${orderId}-${item._id || item.product?._id || 'item'}-${itemIndex}`;
                           return (
                             <div key={itemKey} className="order-item">
                               <div className="item-image">
@@ -226,6 +242,9 @@ function Orders() {
                                   <img
                                     src={resolveImageUrl(item.product.images[0])}
                                     alt={item.product.name}
+                                    onError={(event) => {
+                                      event.currentTarget.style.display = 'none';
+                                    }}
                                   />
                                 ) : (
                                   <div className="placeholder">📷</div>
@@ -327,7 +346,7 @@ function Orders() {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 updateStatusMutation.mutate({
-                                  orderId: order._id,
+                                  orderId,
                                   status: nextStatus,
                                 });
                               }}
