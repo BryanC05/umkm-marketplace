@@ -4,7 +4,13 @@ const helmet = require('helmet');
 const mongoose = require('mongoose');
 const http = require('http');
 const socketIo = require('socket.io');
-require('dotenv').config();
+const path = require('path');
+const dotenv = require('dotenv');
+
+dotenv.config();
+if (!process.env.MONGODB_URI || !process.env.JWT_SECRET) {
+  dotenv.config({ path: path.resolve(__dirname, '../.env') });
+}
 
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
@@ -70,7 +76,6 @@ app.options('*', cors({
 }));
 // Create uploads directories if they don't exist
 const fs = require('fs');
-const path = require('path');
 const uploadsDir = path.join(__dirname, 'uploads');
 const logosDir = path.join(uploadsDir, 'logos');
 

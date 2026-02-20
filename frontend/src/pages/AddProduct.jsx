@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Upload, Plus, X, Trash2, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
@@ -22,6 +21,20 @@ const categories = [
 const MAX_IMAGES = 4;
 const MAX_IMAGE_SIZE_MB = 5;
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const DEFAULT_SELLER_LOCATION = {
+  coordinates: [106.9896, -6.2349],
+  address: 'Default Location',
+  city: 'Bekasi',
+  state: 'West Java',
+};
+
+const formatUploadWarning = (warning) => {
+  if (!warning) return null;
+  if (warning.code === 'enhancement_unavailable') {
+    return 'Image enhancement is currently unavailable on the server. Original image uploaded.';
+  }
+  return warning.message || 'Image was uploaded with warnings.';
+};
 
 function AddProduct() {
   const navigate = useNavigate();
@@ -33,6 +46,7 @@ function AddProduct() {
   const [, setLocationStatus] = useState('getting');
   const [imageError, setImageError] = useState('');
   const [uploadWarnings, setUploadWarnings] = useState([]);
+  const locationInitializedRef = useRef(false);
 
   // Variant state
   const [hasVariants, setHasVariants] = useState(false);
@@ -52,6 +66,9 @@ function AddProduct() {
 
   // Get seller's current location on component mount
   useEffect(() => {
+    if (locationInitializedRef.current) return;
+    locationInitializedRef.current = true;
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -64,12 +81,16 @@ function AddProduct() {
           setLocationStatus('success');
         },
         (error) => {
-          console.error('Error getting location:', error);
-          setLocationStatus('error');
+          console.warn('Could not get current location, using default:', error);
+          setCurrentLocation(DEFAULT_SELLER_LOCATION);
+          setLocationStatus('fallback');
         }
       );
     } else {
-      setLocationStatus('unsupported');
+      queueMicrotask(() => {
+        setCurrentLocation(DEFAULT_SELLER_LOCATION);
+        setLocationStatus('unsupported');
+      });
     }
   }, []);
 
@@ -148,15 +169,16 @@ function AddProduct() {
                 ...item,
                 uploadState: 'done',
                 uploadedUrl: processed.url,
-                warning: processed.warning?.message || null,
+                warning: formatUploadWarning(processed.warning),
                 error: null,
               }
               : item
           )
         );
 
-        if (processed.warning?.message) {
-          setUploadWarnings((prev) => [...prev, processed.warning.message]);
+        const warningMessage = formatUploadWarning(processed.warning);
+        if (warningMessage) {
+          setUploadWarnings((prev) => (prev.includes(warningMessage) ? prev : [...prev, warningMessage]));
         }
       }
 

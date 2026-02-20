@@ -1,6 +1,19 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+const normalizeUser = (user) => {
+  if (!user || typeof user !== 'object') {
+    return user ?? null;
+  }
+
+  const normalizedId = user._id || user.id || null;
+  return {
+    ...user,
+    id: normalizedId,
+    _id: normalizedId,
+  };
+};
+
 export const useAuthStore = create(
   persist(
     (set) => ({
@@ -9,12 +22,12 @@ export const useAuthStore = create(
       isAuthenticated: false,
 
       setAuth: (user, token) => {
-        set({ user, token, isAuthenticated: true });
+        set({ user: normalizeUser(user), token, isAuthenticated: true });
         localStorage.setItem('token', token);
       },
 
       setUser: (user) => {
-        set({ user });
+        set({ user: normalizeUser(user) });
       },
 
       logout: () => {

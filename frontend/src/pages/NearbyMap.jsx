@@ -147,7 +147,7 @@ function NearbyMap() {
     }
   }, [radius]);
 
-  const { data: sellers, isLoading: sellersLoading, error: sellersError } = useQuery({
+  const { data: sellers, isLoading: sellersLoading } = useQuery({
     queryKey: ['nearbySellers', userLocation, radius],
     queryFn: async () => {
       if (!userLocation) return [];
@@ -155,8 +155,15 @@ function NearbyMap() {
         const response = await api.get(
           `/users/nearby-sellers?lat=${userLocation.lat}&lng=${userLocation.lng}&radius=${radius}`
         );
-        console.log('Nearby sellers found:', response.data.length);
-        return response.data;
+        const payload = response?.data;
+        const sellersData = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.sellers)
+            ? payload.sellers
+            : [];
+
+        console.log('Nearby sellers found:', sellersData.length);
+        return sellersData;
       } catch (err) {
         console.error('Error fetching nearby sellers:', err);
         throw err;
@@ -164,6 +171,20 @@ function NearbyMap() {
     },
     enabled: !!userLocation,
   });
+
+  const getSellerDisplayName = (seller) => {
+    const businessName = typeof seller?.businessName === 'string' ? seller.businessName.trim() : '';
+    const username = typeof seller?.name === 'string' ? seller.name.trim() : '';
+    return businessName || username || 'Seller';
+  };
+
+  const getSellerSubtitle = (seller) => {
+    const businessType = typeof seller?.businessType === 'string' ? seller.businessType.trim() : '';
+    if (businessType && businessType !== 'none') {
+      return `${businessType} Enterprise`;
+    }
+    return 'Local Seller';
+  };
 
   // Add seller markers when sellers data changes and map is ready
   useEffect(() => {
@@ -192,16 +213,19 @@ function NearbyMap() {
 
         // Add seller markers
         sellers.forEach(seller => {
-          if (seller.location?.coordinates) {
+          const sellerId = seller?._id || seller?.id;
+          if (seller.location?.coordinates && sellerId) {
+            const displayName = getSellerDisplayName(seller);
+            const subtitle = getSellerSubtitle(seller);
             const [lng, lat] = seller.location.coordinates;
             const marker = L.marker([lat, lng], { icon: sellerIcon })
               .bindPopup(`
                 <div style="min-width: 180px;">
-                  <h4 style="margin: 0 0 4px 0;">${seller.businessName || seller.name}</h4>
-                  <p style="margin: 0 0 4px 0; font-size: 12px; color: #666;">${seller.businessType} Enterprise</p>
+                  <h4 style="margin: 0 0 4px 0;">${displayName}</h4>
+                  <p style="margin: 0 0 4px 0; font-size: 12px; color: #666;">${subtitle}</p>
                   <p style="margin: 0 0 8px 0; font-size: 12px; color: #999;">${seller.location.city || ''}</p>
                   ${seller.rating > 0 ? `<p style="margin: 0 0 8px 0; color: #f59e0b;">⭐ ${seller.rating.toFixed(1)}</p>` : ''}
-                  <button onclick="window.location.href='/store/${seller._id}'" style="width: 100%; padding: 8px 12px; background: #4169E1; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">View Store</button>
+                  <button onclick="window.location.href='/store/${sellerId}'" style="width: 100%; padding: 8px 12px; background: #4169E1; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">View Store</button>
                 </div>
               `);
             markersLayerRef.current.addLayer(marker);
@@ -224,10 +248,13 @@ function NearbyMap() {
     addMarkers();
   }, [sellers, userLocation, mapReady]);
 
-  const filteredSellers = sellers?.filter(seller =>
-    seller.businessName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    seller.name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+  const filteredSellers = (sellers || []).filter((seller) => {
+    if (!normalizedSearch) return true;
+    const displayName = getSellerDisplayName(seller).toLowerCase();
+    const city = (seller.location?.city || '').toLowerCase();
+    return displayName.includes(normalizedSearch) || city.includes(normalizedSearch);
+  });
 
 
 
@@ -285,26 +312,31 @@ function NearbyMap() {
           </div>
 
           <div className="sellers-list">
-            <h3 className="font-semibold mb-3">{t('nearby.nearbySellers')} ({filteredSellers?.length || 0})</h3>
+            <h3 className="font-semibold mb-3">{t('nearby.nearbySellers')} ({filteredSellers.length})</h3>
             {sellersLoading ? (
               <p className="text-sm text-muted-foreground">{t('nearby.loadingSellers')}</p>
-            ) : filteredSellers?.length === 0 ? (
+            ) : filteredSellers.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t('nearby.noSellers')}</p>
             ) : (
               <div className="space-y-3">
-                {filteredSellers?.map((seller) => (
+                {filteredSellers.map((seller) => {
+                  const sellerId = seller?._id || seller?.id;
+                  if (!sellerId) return null;
+                  const displayName = getSellerDisplayName(seller);
+                  const subtitle = getSellerSubtitle(seller);
+                  return (
                   <div
-                    key={seller._id}
+                    key={sellerId}
                     className="p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => navigate(`/store/${seller._id}`)}
+                    onClick={() => navigate(`/store/${sellerId}`)}
                   >
                     <div className="flex items-start gap-3">
                       <div className="bg-primary/10 p-2 rounded-full">
                         <Store size={16} className="text-primary" />
                       </div>
                       <div>
-                        <h4 className="font-medium text-sm">{seller.businessName || seller.name}</h4>
-                        <p className="text-xs text-muted-foreground capitalize">{seller.businessType} {t('nearby.enterprise')}</p>
+                        <h4 className="font-medium text-sm">{displayName}</h4>
+                        <p className="text-xs text-muted-foreground">{subtitle}</p>
                         <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                           <MapPin size={10} />
                           {seller.location?.city}
@@ -315,7 +347,8 @@ function NearbyMap() {
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

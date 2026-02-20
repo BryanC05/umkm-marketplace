@@ -17,7 +17,9 @@ import (
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Println("Warning: .env file not found, using environment variables")
+		if fallbackErr := godotenv.Load("../.env"); fallbackErr != nil {
+			log.Println("Warning: .env file not found, using environment variables")
+		}
 	}
 
 	cfg := config.Load()

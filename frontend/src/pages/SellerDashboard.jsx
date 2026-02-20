@@ -13,6 +13,7 @@ function SellerDashboard() {
   const { user } = useAuthStore();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const sellerId = user?._id || user?.id;
 
   // Edit state - stores product id being edited and its temp values
   const [editingProduct, setEditingProduct] = useState(null);
@@ -22,21 +23,22 @@ function SellerDashboard() {
   const [confirmModal, setConfirmModal] = useState({ show: false, productId: null, productName: '' });
 
   const { data: products, isLoading: productsLoading } = useQuery({
-    queryKey: ['sellerProducts', user?.id],
+    queryKey: ['sellerProducts', sellerId],
     queryFn: async () => {
-      const response = await api.get(`/products/seller/${user.id}`);
+      if (!sellerId) return [];
+      const response = await api.get(`/products/seller/${sellerId}`);
       return response.data;
     },
-    enabled: !!user?.id,
+    enabled: !!sellerId,
   });
 
   const { data: orders } = useQuery({
-    queryKey: ['sellerOrders', user?.id],
+    queryKey: ['sellerOrders', sellerId],
     queryFn: async () => {
       const response = await api.get('/orders/my-orders');
       return response.data;
     },
-    enabled: !!user?.id,
+    enabled: !!sellerId,
   });
 
   const deleteMutation = useMutation({
@@ -44,7 +46,7 @@ function SellerDashboard() {
       await api.delete(`/products/${productId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sellerProducts', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['sellerProducts', sellerId] });
     },
   });
 
@@ -54,7 +56,7 @@ function SellerDashboard() {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sellerProducts', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['sellerProducts', sellerId] });
       setEditingProduct(null);
       setConfirmModal({ show: false, productId: null, productName: '' });
     },

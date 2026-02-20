@@ -48,6 +48,25 @@ func createIndexes(ctx context.Context) {
 	} else {
 		fmt.Println("✅ Created 2dsphere index on users.location")
 	}
+
+	products := DB.Collection("products")
+	_, err = products.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "location", Value: "2dsphere"}},
+	})
+	if err != nil {
+		fmt.Printf("Warning: failed to create 2dsphere index on products.location: %v\n", err)
+	} else {
+		fmt.Println("✅ Created 2dsphere index on products.location")
+	}
+
+	_, err = products.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "seller", Value: 1}, {Key: "createdAt", Value: -1}},
+	})
+	if err != nil {
+		fmt.Printf("Warning: failed to create index on products.seller,createdAt: %v\n", err)
+	} else {
+		fmt.Println("✅ Created index on products.seller,createdAt")
+	}
 }
 
 func GetDB() *mongo.Database {

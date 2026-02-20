@@ -5,14 +5,17 @@ import './ProductCard.css';
 
 function ProductCard({ product }) {
   const navigate = useNavigate();
-
-
+  const sellerId =
+    (typeof product.seller === 'string' ? product.seller : null) ||
+    product.seller?._id ||
+    product.seller?.id ||
+    null;
 
   const handleSellerClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (product.seller?._id) {
-      navigate(`/store/${product.seller._id}`);
+    if (sellerId) {
+      navigate(`/store/${sellerId}`);
     }
   };
 

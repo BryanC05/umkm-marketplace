@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -214,6 +215,24 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 			"message": "Location required. Please enable location access or update your profile with a valid address.",
 		})
 		return
+	}
+
+	// Keep seller profile discoverable for nearby-seller lookups.
+	// If a user creates a product, mark as seller and backfill profile location when missing.
+	userUpdates := bson.M{}
+	if !user.IsSeller {
+		userUpdates["isSeller"] = true
+	}
+	if !hasValidProfileLocation && hasValidCurrentLocation {
+		userUpdates["location"] = productLocation
+	}
+	if len(userUpdates) > 0 {
+		userUpdates["updatedAt"] = time.Now()
+		_, _ = usersCollection.UpdateOne(
+			context.Background(),
+			bson.M{"_id": userObjID},
+			bson.M{"$set": userUpdates},
+		)
 	}
 
 	unit := "pieces"

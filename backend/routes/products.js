@@ -223,6 +223,19 @@ router.post('/', auth, async (req, res) => {
       });
     }
 
+    // Keep profile discoverable for nearby seller features.
+    // Creating a product should mark account as seller and backfill missing profile location.
+    const userUpdates = {};
+    if (!req.user.isSeller) {
+      userUpdates.isSeller = true;
+    }
+    if (!hasValidProfileLocation && hasValidCurrentLocation) {
+      userUpdates.location = productLocation;
+    }
+    if (Object.keys(userUpdates).length > 0) {
+      await User.findByIdAndUpdate(req.user._id, { $set: userUpdates });
+    }
+
     const product = new Product({
       name,
       description,

@@ -18,6 +18,14 @@ func NewUserHandler() *UserHandler {
 	return &UserHandler{}
 }
 
+func hasValidCoordinates(coords []float64) bool {
+	return len(coords) == 2 && (coords[0] != 0 || coords[1] != 0)
+}
+
+func hasValidLocation(location models.Location) bool {
+	return hasValidCoordinates(location.Coordinates)
+}
+
 func (h *UserHandler) GetProfile(c *gin.Context) {
 	userID := c.GetString("userID")
 	objID, err := primitive.ObjectIDFromHex(userID)
@@ -155,6 +163,118 @@ func (h *UserHandler) GetNearbySellers(c *gin.Context) {
 	if err := cursor.All(context.Background(), &sellers); err != nil {
 		c.JSON(500, gin.H{"message": err.Error()})
 		return
+	}
+
+	seenSellers := make(map[primitive.ObjectID]struct{}, len(sellers))
+	for _, seller := range sellers {
+		seenSellers[seller.ID] = struct{}{}
+	}
+
+	// Fallback: also discover sellers from nearby products.
+	// This handles cases where a seller has product coordinates but no profile coordinates yet.
+	type productSellerLocation struct {
+		Seller   primitive.ObjectID `bson:"seller"`
+		Location models.Location    `bson:"location"`
+	}
+
+	productsCollection := database.GetDB().Collection("products")
+	productFilter := bson.M{
+		"location": bson.M{
+			"$near": bson.M{
+				"$geometry": bson.M{
+					"type":        "Point",
+					"coordinates": []float64{lngFloat, latFloat},
+				},
+				"$maxDistance": radius,
+			},
+		},
+	}
+	productOpts := options.Find().
+		SetProjection(bson.D{
+			{Key: "seller", Value: 1},
+			{Key: "location", Value: 1},
+		}).
+		SetLimit(250)
+
+	fallbackLocationBySeller := make(map[primitive.ObjectID]models.Location)
+	var fallbackSellerOrder []primitive.ObjectID
+
+	if productCursor, err := productsCollection.Find(context.Background(), productFilter, productOpts); err == nil {
+		defer productCursor.Close(context.Background())
+
+		var nearbyProducts []productSellerLocation
+		if err := productCursor.All(context.Background(), &nearbyProducts); err == nil {
+			for _, product := range nearbyProducts {
+				if product.Seller.IsZero() {
+					continue
+				}
+				if _, alreadyIncluded := seenSellers[product.Seller]; alreadyIncluded {
+					continue
+				}
+				if _, captured := fallbackLocationBySeller[product.Seller]; captured {
+					continue
+				}
+				if !hasValidLocation(product.Location) {
+					continue
+				}
+				if product.Location.Type == "" {
+					product.Location.Type = "Point"
+				}
+				fallbackLocationBySeller[product.Seller] = product.Location
+				fallbackSellerOrder = append(fallbackSellerOrder, product.Seller)
+			}
+		}
+	}
+
+	if len(fallbackSellerOrder) > 0 {
+		fallbackFilter := bson.M{
+			"_id": bson.M{"$in": fallbackSellerOrder},
+		}
+		fallbackOpts := options.Find().
+			SetProjection(bson.D{
+				{Key: "name", Value: 1},
+				{Key: "businessName", Value: 1},
+				{Key: "rating", Value: 1},
+				{Key: "location", Value: 1},
+				{Key: "businessType", Value: 1},
+				{Key: "profileImage", Value: 1},
+				{Key: "isSeller", Value: 1},
+			}).
+			SetLimit(int64(len(fallbackSellerOrder)))
+
+		if fallbackCursor, err := collection.Find(context.Background(), fallbackFilter, fallbackOpts); err == nil {
+			defer fallbackCursor.Close(context.Background())
+
+			var fallbackUsers []models.User
+			if err := fallbackCursor.All(context.Background(), &fallbackUsers); err == nil {
+				userByID := make(map[primitive.ObjectID]models.User, len(fallbackUsers))
+				for _, user := range fallbackUsers {
+					if !hasValidLocation(user.Location) {
+						if fallbackLocation, ok := fallbackLocationBySeller[user.ID]; ok {
+							user.Location = fallbackLocation
+						}
+					}
+					if !hasValidLocation(user.Location) {
+						continue
+					}
+					userByID[user.ID] = user
+				}
+
+				for _, sellerID := range fallbackSellerOrder {
+					if _, alreadyIncluded := seenSellers[sellerID]; alreadyIncluded {
+						continue
+					}
+					if user, ok := userByID[sellerID]; ok {
+						sellers = append(sellers, user)
+						seenSellers[sellerID] = struct{}{}
+					}
+				}
+			}
+		}
+	}
+
+	if len(sellers) > 50 {
+		sellers = sellers[:50]
 	}
 
 	c.JSON(200, sellers)

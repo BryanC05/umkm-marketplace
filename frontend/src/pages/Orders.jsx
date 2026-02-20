@@ -217,37 +217,40 @@ function Orders() {
                     <div className="order-body">
                       {/* Items */}
                       <div className="order-items">
-                        {order.products.map((item) => (
-                          <div key={item.product?._id || item._id} className="order-item">
-                            <div className="item-image">
-                              {item.product?.images?.[0] ? (
-                                <img
-                                  src={resolveImageUrl(item.product.images[0])}
-                                  alt={item.product.name}
-                                />
-                              ) : (
-                                <div className="placeholder">📷</div>
-                              )}
+                        {order.products.map((item, itemIndex) => {
+                          const itemKey = `${order._id}-${item._id || item.product?._id || 'item'}-${itemIndex}`;
+                          return (
+                            <div key={itemKey} className="order-item">
+                              <div className="item-image">
+                                {item.product?.images?.[0] ? (
+                                  <img
+                                    src={resolveImageUrl(item.product.images[0])}
+                                    alt={item.product.name}
+                                  />
+                                ) : (
+                                  <div className="placeholder">📷</div>
+                                )}
+                              </div>
+                              <div className="item-details">
+                                <h4>{item.product?.name || 'Product'}</h4>
+                                {item.variantName && (
+                                  <p style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 500 }}>Variant: {item.variantName}</p>
+                                )}
+                                {item.selectedOptions?.length > 0 && (
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginTop: '0.15rem' }}>
+                                    {item.selectedOptions.map((opt, oi) => (
+                                      <span key={`${itemKey}-${opt.groupName || 'option'}-${oi}`} style={{ fontSize: '0.7rem', background: 'var(--muted)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                                        {opt.groupName}: {opt.chosen?.join(', ')}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                                <p>Qty: {item.quantity} × {formatCurrency(item.price)}</p>
+                              </div>
+                              <div className="item-total">{formatCurrency(item.quantity * item.price)}</div>
                             </div>
-                            <div className="item-details">
-                              <h4>{item.product?.name || 'Product'}</h4>
-                              {item.variantName && (
-                                <p style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 500 }}>Variant: {item.variantName}</p>
-                              )}
-                              {item.selectedOptions?.length > 0 && (
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginTop: '0.15rem' }}>
-                                  {item.selectedOptions.map((opt, oi) => (
-                                    <span key={oi} style={{ fontSize: '0.7rem', background: 'var(--muted)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
-                                      {opt.groupName}: {opt.chosen?.join(', ')}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                              <p>Qty: {item.quantity} × {formatCurrency(item.price)}</p>
-                            </div>
-                            <div className="item-total">{formatCurrency(item.quantity * item.price)}</div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
 
                       {/* Footer Info */}

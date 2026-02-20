@@ -418,6 +418,8 @@ npm run dev
 
 ## Future Enhancements
 
+- Detailed phased roadmap: [`MVP_ROADMAP.md`](./MVP_ROADMAP.md)
+- Monetization workflow and pricing model: [`MONETIZATION_WORKFLOW.md`](./MONETIZATION_WORKFLOW.md)
 - [x] Real-time chat between buyers and sellers
 - [x] Community forum system
 - [x] Multi-language support (English/Hindi)

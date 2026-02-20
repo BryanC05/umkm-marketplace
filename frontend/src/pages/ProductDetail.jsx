@@ -149,6 +149,12 @@ function ProductDetail() {
   const productImages = product.images?.length > 0
     ? product.images.map((img) => resolveImageUrl(img) || PLACEHOLDER_IMAGE)
     : [PLACEHOLDER_IMAGE];
+  const seller = typeof product.seller === 'object' && product.seller !== null ? product.seller : null;
+  const sellerId =
+    (typeof product.seller === 'string' ? product.seller : null) ||
+    seller?._id ||
+    seller?.id ||
+    null;
 
   return (
     <Layout>
@@ -197,39 +203,54 @@ function ProductDetail() {
               <h1 className="text-3xl md:text-4xl font-bold mb-4">{product.name}</h1>
 
               {/* Seller Info Card */}
-              <Link to={`/store/${product.seller?._id}`}>
-                <Card className="hover:shadow-md transition-shadow">
+              {sellerId ? (
+                <Link to={`/store/${sellerId}`}>
+                  <Card className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Store className="h-6 w-6 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-lg">{seller?.businessName || t('productDetail.localStore')}</span>
+                            {seller?.isVerified && (
+                              <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
+                                <Shield className="h-3 w-3 mr-1" />
+                                {t('productDetail.verified')}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 mt-1">
+                            {seller?.rating > 0 && (
+                              <div className="flex items-center gap-1">
+                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                <span className="font-medium">{seller.rating.toFixed(1)}</span>
+                              </div>
+                            )}
+                            <span className="text-sm text-muted-foreground">
+                              {product.location?.city || 'Bekasi'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ) : (
+                <Card>
                   <CardContent className="p-4">
                     <div className="flex items-center gap-4">
                       <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
                         <Store className="h-6 w-6 text-primary" />
                       </div>
                       <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-lg">{product.seller?.businessName || t('productDetail.localStore')}</span>
-                          {product.seller?.isVerified && (
-                            <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
-                              <Shield className="h-3 w-3 mr-1" />
-                              {t('productDetail.verified')}
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-3 mt-1">
-                          {product.seller?.rating > 0 && (
-                            <div className="flex items-center gap-1">
-                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                              <span className="font-medium">{product.seller.rating.toFixed(1)}</span>
-                            </div>
-                          )}
-                          <span className="text-sm text-muted-foreground">
-                            {product.location?.city || 'Bekasi'}
-                          </span>
-                        </div>
+                        <span className="font-semibold text-lg">{t('productDetail.localStore')}</span>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-              </Link>
+              )}
             </div>
 
             {/* Description */}
@@ -364,18 +385,18 @@ function ProductDetail() {
 
                 {/* Contact Section */}
                 <div className="pt-4 border-t space-y-3">
-                  {product.seller?.phone && (
+                  {seller?.phone && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Phone className="h-4 w-4" />
-                      <span>{t('productDetail.contact')}: {product.seller.phone}</span>
+                      <span>{t('productDetail.contact')}: {seller.phone}</span>
                     </div>
                   )}
 
-                  {user && user.role === 'buyer' && (
+                  {user && user.role === 'buyer' && sellerId && (
                     <Button
                       variant="outline"
                       className="w-full gap-2"
-                      onClick={() => navigate(`/chat?seller=${product.seller?._id}&from=product&productId=${product._id}`)}
+                      onClick={() => navigate(`/chat?seller=${sellerId}&from=product&productId=${product._id}`)}
                     >
                       <MessageCircle className="h-4 w-4" />
                       {t('productDetail.chatWithSeller')}

@@ -124,13 +124,35 @@ export default function NearbySellersScreen() {
                     radius: radius,
                 },
             });
-            setSellers(response.data || []);
+            const payload = response?.data;
+            const sellersData = Array.isArray(payload)
+                ? payload
+                : Array.isArray(payload?.sellers)
+                    ? payload.sellers
+                    : [];
+            setSellers(sellersData);
         } catch (err) {
             console.error('Failed to fetch nearby sellers:', err);
             setSellers([]);
         } finally {
             setLoading(false);
         }
+    };
+
+    const getSellerId = (seller) => seller?._id || seller?.id || null;
+
+    const getSellerDisplayName = (seller) => {
+        const businessName = typeof seller?.businessName === 'string' ? seller.businessName.trim() : '';
+        const username = typeof seller?.name === 'string' ? seller.name.trim() : '';
+        return businessName || username || 'Seller';
+    };
+
+    const getSellerSubtitle = (seller) => {
+        const businessType = typeof seller?.businessType === 'string' ? seller.businessType.trim().toLowerCase() : '';
+        if (businessType === 'micro') return 'Micro Business';
+        if (businessType === 'small') return 'Small Business';
+        if (businessType === 'medium') return 'Medium Business';
+        return 'Local Seller';
     };
 
     const calculateDistance = (sellerLocation) => {
@@ -159,24 +181,28 @@ export default function NearbySellersScreen() {
 
     const mapMarkers = useMemo(() => {
         return sellers
-            .filter(s => s.location?.coordinates)
+            .filter((s) => s.location?.coordinates && getSellerId(s))
             .map((seller, index) => {
+                const sellerId = getSellerId(seller);
                 const [lng, lat] = seller.location.coordinates;
                 const distance = calculateDistance(seller.location);
                 return {
-                    id: seller._id,
+                    id: sellerId,
                     coordinate: { latitude: lat, longitude: lng },
-                    title: seller.businessName || seller.name,
+                    title: getSellerDisplayName(seller),
                     description: `${distance} km away`,
                     number: index + 1,
                 };
             });
     }, [sellers, location]);
 
-    const filteredSellers = sellers.filter(seller =>
-        seller.businessName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        seller.name?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+    const filteredSellers = sellers.filter((seller) => {
+        if (!normalizedSearch) return true;
+        const displayName = getSellerDisplayName(seller).toLowerCase();
+        const city = (seller.location?.city || '').toLowerCase();
+        return displayName.includes(normalizedSearch) || city.includes(normalizedSearch);
+    });
 
     const sortedSellers = [...filteredSellers].sort((a, b) => {
         const distA = parseFloat(calculateDistance(a.location)) || 999;
@@ -186,14 +212,20 @@ export default function NearbySellersScreen() {
 
     const renderSeller = ({ item, index }) => {
         const distance = calculateDistance(item.location);
-        const isSelected = selectedSeller?._id === item._id;
+        const sellerId = getSellerId(item);
+        const isSelected = getSellerId(selectedSeller) === sellerId;
+        const displayName = getSellerDisplayName(item);
+        const subtitle = getSellerSubtitle(item);
+        const ratingText = typeof item.rating === 'number' ? item.rating.toFixed(1) : null;
 
         return (
             <TouchableOpacity
                 style={[styles.sellerCard, { backgroundColor: colors.card }, isSelected && styles.sellerCardSelected]}
                 onPress={() => {
                     setSelectedSeller(item);
-                    navigation.navigate('BusinessDetails', { sellerId: item._id });
+                    if (sellerId) {
+                        navigation.navigate('BusinessDetails', { sellerId });
+                    }
                 }}
             >
                 <View style={[styles.sellerNumber, { backgroundColor: colors.primary + '20' }, isSelected && { backgroundColor: colors.primary }]}>
@@ -201,12 +233,10 @@ export default function NearbySellersScreen() {
                 </View>
                 <View style={styles.sellerInfo}>
                     <Text style={[styles.sellerName, { color: colors.text }]} numberOfLines={1}>
-                        {item.businessName || item.name}
+                        {displayName}
                     </Text>
                     <Text style={[styles.sellerType, { color: colors.textSecondary }]}>
-                        {item.businessType === 'micro' ? 'Micro Business' :
-                            item.businessType === 'small' ? 'Small Business' :
-                                item.businessType === 'medium' ? 'Medium Business' : 'Seller'}
+                        {subtitle}
                     </Text>
                     {item.location?.address && (
                         <Text style={[styles.sellerAddress, { color: colors.textSecondary }]} numberOfLines={1}>
@@ -215,6 +245,12 @@ export default function NearbySellersScreen() {
                     )}
                 </View>
                 <View style={styles.sellerRight}>
+                    {ratingText && (
+                        <View style={[styles.distanceBadge, { backgroundColor: '#f59e0b' }]}>
+                            <Ionicons name="star" size={12} color="#fff" />
+                            <Text style={styles.distance}>{ratingText}</Text>
+                        </View>
+                    )}
                     {distance && (
                         <View style={[styles.distanceBadge, { backgroundColor: colors.primary }]}>
                             <Ionicons name="location" size={12} color="#fff" />
@@ -290,10 +326,10 @@ export default function NearbySellersScreen() {
                     radius={radius}
                     markers={mapMarkers}
                     onMarkerPress={(marker) => {
-                        const seller = sellers.find(s => s._id === marker.id);
+                        const seller = sellers.find((s) => getSellerId(s) === marker.id);
                         setSelectedSeller(seller);
                     }}
-                    selectedMarkerId={selectedSeller?._id}
+                    selectedMarkerId={getSellerId(selectedSeller)}
                 />
 
                 {/* Close dropdown when tapping map */}
@@ -332,11 +368,13 @@ export default function NearbySellersScreen() {
                                 nestedScrollEnabled
                             >
                                 {sortedSellers.map((seller, index) => {
+                                    const sellerId = getSellerId(seller);
                                     const distance = calculateDistance(seller.location);
-                                    const isSelected = selectedSeller?._id === seller._id;
+                                    const isSelected = getSellerId(selectedSeller) === sellerId;
+                                    const displayName = getSellerDisplayName(seller);
                                     return (
                                         <TouchableOpacity
-                                            key={seller._id}
+                                            key={sellerId || `seller-${index}`}
                                             style={[
                                                 styles.dropdownItem,
                                                 { borderBottomColor: colors.border },
@@ -367,7 +405,7 @@ export default function NearbySellersScreen() {
                                                     ]}
                                                     numberOfLines={1}
                                                 >
-                                                    {seller.businessName || seller.name}
+                                                    {displayName}
                                                 </Text>
                                                 <View style={styles.dropdownMeta}>
                                                     <View style={styles.dropdownRating}>
@@ -459,7 +497,7 @@ export default function NearbySellersScreen() {
                 <FlatList
                     data={sortedSellers}
                     renderItem={renderSeller}
-                    keyExtractor={(item) => item._id}
+                    keyExtractor={(item, index) => getSellerId(item) || `seller-${index}`}
                     contentContainerStyle={styles.list}
                     showsVerticalScrollIndicator={false}
                     ListEmptyComponent={

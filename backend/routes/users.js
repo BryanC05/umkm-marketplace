@@ -16,32 +16,66 @@ router.get('/sellers/count', async (req, res) => {
 
 router.get('/nearby-sellers', async (req, res) => {
   try {
-    const { lat, lng, radius = 10000, category } = req.query;
+    const { lat, lng, radius = 10000 } = req.query;
 
     if (!lat || !lng) {
       return res.status(400).json({ message: 'Latitude and longitude are required' });
     }
 
-    let query = {
-      isSeller: true,
-      isSeller: true,
-      // isVerified: true, // Allow unverified sellers for testing
-      location: {
-        $near: {
-          $geometry: {
-            type: 'Point',
-            coordinates: [Number(lng), Number(lat)]
-          },
-          $maxDistance: Number(radius)
-        }
-      }
+    const nearGeometry = {
+      $geometry: {
+        type: 'Point',
+        coordinates: [Number(lng), Number(lat)]
+      },
+      $maxDistance: Number(radius)
     };
 
-    const sellers = await User.find(query)
-      .select('name businessName rating location businessType profileImage')
+    const hasValidCoordinates = (location) =>
+      Array.isArray(location?.coordinates) &&
+      location.coordinates.length === 2 &&
+      (location.coordinates[0] !== 0 || location.coordinates[1] !== 0);
+
+    // Primary source: seller profile location
+    const sellers = await User.find({
+      isSeller: true,
+      location: { $near: nearGeometry }
+    })
+      .select('name businessName rating location businessType profileImage isSeller')
       .limit(50);
 
-    res.json(sellers);
+    const sellerMap = new Map();
+    sellers.forEach((seller) => sellerMap.set(String(seller._id), seller.toObject()));
+
+    // Fallback source: product location for sellers without profile location.
+    const nearbyProducts = await Product.find({
+      location: { $near: nearGeometry }
+    })
+      .select('seller location')
+      .populate('seller', 'name businessName rating location businessType profileImage isSeller')
+      .limit(250);
+
+    nearbyProducts.forEach((product) => {
+      const sellerDoc = product?.seller;
+      if (!sellerDoc?._id) return;
+
+      const sellerId = String(sellerDoc._id);
+      if (sellerMap.has(sellerId)) return;
+
+      const seller = sellerDoc.toObject ? sellerDoc.toObject() : sellerDoc;
+      const mergedSeller = {
+        ...seller,
+        isSeller: true,
+      };
+
+      if (!hasValidCoordinates(mergedSeller.location) && hasValidCoordinates(product.location)) {
+        mergedSeller.location = product.location;
+      }
+
+      if (!hasValidCoordinates(mergedSeller.location)) return;
+      sellerMap.set(sellerId, mergedSeller);
+    });
+
+    res.json(Array.from(sellerMap.values()).slice(0, 50));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -1,6 +1,22 @@
 import { useState, useCallback } from 'react';
 import api from '../utils/api';
 
+const normalizeLogos = (value) => {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value?.logos)) return value.logos;
+  return [];
+};
+
+const updateStatusWithRemaining = (prevStatus, remainingGenerations) => {
+  if (!prevStatus || typeof prevStatus !== 'object') return prevStatus;
+
+  const nextStatus = { ...prevStatus, remaining: remainingGenerations };
+  if (typeof prevStatus.limit === 'number') {
+    nextStatus.used = Math.max(0, prevStatus.limit - remainingGenerations);
+  }
+  return nextStatus;
+};
+
 export function useLogoGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -17,12 +33,8 @@ export function useLogoGenerator() {
       const response = await api.post('/logo/generate', { prompt });
       
       if (response.data.success) {
-        setLogos(prev => [...prev, response.data.logo]);
-        setStatus(prev => ({
-          ...prev,
-          used: prev?.limit - response.data.remainingGenerations,
-          remaining: response.data.remainingGenerations
-        }));
+        setLogos((prev) => [...normalizeLogos(prev), response.data.logo]);
+        setStatus((prev) => updateStatusWithRemaining(prev, response.data.remainingGenerations));
         return response.data.logo;
       }
     } catch (err) {
@@ -43,7 +55,7 @@ export function useLogoGenerator() {
       const response = await api.get('/logo/history');
       
       if (response.data.success) {
-        setLogos(response.data.logos);
+        setLogos(normalizeLogos(response.data.logos));
         return response.data;
       }
     } catch (err) {
@@ -120,7 +132,7 @@ export function useLogoGenerator() {
       const response = await api.delete(`/logo/${logoId}`);
       
       if (response.data.success) {
-        setLogos(prev => prev.filter(logo => logo.logoId !== logoId));
+        setLogos((prev) => normalizeLogos(prev).filter((logo) => logo.logoId !== logoId));
         return response.data;
       }
     } catch (err) {

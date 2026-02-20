@@ -10,25 +10,30 @@ import './SellerStore.css';
 
 function SellerStore() {
     const { id } = useParams();
+    const sellerId = id && id !== 'undefined' && id !== 'null' ? id : null;
     const navigate = useNavigate();
     const { user } = useAuthStore();
 
     // Fetch seller details
     const { data: seller, isLoading: sellerLoading } = useQuery({
-        queryKey: ['seller', id],
+        queryKey: ['seller', sellerId],
         queryFn: async () => {
-            const response = await api.get(`/users/seller/${id}`);
+            if (!sellerId) return null;
+            const response = await api.get(`/users/seller/${sellerId}`);
             return response.data;
         },
+        enabled: !!sellerId,
     });
 
     // Fetch seller's products
     const { data: products, isLoading: productsLoading } = useQuery({
-        queryKey: ['sellerProducts', id],
+        queryKey: ['sellerProducts', sellerId],
         queryFn: async () => {
-            const response = await api.get(`/products/seller/${id}`);
+            if (!sellerId) return [];
+            const response = await api.get(`/products/seller/${sellerId}`);
             return response.data;
         },
+        enabled: !!sellerId,
     });
 
     if (sellerLoading) {
@@ -125,7 +130,7 @@ function SellerStore() {
                         {user && user.role === 'buyer' && (
                             <button
                                 className="btn-chat-store inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-                                onClick={() => navigate(`/chat?seller=${id}`)}
+                                onClick={() => navigate(`/chat?seller=${sellerId}`)}
                             >
                                 <MessageCircle size={18} />
                                 Chat with Store

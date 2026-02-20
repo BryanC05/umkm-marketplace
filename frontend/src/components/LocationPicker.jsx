@@ -139,7 +139,7 @@ function LocationPicker({ onLocationSelect, initialLocation }) {
             }
             markerRef.current = null;
         };
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Sync valid position with marker if updated externally
     useEffect(() => {
@@ -228,7 +228,7 @@ function LocationPicker({ onLocationSelect, initialLocation }) {
                     setIsSearching(false);
                 },
                 (err) => {
-                    console.error('Geolocation error:', err);
+                    console.warn('Geolocation warning (using existing/default map location):', err);
                     setIsSearching(false);
 
                     let errorMessage = 'Could not access your location.';
@@ -240,10 +240,10 @@ function LocationPicker({ onLocationSelect, initialLocation }) {
                         errorMessage = 'Location request timed out. Please try again.';
                     }
 
-                    // Only show alert if user explicitly clicked the button, otherwise just log
-                    // We can determine this by checking an internal flag or passing manual=true
-                    // For now, simpler to just allow the alert but make it informative
-                    alert(errorMessage);
+                    const hasExistingLocation = !!position && Number.isFinite(position.lat) && Number.isFinite(position.lng);
+                    if (!hasExistingLocation) {
+                        alert(errorMessage);
+                    }
                 },
                 {
                     enableHighAccuracy: true,
