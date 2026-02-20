@@ -13,7 +13,7 @@ const { width } = Dimensions.get('window');
 
 export default function ProductsScreen({ navigation, route }) {
     const { colors, isDarkMode } = useThemeStore();
-    const initialCategory = route.params?.category || 'all';
+    const initialCategory = route?.params?.category || 'all';
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -27,14 +27,15 @@ export default function ProductsScreen({ navigation, route }) {
 
     const fetchProducts = useCallback(async (pageNum = 1, append = false) => {
         try {
-            const params = new URLSearchParams();
-            if (search) params.append('search', search);
-            if (category && category !== 'all') params.append('category', category);
-            params.append('sort', sortBy);
-            params.append('page', pageNum);
-            params.append('limit', '20');
+            const params = {
+                sort: sortBy,
+                page: pageNum,
+                limit: 20,
+            };
+            if (search) params.search = search;
+            if (category && category !== 'all') params.category = category;
 
-            const response = await api.get(`/products?${params.toString()}`);
+            const response = await api.get('/products', { params });
             const newProducts = response.data.products || [];
             const pagination = response.data.pagination || {};
 
@@ -59,10 +60,10 @@ export default function ProductsScreen({ navigation, route }) {
     }, [fetchProducts]);
 
     useEffect(() => {
-        if (route.params?.category) {
+        if (route?.params?.category) {
             setCategory(route.params.category);
         }
-    }, [route.params?.category]);
+    }, [route?.params?.category]);
 
     const onRefresh = async () => {
         setRefreshing(true);

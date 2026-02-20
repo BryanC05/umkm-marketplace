@@ -73,23 +73,15 @@ function ProductsStackNavigator() {
     const { colors } = useThemeStore();
     const { t } = useLanguageStore();
 
-    const ProductsWrapper = ({ navigation }) => {
+    const ProductsWrapper = ({ navigation, route }) => {
         React.useEffect(() => {
-            const unsubscribe = navigation.addListener('focus', () => {
-                const parent = navigation.getParent();
-                if (parent) {
-                    const state = parent.getState();
-                    const productsRoute = state?.routes?.find(r => r.name === 'ProductsTab');
-                    if (productsRoute?.params?.reset) {
-                        parent.setParams({ reset: undefined });
-                        navigation.popToTop();
-                    }
-                }
-            });
-            return unsubscribe;
-        }, [navigation]);
+            if (route?.params?.reset) {
+                navigation.setParams({ reset: undefined });
+                navigation.popToTop();
+            }
+        }, [navigation, route?.params?.reset]);
 
-        return <ProductsScreen />;
+        return <ProductsScreen navigation={navigation} route={route} />;
     };
 
     return (

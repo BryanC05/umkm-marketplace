@@ -17,6 +17,30 @@ const SHEET_ITEM_HEIGHT = 82; // Height of each seller card + margin
 const HEADER_CONTENT_HEIGHT = 140; // Search box + radius chips + padding
 const DRAG_HANDLE_HEIGHT = 50;
 const BASE_SHEET_HEIGHT = DRAG_HANDLE_HEIGHT + HEADER_CONTENT_HEIGHT;
+const DEFAULT_FALLBACK_LOCATION = {
+    lat: -6.2349,
+    lng: 106.9896,
+    latitude: -6.2349,
+    longitude: 106.9896,
+};
+
+const toNumber = (value) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+};
+
+const getSellerCoordinates = (seller) => {
+    if (!Array.isArray(seller?.location?.coordinates) || seller.location.coordinates.length !== 2) {
+        return null;
+    }
+
+    const lng = toNumber(seller.location.coordinates[0]);
+    const lat = toNumber(seller.location.coordinates[1]);
+    if (lng == null || lat == null) return null;
+    if (lng === 0 && lat === 0) return null;
+
+    return { lat, lng };
+};
 
 export default function NearbySellersScreen() {
     const navigation = useNavigation();
@@ -29,6 +53,7 @@ export default function NearbySellersScreen() {
     const [searchQuery, setSearchQuery] = useState('');
     const [radius, setRadius] = useState(25000);
     const [error, setError] = useState(null);
+    const [locationWarning, setLocationWarning] = useState(null);
     const [selectedSeller, setSelectedSeller] = useState(null);
     const [dropdownVisible, setDropdownVisible] = useState(false);
     const mapRef = useRef(null);
@@ -92,10 +117,12 @@ export default function NearbySellersScreen() {
 
     const getUserLocation = async () => {
         try {
+            setError(null);
+            setLocationWarning(null);
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
-                setError('Location permission denied');
-                setLoading(false);
+                setLocationWarning('Location permission denied. Using default location for nearby sellers.');
+                setLocation(DEFAULT_FALLBACK_LOCATION);
                 return;
             }
 
@@ -109,8 +136,9 @@ export default function NearbySellersScreen() {
                 longitude: userLocation.coords.longitude,
             });
         } catch (err) {
-            setError('Failed to get location');
-            setLoading(false);
+            console.warn('Failed to get location, using default fallback:', err);
+            setLocationWarning('Failed to get your current location. Using default location.');
+            setLocation(DEFAULT_FALLBACK_LOCATION);
         }
     };
 
@@ -130,7 +158,26 @@ export default function NearbySellersScreen() {
                 : Array.isArray(payload?.sellers)
                     ? payload.sellers
                     : [];
-            setSellers(sellersData);
+            const normalized = sellersData
+                .map((seller) => {
+                    const sellerId = getSellerId(seller);
+                    const coordinates = getSellerCoordinates(seller);
+                    if (!sellerId || !coordinates) return null;
+                    return {
+                        ...seller,
+                        _id: sellerId,
+                        id: sellerId,
+                        location: {
+                            ...seller.location,
+                            type: seller.location?.type || 'Point',
+                            coordinates: [coordinates.lng, coordinates.lat],
+                        },
+                    };
+                })
+                .filter(Boolean);
+
+            console.log('Nearby sellers fetched:', normalized.length);
+            setSellers(normalized);
         } catch (err) {
             console.error('Failed to fetch nearby sellers:', err);
             setSellers([]);
@@ -139,7 +186,11 @@ export default function NearbySellersScreen() {
         }
     };
 
-    const getSellerId = (seller) => seller?._id || seller?.id || null;
+    const getSellerId = (seller) => {
+        const raw = seller?._id || seller?.id;
+        if (!raw) return null;
+        return typeof raw === 'string' ? raw : String(raw);
+    };
 
     const getSellerDisplayName = (seller) => {
         const businessName = typeof seller?.businessName === 'string' ? seller.businessName.trim() : '';
@@ -156,8 +207,10 @@ export default function NearbySellersScreen() {
     };
 
     const calculateDistance = (sellerLocation) => {
-        if (!sellerLocation?.coordinates || !location) return null;
-        const [lng, lat] = sellerLocation.coordinates;
+        if (!location) return null;
+        const coords = getSellerCoordinates({ location: sellerLocation });
+        if (!coords) return null;
+        const { lat, lng } = coords;
         const R = 6371;
         const dLat = (lat - location.lat) * Math.PI / 180;
         const dLon = (lng - location.lng) * Math.PI / 180;
@@ -181,10 +234,12 @@ export default function NearbySellersScreen() {
 
     const mapMarkers = useMemo(() => {
         return sellers
-            .filter((s) => s.location?.coordinates && getSellerId(s))
+            .filter((s) => getSellerCoordinates(s) && getSellerId(s))
             .map((seller, index) => {
                 const sellerId = getSellerId(seller);
-                const [lng, lat] = seller.location.coordinates;
+                const coords = getSellerCoordinates(seller);
+                if (!coords) return null;
+                const { lat, lng } = coords;
                 const distance = calculateDistance(seller.location);
                 return {
                     id: sellerId,
@@ -193,7 +248,8 @@ export default function NearbySellersScreen() {
                     description: `${distance} km away`,
                     number: index + 1,
                 };
-            });
+            })
+            .filter(Boolean);
     }, [sellers, location]);
 
     const normalizedSearch = searchQuery.trim().toLowerCase();
@@ -317,6 +373,13 @@ export default function NearbySellersScreen() {
                 <View style={styles.placeholder} />
             </View>
 
+            {locationWarning && (
+                <View style={[styles.warningBanner, { backgroundColor: '#fef3c7', top: insets.top + 68 }]}>
+                    <Ionicons name="warning-outline" size={14} color="#92400e" />
+                    <Text style={styles.warningText}>{locationWarning}</Text>
+                </View>
+            )}
+
             {/* Map Container - Directly below header with no gap */}
             <View style={[styles.mapWrapper, { top: insets.top + 60 }]}>
                 <Map
@@ -384,8 +447,9 @@ export default function NearbySellersScreen() {
                                             onPress={() => {
                                                 setSelectedSeller(seller);
                                                 setDropdownVisible(false);
-                                                if (seller.location?.coordinates) {
-                                                    const [lng, lat] = seller.location.coordinates;
+                                                const coords = getSellerCoordinates(seller);
+                                                if (coords) {
+                                                    const { lat, lng } = coords;
                                                     mapRef.current?.animateToRegion({
                                                         latitude: lat,
                                                         longitude: lng,
@@ -576,6 +640,25 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontWeight: '600',
         fontSize: 14,
+    },
+    warningBanner: {
+        position: 'absolute',
+        left: 12,
+        right: 12,
+        top: 72,
+        zIndex: 20,
+        borderRadius: 10,
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    warningText: {
+        flex: 1,
+        fontSize: 12,
+        color: '#92400e',
+        fontWeight: '500',
     },
     mapWrapper: {
         position: 'absolute',
