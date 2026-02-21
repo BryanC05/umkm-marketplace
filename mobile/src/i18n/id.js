@@ -118,6 +118,8 @@ export default {
     orderTotal: 'Total Pesanan',
     pending: 'Menunggu',
     confirmed: 'Dikonfirmasi',
+    preparing: 'Diproses',
+    ready: 'Siap',
     shipped: 'Dikirim',
     delivered: 'Diterima',
     cancelled: 'Dibatalkan',

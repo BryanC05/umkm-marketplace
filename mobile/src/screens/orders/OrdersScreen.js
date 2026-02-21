@@ -19,8 +19,8 @@ export default function OrdersScreen() {
     const STATUS_COLORS = {
         pending: { bg: '#fef3c7', text: '#92400e', label: t.pending },
         confirmed: { bg: '#dbeafe', text: '#1e40af', label: t.confirmed },
-        preparing: { bg: '#e0e7ff', text: '#3730a3', label: t.confirmed },
-        ready: { bg: '#e0e7ff', text: '#3730a3', label: t.confirmed },
+        preparing: { bg: '#e0e7ff', text: '#3730a3', label: t.preparing },
+        ready: { bg: '#e0e7ff', text: '#3730a3', label: t.ready },
         delivered: { bg: '#d1fae5', text: '#065f46', label: t.delivered },
         cancelled: { bg: '#fee2e2', text: '#991b1b', label: t.cancelled },
     };
@@ -64,6 +64,30 @@ export default function OrdersScreen() {
         orderDate: { fontSize: 12, color: colors.textSecondary },
         statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
         statusText: { fontSize: 11, fontWeight: '700' },
+        // Delivery info styles
+        deliveryInfo: {
+            flexDirection: 'row', alignItems: 'center', backgroundColor: colors.input, 
+            padding: 10, borderRadius: 10, marginBottom: 12,
+        },
+        pickupInfo: {
+            flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primary + '10', 
+            padding: 10, borderRadius: 10, marginBottom: 12, borderWidth: 1, borderColor: colors.primary + '30',
+        },
+        deliveryIcon: { marginRight: 8 },
+        deliveryText: { fontSize: 13, fontWeight: '600', color: colors.text, flex: 1 },
+        deliveryTime: { fontSize: 12, color: colors.primary, fontWeight: '700' },
+        // Seller info
+        sellerInfo: {
+            flexDirection: 'row', alignItems: 'center', marginBottom: 12,
+        },
+        sellerIcon: { marginRight: 6 },
+        sellerName: { fontSize: 13, fontWeight: '600', color: colors.text },
+        // Notes
+        notesBox: {
+            backgroundColor: colors.input, padding: 10, borderRadius: 10, marginBottom: 12,
+        },
+        notesLabel: { fontSize: 11, color: colors.textSecondary, marginBottom: 2 },
+        notesText: { fontSize: 12, color: colors.text, fontStyle: 'italic' },
         orderItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
         orderImage: { width: 48, height: 48, borderRadius: 8, backgroundColor: colors.border },
         orderItemInfo: { flex: 1, marginLeft: 10 },
@@ -83,14 +107,54 @@ export default function OrdersScreen() {
 
     const renderOrder = ({ item: order }) => {
         const statusInfo = STATUS_COLORS[order.status] || STATUS_COLORS.pending;
+        const isPickup = order.deliveryType === 'pickup';
+        
         return (
             <View style={styles.orderCard}>
+                {/* Header */}
                 <View style={styles.orderHeader}>
                     <Text style={styles.orderDate}>{formatDate(order.createdAt)}</Text>
                     <View style={[styles.statusBadge, { backgroundColor: statusInfo.bg }]}>
                         <Text style={[styles.statusText, { color: statusInfo.text }]}>{statusInfo.label}</Text>
                     </View>
                 </View>
+
+                {/* Seller Info */}
+                {order.seller && (
+                    <View style={styles.sellerInfo}>
+                        <Ionicons name="storefront-outline" size={16} color={colors.primary} style={styles.sellerIcon} />
+                        <Text style={styles.sellerName}>{order.seller.businessName || order.seller.name}</Text>
+                    </View>
+                )}
+
+                {/* Delivery/Pickup Info */}
+                {isPickup ? (
+                    <View style={styles.pickupInfo}>
+                        <Ionicons name="storefront" size={18} color={colors.primary} style={styles.deliveryIcon} />
+                        <Text style={styles.deliveryText}>🏪 Pickup at Store</Text>
+                        {order.preorderTime && (
+                            <Text style={styles.deliveryTime}>{order.preorderTime}</Text>
+                        )}
+                    </View>
+                ) : (
+                    <View style={styles.deliveryInfo}>
+                        <Ionicons name="car" size={18} color={colors.textSecondary} style={styles.deliveryIcon} />
+                        <Text style={styles.deliveryText}>🚗 Delivery</Text>
+                        {order.preorderTime && (
+                            <Text style={styles.deliveryTime}>{order.preorderTime}</Text>
+                        )}
+                    </View>
+                )}
+
+                {/* Notes */}
+                {order.notes && (
+                    <View style={styles.notesBox}>
+                        <Text style={styles.notesLabel}>Note:</Text>
+                        <Text style={styles.notesText}>{order.notes}</Text>
+                    </View>
+                )}
+
+                {/* Products */}
                 {order.products?.map((item, idx) => {
                     const img = item.product?.images?.[0] ? getImageUrl(item.product.images[0]) : PLACEHOLDER_IMAGE;
                     return (
@@ -116,6 +180,8 @@ export default function OrdersScreen() {
                         </View>
                     );
                 })}
+
+                {/* Footer */}
                 <View style={styles.orderFooter}>
                     <Text style={styles.totalLabel}>{t.total}</Text>
                     <Text style={styles.totalValue}>{formatPrice(order.totalAmount)}</Text>

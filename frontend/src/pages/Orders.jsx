@@ -302,14 +302,27 @@ function Orders() {
                             </div>
                           )}
 
-                          {/* Delivery Address */}
-                          {order.deliveryAddress && (
+                          {/* Delivery Type & Address */}
+                          {order.deliveryType === 'pickup' ? (
+                            <div className="meta-row">
+                              <span className="meta-label">{t('orders.delivery')}</span>
+                              <span className="meta-value" style={{ color: 'var(--primary)', fontWeight: 600 }}>
+                                🏪 Pickup at Store
+                                {order.preorderTime && ` - ${order.preorderTime}`}
+                              </span>
+                            </div>
+                          ) : order.deliveryAddress && (
                             <div className="meta-row">
                               <span className="meta-label">{t('orders.delivery')}</span>
                               <span className="meta-value">
                                 <MapPin size={12} />
                                 {order.deliveryAddress.address}
                                 {order.deliveryAddress.city && `, ${order.deliveryAddress.city}`}
+                                {order.preorderTime && (
+                                  <span style={{ display: 'block', marginTop: '4px', color: 'var(--primary)', fontSize: '0.85rem' }}>
+                                    🕐 Delivery at: {order.preorderTime}
+                                  </span>
+                                )}
                               </span>
                             </div>
                           )}

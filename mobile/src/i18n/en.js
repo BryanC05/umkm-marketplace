@@ -118,6 +118,8 @@ export default {
     orderTotal: 'Order Total',
     pending: 'Pending',
     confirmed: 'Confirmed',
+    preparing: 'Preparing',
+    ready: 'Ready',
     shipped: 'Shipped',
     delivered: 'Delivered',
     cancelled: 'Cancelled',
