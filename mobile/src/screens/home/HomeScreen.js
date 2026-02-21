@@ -120,10 +120,11 @@ export default function HomeScreen({ navigation }) {
         catCard: {
             backgroundColor: colors.card, borderRadius: 14, padding: 14, alignItems: 'center', width: 100,
             shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
+            borderWidth: 1, borderColor: colors.border,
         },
         catIcon: { fontSize: 28, marginBottom: 6 },
-        catName: { fontSize: 11, fontWeight: '600', color: colors.text, textAlign: 'center', lineHeight: 14 },
-        catCount: { fontSize: 10, color: colors.textSecondary, marginTop: 3 },
+        catName: { fontSize: 12, fontWeight: '700', color: colors.text, textAlign: 'center', lineHeight: 16 },
+        catCount: { fontSize: 11, color: colors.textSecondary, marginTop: 3, fontWeight: '500' },
     };
 
     const statsData = [
@@ -171,27 +172,28 @@ export default function HomeScreen({ navigation }) {
                 ))}
             </View>
 
-            <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>{t.category}</Text>
-                    <TouchableOpacity onPress={() => navigation.navigate('ProductsTab')}>
-                        <Text style={styles.seeAll}>{t.seeAll}</Text>
-                    </TouchableOpacity>
+            {categories.filter((cat) => (categoryCounts[cat.id] || 0) > 0).length > 0 && (
+                <View style={styles.section}>
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>{t.category}</Text>
+                    </View>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.catScroll}>
+                        {categories
+                            .filter((cat) => (categoryCounts[cat.id] || 0) > 0)
+                            .map((cat) => (
+                            <TouchableOpacity
+                                key={cat.id}
+                                style={styles.catCard}
+                                onPress={() => navigation.navigate('ProductsTab', { screen: 'Products', params: { category: cat.id } })}
+                            >
+                                <Text style={styles.catIcon}>{cat.icon}</Text>
+                                <Text style={styles.catName}>{t[catTranslations[cat.name]] || cat.name}</Text>
+                                <Text style={styles.catCount}>{categoryCounts[cat.id]}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
                 </View>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.catScroll}>
-                    {categories.map((cat) => (
-                        <TouchableOpacity
-                            key={cat.id}
-                            style={styles.catCard}
-                            onPress={() => navigation.navigate('ProductsTab', { screen: 'Products', params: { category: cat.id } })}
-                        >
-                            <Text style={styles.catIcon}>{cat.icon}</Text>
-                            <Text style={styles.catName}>{t[catTranslations[cat.name]] || cat.name}</Text>
-                            <Text style={styles.catCount}>{categoryCounts[cat.id] || 0}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
-            </View>
+            )}
 
             <View style={styles.section}>
                 <View style={styles.sectionHeader}>

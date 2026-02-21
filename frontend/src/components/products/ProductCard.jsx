@@ -9,10 +9,8 @@ import { PLACEHOLDER_IMAGE } from "@/utils/constants";
 import { resolveImageUrl } from "@/utils/imageUrl";
 
 const ProductCard = ({ product }) => {
-    // Handle both API data structure and mock data structure
     const productId = product._id || product.id;
     const productImage = resolveImageUrl(product.images?.[0] || product.image) || PLACEHOLDER_IMAGE;
-    const sellerName = product.seller?.businessName || product.seller?.name || 'Local Seller';
     const sellerRating = product.seller?.rating || product.rating || 4.5;
 
     const { isProductSaved, toggleSaveProduct, isLoading } = useSavedProductsStore();
@@ -23,13 +21,11 @@ const ProductCard = ({ product }) => {
         e.preventDefault();
         e.stopPropagation();
         if (!isAuthenticated) {
-            // Could redirect to login or show a toast
             return;
         }
         await toggleSaveProduct(productId);
     };
 
-    // Handle location - can be string or object
     const getLocationDisplay = () => {
         if (!product.seller?.location && !product.location) return 'Nearby';
         const loc = product.seller?.location || product.location;
@@ -48,42 +44,45 @@ const ProductCard = ({ product }) => {
                         onError={(e) => { e.target.src = PLACEHOLDER_IMAGE; }}
                     />
                     {product.isNew && (
-                        <Badge className="absolute top-2 left-2 bg-accent text-accent-foreground">
+                        <Badge className="absolute top-2 left-2 bg-accent text-accent-foreground text-sm px-2 py-1">
                             New
                         </Badge>
                     )}
                     {isAuthenticated && (
                         <Button
                             variant="ghost"
-                            size="icon"
-                            className="absolute top-2 right-2 bg-white/80 hover:bg-white backdrop-blur-sm rounded-full"
+                            size="default"
+                            className={`absolute top-2 right-2 bg-white/90 hover:bg-white backdrop-blur-sm rounded-full h-10 w-10 p-0 ${isSaved ? 'text-red-500' : 'text-gray-600'}`}
                             onClick={handleSaveClick}
                             disabled={isLoading}
+                            title="Save product"
                         >
                             <Heart 
-                                className={`h-4 w-4 transition-colors ${isSaved ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} 
+                                className={`h-5 w-5 transition-colors ${isSaved ? 'fill-red-500 text-red-500' : ''}`} 
                             />
                         </Button>
                     )}
                 </div>
                 <CardContent className="p-4">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
-                        {product.category}
-                    </p>
-                    <h3 className="font-semibold text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+                    {product.category && (
+                        <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
+                            {product.category}
+                        </p>
+                    )}
+                    <h3 className="font-semibold text-base text-foreground line-clamp-1 group-hover:text-primary transition-colors">
                         {product.name}
                     </h3>
-                    <p className="text-lg font-bold text-primary mt-1">
+                    <p className="text-xl font-bold text-primary mt-2">
                         Rp{product.price?.toLocaleString('id-ID') || product.price}
                     </p>
                     <div className="mt-3 pt-3 border-t flex items-center justify-between text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
+                            <MapPin className="h-4 w-4" />
                             <span className="truncate max-w-[100px]">{getLocationDisplay()}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                            <Star className="h-3 w-3 fill-warning text-warning" />
-                            <span>{sellerRating?.toFixed(1) || '4.5'}</span>
+                            <Star className="h-4 w-4 fill-warning text-warning" />
+                            <span className="font-medium">{sellerRating?.toFixed(1) || '4.5'}</span>
                         </div>
                     </div>
                 </CardContent>

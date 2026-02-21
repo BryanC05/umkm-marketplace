@@ -20,7 +20,46 @@
     "automation": "Automation",
     "profile": "Profile",
     "theme": "Theme",
-    "searchPlaceholder": "Search products, sellers..."
+    "searchPlaceholder": "Search products, sellers...",
+    "sellerMenu": "Seller Tools",
+    "settings": "Settings",
+    "help": "Help",
+    "language": "Language",
+    "darkMode": "Dark Mode",
+    "lightMode": "Light Mode"
+  },
+  "onboarding": {
+    "welcome": "Welcome to TroliToko!",
+    "welcomeDesc": "Let us show you how to shop easily",
+    "step1Title": "Find Products",
+    "step1Desc": "Search for products or browse categories",
+    "step2Title": "Add to Cart",
+    "step2Desc": "Tap 'Add to Cart' to save items you want to buy",
+    "step3Title": "Checkout",
+    "step3Desc": "Review your cart and place your order",
+    "step4Title": "Track Order",
+    "step4Desc": "See your order status in 'My Orders'",
+    "skip": "Skip",
+    "next": "Next",
+    "gotIt": "Got it!",
+    "startTour": "Start Tour"
+  },
+  "help": {
+    "searchTip": "Type what you're looking for here",
+    "filterTip": "Use filters to narrow down results",
+    "sortTip": "Arrange products by price or date",
+    "addToCartTip": "Tap this button to add item to your cart",
+    "checkoutTip": "Review and complete your purchase"
+  },
+  "checkout": {
+    "step1": "Cart",
+    "step2": "Address",
+    "step3": "Payment",
+    "step4": "Confirm",
+    "reviewCart": "Review Your Cart",
+    "enterAddress": "Enter Delivery Address",
+    "selectPayment": "Select Payment Method",
+    "confirmOrder": "Confirm Your Order"
   },
   "home": {
     "heroTitle": "TroliToko",

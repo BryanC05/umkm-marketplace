@@ -22,22 +22,27 @@ export default function ProductCard({ product, onPress }) {
                 resizeMode="cover"
             />
             <View style={styles.content}>
+                {product.category && (
+                    <Text style={[styles.category, { color: colors.textSecondary }]} numberOfLines={1}>
+                        {product.category.toUpperCase()}
+                    </Text>
+                )}
                 <Text style={[styles.name, { color: colors.text }]} numberOfLines={2}>
                     {product.name}
                 </Text>
                 <Text style={[styles.price, { color: colors.primary }]}>{formatPrice(product.price)}</Text>
-                <View style={styles.sellerRow}>
-                    <Ionicons name="storefront-outline" size={12} color={colors.textSecondary} />
-                    <Text style={[styles.seller, { color: colors.textSecondary }]} numberOfLines={1}>
-                        {product.seller?.businessName || product.seller?.name || 'Seller'}
-                    </Text>
-                </View>
-                {product.rating > 0 && (
+                <View style={styles.footerRow}>
+                    <View style={styles.locationRow}>
+                        <Ionicons name="location-outline" size={12} color={colors.textSecondary} />
+                        <Text style={[styles.location, { color: colors.textSecondary }]} numberOfLines={1}>
+                            {product.seller?.location?.city || 'Nearby'}
+                        </Text>
+                    </View>
                     <View style={styles.ratingRow}>
                         <Ionicons name="star" size={12} color="#f59e0b" />
-                        <Text style={[styles.rating, { color: colors.textSecondary }]}>{product.rating.toFixed(1)}</Text>
+                        <Text style={[styles.rating, { color: colors.textSecondary }]}>{(product.rating || 4.5).toFixed(1)}</Text>
                     </View>
-                )}
+                </View>
             </View>
         </TouchableOpacity>
     );
@@ -62,23 +67,38 @@ const styles = StyleSheet.create({
     content: {
         padding: 10,
     },
+    category: {
+        fontSize: 10,
+        fontWeight: '500',
+        letterSpacing: 0.5,
+        marginBottom: 2,
+    },
     name: {
-        fontSize: 13,
+        fontSize: 14,
         fontWeight: '600',
         marginBottom: 4,
         lineHeight: 18,
     },
     price: {
-        fontSize: 15,
+        fontSize: 16,
         fontWeight: '700',
-        marginBottom: 4,
+        marginBottom: 6,
     },
-    sellerRow: {
+    footerRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
+        justifyContent: 'space-between',
+        borderTopWidth: 1,
+        borderTopColor: '#e5e7eb',
+        paddingTop: 8,
     },
-    seller: {
+    locationRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 3,
+        flex: 1,
+    },
+    location: {
         fontSize: 11,
         flex: 1,
     },
@@ -86,10 +106,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 3,
-        marginTop: 4,
     },
     rating: {
         fontSize: 11,
-        fontWeight: '500',
+        fontWeight: '600',
     },
 });

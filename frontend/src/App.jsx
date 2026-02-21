@@ -26,10 +26,10 @@ import SavedProducts from './pages/SavedProducts';
 import Automation from './pages/Automation/Automation';
 import LogoGenerator from './pages/LogoGenerator';
 import ScrollToTop from './components/ScrollToTop';
+import OnboardingTour from './components/ui/OnboardingTour';
 import { useAuthStore } from './store/authStore';
 import { useThemeStore } from './store/themeStore';
 import { useLanguageStore } from './store/languageStore';
-// Removed: import './App.css'; // Assuming Tailwind handles global styles now or we just rely on index.css
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -61,6 +61,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <Router>
         <ScrollToTop />
+        <OnboardingTour />
         <div className="min-h-screen bg-background text-foreground font-sans antialiased">
           {/* Navbar removed from here as it's included in Layout component used by pages */}
           <Routes>

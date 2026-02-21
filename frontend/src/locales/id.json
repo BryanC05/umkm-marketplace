@@ -20,7 +20,46 @@
         "automation": "Otomasi",
         "profile": "Profil",
         "theme": "Tema",
-        "searchPlaceholder": "Cari produk, penjual..."
+        "searchPlaceholder": "Cari produk, penjual...",
+        "sellerMenu": "Alat Penjual",
+        "settings": "Pengaturan",
+        "help": "Bantuan",
+        "language": "Bahasa",
+        "darkMode": "Mode Gelap",
+        "lightMode": "Mode Terang"
+    },
+    "onboarding": {
+        "welcome": "Selamat Datang di TroliToko!",
+        "welcomeDesc": "Mari kami tunjukkan cara berbelanja dengan mudah",
+        "step1Title": "Cari Produk",
+        "step1Desc": "Cari produk atau jelajahi kategori",
+        "step2Title": "Tambah ke Keranjang",
+        "step2Desc": "Tekan 'Tambah ke Keranjang' untuk menyimpan item",
+        "step3Title": "Checkout",
+        "step3Desc": "Periksa keranjang dan buat pesanan",
+        "step4Title": "Lacak Pesanan",
+        "step4Desc": "Lihat status pesanan di 'Pesanan Saya'",
+        "skip": "Lewati",
+        "next": "Lanjut",
+        "gotIt": "Mengerti!",
+        "startTour": "Mulai Tur"
+    },
+    "help": {
+        "searchTip": "Ketik yang Anda cari di sini",
+        "filterTip": "Gunakan filter untuk mempersempit hasil",
+        "sortTip": "Urutkan produk berdasarkan harga atau tanggal",
+        "addToCartTip": "Tekan tombol ini untuk menambahkan ke keranjang",
+        "checkoutTip": "Periksa dan selesaikan pembelian Anda"
+    },
+    "checkout": {
+        "step1": "Keranjang",
+        "step2": "Alamat",
+        "step3": "Pembayaran",
+        "step4": "Konfirmasi",
+        "reviewCart": "Periksa Keranjang Anda",
+        "enterAddress": "Masukkan Alamat Pengiriman",
+        "selectPayment": "Pilih Metode Pembayaran",
+        "confirmOrder": "Konfirmasi Pesanan Anda"
     },
     "home": {
         "heroTitle": "TroliToko",

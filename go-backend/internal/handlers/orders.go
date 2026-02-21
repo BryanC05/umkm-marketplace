@@ -211,35 +211,91 @@ func (h *OrderHandler) GetMyOrders(c *gin.Context) {
 	}
 
 	ordersCollection := database.GetDB().Collection("orders")
-	cursor, err := ordersCollection.Find(context.Background(), bson.M{
-		"$or": []bson.M{
-			{"buyer": userObjID},
-			{"seller": userObjID},
+	productsCollection := database.GetDB().Collection("products")
+
+	pipeline := []bson.M{
+		{
+			"$match": bson.M{
+				"$or": []bson.M{
+					{"buyer": userObjID},
+					{"seller": userObjID},
+				},
+			},
 		},
-	})
+		{
+			"$sort": bson.M{"createdAt": -1},
+		},
+		{
+			"$lookup": bson.M{
+				"from":         "users",
+				"localField":   "seller",
+				"foreignField": "_id",
+				"as":           "sellerInfo",
+			},
+		},
+		{
+			"$lookup": bson.M{
+				"from":         "users",
+				"localField":   "buyer",
+				"foreignField": "_id",
+				"as":           "buyerInfo",
+			},
+		},
+		{
+			"$addFields": bson.M{
+				"seller": bson.M{"$arrayElemAt": []interface{}{"$sellerInfo", 0}},
+				"buyer":  bson.M{"$arrayElemAt": []interface{}{"$buyerInfo", 0}},
+			},
+		},
+		{
+			"$project": bson.M{
+				"sellerInfo":      0,
+				"buyerInfo":       0,
+				"seller.password": 0,
+				"buyer.password":  0,
+			},
+		},
+	}
+
+	cursor, err := ordersCollection.Aggregate(context.Background(), pipeline)
 	if err != nil {
 		c.JSON(500, gin.H{"message": err.Error()})
 		return
 	}
 	defer cursor.Close(context.Background())
 
-	orders := make([]models.Order, 0)
+	var orders []bson.M
 	if err := cursor.All(context.Background(), &orders); err != nil {
 		c.JSON(500, gin.H{"message": err.Error()})
 		return
 	}
 
-	filteredOrders := make([]models.Order, 0)
-	userIDStr := userID
-	for _, order := range orders {
-		buyerStr := order.Buyer.Hex()
-		sellerStr := order.Seller.Hex()
-		if buyerStr == userIDStr || sellerStr == userIDStr {
-			filteredOrders = append(filteredOrders, order)
+	// Populate product info for each order
+	for i, order := range orders {
+		if products, ok := order["products"].(primitive.A); ok {
+			populatedProducts := make([]bson.M, 0)
+			for _, p := range products {
+				if productMap, ok := p.(primitive.M); ok {
+					if productID, ok := productMap["product"].(primitive.ObjectID); ok {
+						var product models.Product
+						productsCollection.FindOne(context.Background(), bson.M{"_id": productID}).Decode(&product)
+						productMap["product"] = bson.M{
+							"_id":      product.ID,
+							"name":     product.Name,
+							"images":   product.Images,
+							"price":    product.Price,
+							"category": product.Category,
+							"seller":   product.Seller,
+						}
+					}
+					populatedProducts = append(populatedProducts, productMap)
+				}
+			}
+			orders[i]["products"] = populatedProducts
 		}
 	}
 
-	c.JSON(200, filteredOrders)
+	c.JSON(200, orders)
 }
 
 func (h *OrderHandler) GetOrderByID(c *gin.Context) {
