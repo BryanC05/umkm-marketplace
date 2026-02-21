@@ -225,21 +225,34 @@
   border-left: 3px solid #f56565;
 }
 
+/* Order Card - Make entire card clickable */
+.order-card {
+  cursor: pointer;
+  transition: box-shadow 0.2s, border-color 0.2s, background 0.15s;
+}
+
+.order-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  background: var(--color-secondary, #f9f9f9);
+}
+
+.order-card.expanded {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
 /* Order Header (always visible) */
 .order-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.25rem;
-  cursor: pointer;
   user-select: none;
-  transition: background 0.15s;
   width: 100%;
   box-sizing: border-box;
 }
 
 .order-header:hover {
-  background: var(--color-secondary, #f9f9f9);
+  background: transparent;
 }
 
 .order-header-left {
@@ -299,17 +312,27 @@
 }
 
 .expand-toggle {
-  background: none;
+  background: var(--color-secondary, #f0f0f0);
   border: none;
-  color: var(--color-muted-foreground, #ccc);
+  color: var(--color-muted-foreground, #666);
   cursor: pointer;
-  padding: 0.25rem;
+  padding: 0.5rem;
   display: flex;
-  transition: color 0.15s;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  border-radius: 8px;
+  min-width: 36px;
+  min-height: 36px;
 }
 
 .expand-toggle:hover {
   color: var(--color-foreground, #333);
+  background: var(--color-muted, #e0e0e0);
+}
+
+.expand-toggle:active {
+  transform: scale(0.95);
 }
 
 /* Order Body - Expandable */

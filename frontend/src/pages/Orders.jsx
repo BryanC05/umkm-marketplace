@@ -13,6 +13,7 @@ import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { resolveImageUrl } from '@/utils/imageUrl';
+import DriverTracker from '@/components/DriverTracker';
 import './Orders.css';
 
 const statusConfig = {
@@ -201,9 +202,13 @@ function Orders() {
               const PaymentIcon = payment.icon;
 
               return (
-                <div key={orderId} className={`order-card ${order.status}`}>
+                <div 
+                  key={orderId} 
+                  className={`order-card ${order.status} ${isExpanded ? 'expanded' : ''}`}
+                  onClick={() => toggleExpand(orderId)}
+                >
                   {/* Order Header */}
-                  <div className="order-header" onClick={() => toggleExpand(orderId)}>
+                  <div className="order-header">
                     <div className="order-header-left">
                       <div className="order-id-section">
                         <span className="order-label">{t('orders.order')}</span>
@@ -222,7 +227,13 @@ function Orders() {
                       <div className="order-total-compact">
                         {formatCurrency(order.totalAmount)}
                       </div>
-                      <button className="expand-toggle">
+                      <button 
+                        className="expand-toggle"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleExpand(orderId);
+                        }}
+                      >
                         {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                       </button>
                     </div>
@@ -341,6 +352,23 @@ function Orders() {
                             <div className="meta-row">
                               <span className="meta-label">{t('orders.notes')}</span>
                               <span className="meta-value note-text">{order.notes}</span>
+                            </div>
+                          )}
+
+                          {/* Driver Tracking - Only for delivery orders in progress */}
+                          {order.deliveryType === 'delivery' && 
+                           order.status !== 'delivered' && 
+                           order.status !== 'cancelled' && 
+                           order.status !== 'pending' && (
+                            <div style={{ marginTop: '1rem', marginBottom: '1rem' }}>
+                              <DriverTracker 
+                                orderId={orderId}
+                                deliveryAddress={order.deliveryAddress}
+                                driverInfo={{
+                                  driverName: order.driverName,
+                                  driverPhone: order.driverPhone
+                                }}
+                              />
                             </div>
                           )}
                         </div>

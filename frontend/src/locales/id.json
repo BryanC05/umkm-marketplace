@@ -75,7 +75,16 @@
         "scheduleDesc": "Penjual akan menyiapkan pesanan Anda pada waktu ini",
         "enterAddress": "Alamat Pengiriman",
         "selectPayment": "Pilih Metode Pembayaran",
-        "confirmOrder": "Konfirmasi Pesanan Anda"
+        "confirmOrder": "Konfirmasi Pesanan Anda",
+        "selectLocation": "Pilih Lokasi Pengiriman",
+        "selectLocationDesc": "Klik pada peta untuk memilih alamat pengiriman. Lokasi harus dalam radius 5km dari toko.",
+        "driverTracking": "Lacak Driver Langsung",
+        "driverNotStarted": "Driver belum memulai pengiriman",
+        "driverAssigned": "Driver Ditugaskan",
+        "lastUpdated": "Terakhir diperbarui",
+        "deliveryAddress": "Alamat Pengiriman",
+        "distanceError": "Lokasi di luar jangkauan pengiriman",
+        "maxDistance": "Maksimal 5km dari toko"
     },
     "home": {
         "heroTitle": "TroliToko",

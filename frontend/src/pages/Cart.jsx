@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Trash2, ArrowRight, ArrowLeft, ShoppingBag, MapPin, Plus, Minus, CreditCard, Check, Store, ChevronDown, ChevronUp, Truck, Clock } from 'lucide-react';
+import { Trash2, ArrowRight, ArrowLeft, ShoppingBag, MapPin, Plus, Minus, CreditCard, Check, Store, ChevronDown, ChevronUp, Truck, Clock, Navigation } from 'lucide-react';
 import { useCartStore, useAuthStore } from '../store/authStore';
 import { useTranslation } from '../hooks/useTranslation';
 import api from '../utils/api';
@@ -11,9 +11,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PLACEHOLDER_IMAGE } from '@/utils/constants';
 import { resolveImageUrl } from '@/utils/imageUrl';
 import ProgressSteps from '@/components/ui/ProgressSteps';
+import DeliveryMapPicker from '@/components/DeliveryMapPicker';
 
 function Cart() {
     const navigate = useNavigate();
@@ -29,16 +31,33 @@ function Cart() {
         city: user?.location?.city || '',
         state: user?.location?.state || '',
         pincode: user?.location?.pincode || '',
+        coordinates: user?.location?.coordinates || [0, 0],
     });
     const [notes, setNotes] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('cash');
     const [deliveryType, setDeliveryType] = useState('delivery');
     const [preorderTime, setPreorderTime] = useState('');
     const [loading, setLoading] = useState(false);
+    const [deliveryLocation, setDeliveryLocation] = useState(null);
+    const [distanceError, setDistanceError] = useState(null);
 
     const subtotal = checkoutSeller ? getSellerTotal(checkoutSeller.sellerId) : 0;
     const deliveryFee = deliveryType === 'delivery' ? 15000 : 0;
     const total = subtotal + deliveryFee;
+
+    // Get seller location from first product
+    const getSellerLocation = () => {
+        if (!checkoutSeller || !checkoutSeller.items.length) return null;
+        const firstItem = checkoutSeller.items[0];
+        const seller = firstItem.product.seller;
+        if (seller?.location?.coordinates && seller.location.coordinates.length >= 2) {
+            return {
+                lat: seller.location.coordinates[1],
+                lng: seller.location.coordinates[0]
+            };
+        }
+        return null;
+    };
 
     const steps = [
         { label: t('checkout.step1') },
@@ -69,15 +88,48 @@ function Cart() {
     const startCheckout = (sellerGroup) => {
         setCheckoutSeller(sellerGroup);
         setCurrentStep(1);
+        setDistanceError(null);
     };
 
     const cancelCheckout = () => {
         setCheckoutSeller(null);
         setCurrentStep(1);
+        setDeliveryLocation(null);
+        setDistanceError(null);
     };
 
-    const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, 4));
-    const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
+    const handleDeliveryTypeChange = (typeId) => {
+        setDeliveryType(typeId);
+        setDistanceError(null);
+        if (typeId === 'pickup') {
+            setDeliveryLocation(null);
+        }
+    };
+
+    const handleLocationSelect = (location) => {
+        setDeliveryLocation(location);
+        setAddress({
+            ...address,
+            address: location.address,
+            coordinates: [location.lng, location.lat]
+        });
+        setDistanceError(null);
+    };
+
+    const nextStep = () => {
+        // Validate delivery location before proceeding
+        if (currentStep === 2 && deliveryType === 'delivery' && !deliveryLocation) {
+            setDistanceError('Please select a delivery location on the map');
+            return;
+        }
+        setDistanceError(null);
+        setCurrentStep(prev => Math.min(prev + 1, 4));
+    };
+
+    const prevStep = () => {
+        setDistanceError(null);
+        setCurrentStep(prev => Math.max(prev - 1, 1));
+    };
 
     const handleCheckout = async (e) => {
         e.preventDefault();
@@ -87,7 +139,15 @@ function Cart() {
             return;
         }
 
+        // Validate delivery location
+        if (deliveryType === 'delivery' && !deliveryLocation) {
+            setDistanceError('Please select a delivery location on the map');
+            return;
+        }
+
         setLoading(true);
+        setDistanceError(null);
+
         try {
             const orderData = {
                 products: checkoutSeller.items.map(item => ({
@@ -99,7 +159,13 @@ function Cart() {
                         chosen: o.chosen
                     }))
                 })),
-                deliveryAddress: address,
+                deliveryAddress: {
+                    address: address.address,
+                    city: address.city,
+                    state: address.state,
+                    pincode: address.pincode,
+                    coordinates: address.coordinates,
+                },
                 notes,
                 paymentMethod,
                 deliveryType,
@@ -111,9 +177,14 @@ function Cart() {
             clearSellerCart(checkoutSeller.sellerId);
             alert('Order placed successfully!');
             setCheckoutSeller(null);
+            setDeliveryLocation(null);
             navigate('/orders');
         } catch (error) {
-            alert(error.response?.data?.message || 'Failed to place order');
+            const errorMsg = error.response?.data?.message || error.response?.data?.error || 'Failed to place order';
+            setDistanceError(errorMsg);
+            if (error.response?.data?.distance) {
+                setDistanceError(`Location is ${error.response.data.distance.toFixed(2)}km away. Maximum allowed is 5km.`);
+            }
         } finally {
             setLoading(false);
         }
@@ -208,7 +279,7 @@ function Cart() {
                                 {deliveryTypes.map((type) => (
                                     <div
                                         key={type.id}
-                                        onClick={() => setDeliveryType(type.id)}
+                                        onClick={() => handleDeliveryTypeChange(type.id)}
                                         className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
                                             deliveryType === type.id
                                                 ? 'border-primary bg-primary/5'
@@ -230,6 +301,13 @@ function Cart() {
                             </div>
                         </div>
 
+                        {distanceError && (
+                            <Alert variant="destructive">
+                                <Navigation className="h-4 w-4" />
+                                <AlertDescription>{distanceError}</AlertDescription>
+                            </Alert>
+                        )}
+
                         {deliveryType === 'pickup' && (
                             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                                 <div className="flex items-start gap-3">
@@ -245,6 +323,29 @@ function Cart() {
                         )}
 
                         <Separator />
+
+                        {deliveryType === 'delivery' && (
+                            <div className="space-y-4">
+                                <div>
+                                    <Label className="text-base font-semibold flex items-center gap-2 mb-3">
+                                        <MapPin className="h-5 w-5" />
+                                        Select Delivery Location
+                                    </Label>
+                                    <p className="text-sm text-muted-foreground mb-4">
+                                        Click on the map to select your delivery address. The location must be within 5km of the store.
+                                    </p>
+                                    
+                                    <DeliveryMapPicker
+                                        sellerLocation={getSellerLocation()}
+                                        onLocationSelect={handleLocationSelect}
+                                        maxDistance={5}
+                                        initialLocation={deliveryLocation}
+                                    />
+                                </div>
+
+                                <Separator />
+                            </div>
+                        )}
 
                         <div className="space-y-4">
                             <div>
@@ -276,47 +377,6 @@ function Cart() {
                                 />
                             </div>
                         </div>
-
-                        {deliveryType === 'delivery' && (
-                            <>
-                                <Separator />
-                                <h3 className="text-lg font-semibold">Delivery Address</h3>
-                                <div className="space-y-4">
-                                    <div>
-                                        <Label className="text-base mb-2 block">{t('cart.streetAddress')}</Label>
-                                        <Input
-                                            placeholder="Enter your street address"
-                                            value={address.address}
-                                            onChange={(e) => setAddress({ ...address, address: e.target.value })}
-                                            className="h-12 text-base"
-                                            required
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <Label className="text-base mb-2 block">{t('cart.city')}</Label>
-                                            <Input
-                                                placeholder="City"
-                                                value={address.city}
-                                                onChange={(e) => setAddress({ ...address, city: e.target.value })}
-                                                className="h-12 text-base"
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label className="text-base mb-2 block">{t('cart.postalCode')}</Label>
-                                            <Input
-                                                placeholder="Postal Code"
-                                                value={address.pincode}
-                                                onChange={(e) => setAddress({ ...address, pincode: e.target.value })}
-                                                className="h-12 text-base"
-                                                required
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </>
-                        )}
                     </div>
                 );
 
@@ -392,13 +452,15 @@ function Cart() {
                                     </>
                                 )}
 
-                                {deliveryType === 'delivery' && (
+                                {deliveryType === 'delivery' && deliveryLocation && (
                                     <>
                                         <Separator />
                                         <div>
                                             <p className="text-sm text-muted-foreground mb-1">Delivery Address</p>
-                                            <p className="font-medium">{address.address}</p>
-                                            <p className="text-muted-foreground">{address.city}, {address.pincode}</p>
+                                            <p className="font-medium">{deliveryLocation.address}</p>
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                Coordinates: {deliveryLocation.lat.toFixed(4)}, {deliveryLocation.lng.toFixed(4)}
+                                            </p>
                                         </div>
                                     </>
                                 )}

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"math"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -15,6 +16,23 @@ type OrderHandler struct{}
 
 func NewOrderHandler() *OrderHandler {
 	return &OrderHandler{}
+}
+
+// calculateDistance calculates distance between two coordinates in kilometers using Haversine formula
+func calculateDistance(lat1, lng1, lat2, lng2 float64) float64 {
+	const R = 6371 // Earth radius in kilometers
+
+	lat1Rad := lat1 * math.Pi / 180
+	lat2Rad := lat2 * math.Pi / 180
+	deltaLat := (lat2 - lat1) * math.Pi / 180
+	deltaLng := (lng2 - lng1) * math.Pi / 180
+
+	a := math.Sin(deltaLat/2)*math.Sin(deltaLat/2) +
+		math.Cos(lat1Rad)*math.Cos(lat2Rad)*
+			math.Sin(deltaLng/2)*math.Sin(deltaLng/2)
+	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
+
+	return R * c
 }
 
 func (h *OrderHandler) CreateOrder(c *gin.Context) {
@@ -182,6 +200,39 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 	coords := req.DeliveryAddress.Coordinates
 	if coords == nil {
 		coords = []float64{0, 0}
+	}
+
+	// Validate 5km radius for delivery orders
+	if req.DeliveryType == "delivery" {
+		// Get seller location
+		usersCollection := database.GetDB().Collection("users")
+		var seller models.User
+		err := usersCollection.FindOne(context.Background(), bson.M{"_id": sellerID}).Decode(&seller)
+		if err != nil {
+			c.JSON(500, gin.H{"message": "Failed to fetch seller information"})
+			return
+		}
+
+		// Check if seller has location
+		if seller.Location.Coordinates != nil && len(seller.Location.Coordinates) >= 2 {
+			sellerLng := seller.Location.Coordinates[0]
+			sellerLat := seller.Location.Coordinates[1]
+			deliveryLng := coords[0]
+			deliveryLat := coords[1]
+
+			// Skip validation if coordinates are 0,0 (default/not set)
+			if deliveryLat != 0 || deliveryLng != 0 {
+				distance := calculateDistance(sellerLat, sellerLng, deliveryLat, deliveryLng)
+				if distance > 5 {
+					c.JSON(400, gin.H{
+						"message":  "Delivery location is too far",
+						"error":    "Distance exceeds 5km limit",
+						"distance": distance,
+					})
+					return
+				}
+			}
+		}
 	}
 
 	order := models.Order{
@@ -676,4 +727,165 @@ func (h *OrderHandler) GetProductTracking(c *gin.Context) {
 	}
 
 	c.JSON(200, trackingData)
+}
+
+// UpdateDriverLocation updates the driver's current location for an order
+func (h *OrderHandler) UpdateDriverLocation(c *gin.Context) {
+	userID := c.GetString("userID")
+	orderID := c.Param("id")
+
+	var req struct {
+		Latitude  float64 `json:"latitude" binding:"required"`
+		Longitude float64 `json:"longitude" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"message": err.Error()})
+		return
+	}
+
+	orderObjID, err := primitive.ObjectIDFromHex(orderID)
+	if err != nil {
+		c.JSON(400, gin.H{"message": "Invalid order ID"})
+		return
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		c.JSON(400, gin.H{"message": "Invalid user ID"})
+		return
+	}
+
+	ordersCollection := database.GetDB().Collection("orders")
+	var order models.Order
+	err = ordersCollection.FindOne(context.Background(), bson.M{
+		"_id":    orderObjID,
+		"seller": userObjID,
+	}).Decode(&order)
+	if err != nil {
+		c.JSON(404, gin.H{"message": "Order not found or unauthorized"})
+		return
+	}
+
+	// Update driver location
+	driverLocation := &models.DriverLocation{
+		Latitude:  req.Latitude,
+		Longitude: req.Longitude,
+		Timestamp: time.Now(),
+	}
+
+	_, err = ordersCollection.UpdateOne(
+		context.Background(),
+		bson.M{"_id": orderObjID},
+		bson.M{
+			"$set": bson.M{
+				"driverLocation": driverLocation,
+				"updatedAt":      time.Now(),
+			},
+		},
+	)
+	if err != nil {
+		c.JSON(500, gin.H{"message": "Failed to update driver location"})
+		return
+	}
+
+	c.JSON(200, driverLocation)
+}
+
+// GetDriverLocation gets the driver's current location for an order (buyer only)
+func (h *OrderHandler) GetDriverLocation(c *gin.Context) {
+	userID := c.GetString("userID")
+	orderID := c.Param("id")
+
+	orderObjID, err := primitive.ObjectIDFromHex(orderID)
+	if err != nil {
+		c.JSON(400, gin.H{"message": "Invalid order ID"})
+		return
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		c.JSON(400, gin.H{"message": "Invalid user ID"})
+		return
+	}
+
+	ordersCollection := database.GetDB().Collection("orders")
+	var order models.Order
+	err = ordersCollection.FindOne(context.Background(), bson.M{
+		"_id":   orderObjID,
+		"buyer": userObjID,
+	}).Decode(&order)
+	if err != nil {
+		c.JSON(404, gin.H{"message": "Order not found or unauthorized"})
+		return
+	}
+
+	if order.DriverLocation == nil {
+		c.JSON(404, gin.H{"message": "Driver location not available"})
+		return
+	}
+
+	c.JSON(200, order.DriverLocation)
+}
+
+// AssignDriver assigns a driver to an order
+func (h *OrderHandler) AssignDriver(c *gin.Context) {
+	userID := c.GetString("userID")
+	orderID := c.Param("id")
+
+	var req struct {
+		DriverName  string `json:"driverName" binding:"required"`
+		DriverPhone string `json:"driverPhone" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"message": err.Error()})
+		return
+	}
+
+	orderObjID, err := primitive.ObjectIDFromHex(orderID)
+	if err != nil {
+		c.JSON(400, gin.H{"message": "Invalid order ID"})
+		return
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		c.JSON(400, gin.H{"message": "Invalid user ID"})
+		return
+	}
+
+	ordersCollection := database.GetDB().Collection("orders")
+	var order models.Order
+	err = ordersCollection.FindOne(context.Background(), bson.M{
+		"_id":    orderObjID,
+		"seller": userObjID,
+	}).Decode(&order)
+	if err != nil {
+		c.JSON(404, gin.H{"message": "Order not found or unauthorized"})
+		return
+	}
+
+	// Assign driver
+	_, err = ordersCollection.UpdateOne(
+		context.Background(),
+		bson.M{"_id": orderObjID},
+		bson.M{
+			"$set": bson.M{
+				"driverName":  req.DriverName,
+				"driverPhone": req.DriverPhone,
+				"updatedAt":   time.Now(),
+			},
+		},
+	)
+	if err != nil {
+		c.JSON(500, gin.H{"message": "Failed to assign driver"})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"message":     "Driver assigned successfully",
+		"driverName":  req.DriverName,
+		"driverPhone": req.DriverPhone,
+	})
 }

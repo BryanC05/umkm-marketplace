@@ -112,6 +112,11 @@ func main() {
 			orders.GET("/:id/chat-room", orderHandler.GetOrderChatRoom)
 			orders.GET("/seller/product-tracking", orderHandler.GetProductTracking)
 
+			// Driver tracking routes
+			orders.POST("/:id/driver/location", orderHandler.UpdateDriverLocation)
+			orders.GET("/:id/driver/location", orderHandler.GetDriverLocation)
+			orders.POST("/:id/driver/assign", orderHandler.AssignDriver)
+
 			orders.POST("/", orderHandler.CreateOrder)
 		}
 

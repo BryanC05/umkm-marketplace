@@ -27,6 +27,7 @@ export default function OrdersScreen() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [expandedOrders, setExpandedOrders] = useState({});
 
     const fetchOrders = useCallback(async () => {
         try {
@@ -47,6 +48,10 @@ export default function OrdersScreen() {
         setRefreshing(false);
     };
 
+    const toggleExpand = (orderId) => {
+        setExpandedOrders(prev => ({ ...prev, [orderId]: !prev[orderId] }));
+    };
+
     if (loading) return <LoadingSpinner />;
 
     const styles = {
@@ -58,12 +63,21 @@ export default function OrdersScreen() {
             shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
         },
         orderHeader: {
-            flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12,
-            borderBottomWidth: 1, borderColor: colors.border, paddingBottom: 10,
+            flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+            paddingBottom: 10,
         },
-        orderDate: { fontSize: 12, color: colors.textSecondary },
+        orderHeaderLeft: { flex: 1 },
+        orderId: { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
+        orderDate: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
+        orderHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
         statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
         statusText: { fontSize: 11, fontWeight: '700' },
+        totalCompact: { fontSize: 14, fontWeight: '700', color: colors.text },
+        expandIcon: { padding: 4 },
+        // Expanded content
+        expandedContent: {
+            borderTopWidth: 1, borderColor: colors.border, paddingTop: 12,
+        },
         // Delivery info styles
         deliveryInfo: {
             flexDirection: 'row', alignItems: 'center', backgroundColor: colors.input, 
@@ -108,84 +122,104 @@ export default function OrdersScreen() {
     const renderOrder = ({ item: order }) => {
         const statusInfo = STATUS_COLORS[order.status] || STATUS_COLORS.pending;
         const isPickup = order.deliveryType === 'pickup';
+        const isExpanded = !!expandedOrders[order._id];
+        const orderIdShort = order._id.slice(-8).toUpperCase();
         
         return (
             <View style={styles.orderCard}>
-                {/* Header */}
-                <View style={styles.orderHeader}>
-                    <Text style={styles.orderDate}>{formatDate(order.createdAt)}</Text>
-                    <View style={[styles.statusBadge, { backgroundColor: statusInfo.bg }]}>
-                        <Text style={[styles.statusText, { color: statusInfo.text }]}>{statusInfo.label}</Text>
+                {/* Header - Clickable */}
+                <TouchableOpacity style={styles.orderHeader} onPress={() => toggleExpand(order._id)}>
+                    <View style={styles.orderHeaderLeft}>
+                        <Text style={styles.orderId}>#{orderIdShort}</Text>
+                        <Text style={styles.orderDate}>{formatDate(order.createdAt)}</Text>
                     </View>
-                </View>
-
-                {/* Seller Info */}
-                {order.seller && (
-                    <View style={styles.sellerInfo}>
-                        <Ionicons name="storefront-outline" size={16} color={colors.primary} style={styles.sellerIcon} />
-                        <Text style={styles.sellerName}>{order.seller.businessName || order.seller.name}</Text>
-                    </View>
-                )}
-
-                {/* Delivery/Pickup Info */}
-                {isPickup ? (
-                    <View style={styles.pickupInfo}>
-                        <Ionicons name="storefront" size={18} color={colors.primary} style={styles.deliveryIcon} />
-                        <Text style={styles.deliveryText}>🏪 Pickup at Store</Text>
-                        {order.preorderTime && (
-                            <Text style={styles.deliveryTime}>{order.preorderTime}</Text>
-                        )}
-                    </View>
-                ) : (
-                    <View style={styles.deliveryInfo}>
-                        <Ionicons name="car" size={18} color={colors.textSecondary} style={styles.deliveryIcon} />
-                        <Text style={styles.deliveryText}>🚗 Delivery</Text>
-                        {order.preorderTime && (
-                            <Text style={styles.deliveryTime}>{order.preorderTime}</Text>
-                        )}
-                    </View>
-                )}
-
-                {/* Notes */}
-                {order.notes && (
-                    <View style={styles.notesBox}>
-                        <Text style={styles.notesLabel}>Note:</Text>
-                        <Text style={styles.notesText}>{order.notes}</Text>
-                    </View>
-                )}
-
-                {/* Products */}
-                {order.products?.map((item, idx) => {
-                    const img = item.product?.images?.[0] ? getImageUrl(item.product.images[0]) : PLACEHOLDER_IMAGE;
-                    return (
-                        <View key={idx} style={styles.orderItem}>
-                            <Image source={{ uri: img }} style={styles.orderImage} />
-                            <View style={styles.orderItemInfo}>
-                                <Text style={styles.orderItemName} numberOfLines={1}>{item.product?.name || 'Product'}</Text>
-                                {item.variantName ? (
-                                    <Text style={{ fontSize: 11, color: colors.primary, fontWeight: '600' }}>{item.variantName}</Text>
-                                ) : null}
-                                {item.selectedOptions?.length > 0 ? (
-                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 3, marginTop: 1 }}>
-                                        {item.selectedOptions.map((opt, oi) => (
-                                            <Text key={oi} style={{ fontSize: 9, backgroundColor: colors.input || colors.border, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 3, color: colors.textSecondary }}>
-                                                {opt.groupName}: {opt.chosen?.join(', ')}
-                                            </Text>
-                                        ))}
-                                    </View>
-                                ) : null}
-                                <Text style={styles.orderItemQty}>Qty: {item.quantity}</Text>
-                            </View>
-                            <Text style={styles.orderItemPrice}>{formatPrice(item.price * item.quantity)}</Text>
+                    <View style={styles.orderHeaderRight}>
+                        <View style={[styles.statusBadge, { backgroundColor: statusInfo.bg }]}>
+                            <Text style={[styles.statusText, { color: statusInfo.text }]}>{statusInfo.label}</Text>
                         </View>
-                    );
-                })}
+                        <Text style={styles.totalCompact}>{formatPrice(order.totalAmount)}</Text>
+                        <View style={styles.expandIcon}>
+                            <Ionicons 
+                                name={isExpanded ? "chevron-up" : "chevron-down"} 
+                                size={20} 
+                                color={colors.text} 
+                            />
+                        </View>
+                    </View>
+                </TouchableOpacity>
 
-                {/* Footer */}
-                <View style={styles.orderFooter}>
-                    <Text style={styles.totalLabel}>{t.total}</Text>
-                    <Text style={styles.totalValue}>{formatPrice(order.totalAmount)}</Text>
-                </View>
+                {/* Expanded Content */}
+                {isExpanded && (
+                    <View style={styles.expandedContent}>
+                        {/* Seller Info */}
+                        {order.seller && (
+                            <View style={styles.sellerInfo}>
+                                <Ionicons name="storefront-outline" size={16} color={colors.primary} style={styles.sellerIcon} />
+                                <Text style={styles.sellerName}>{order.seller.businessName || order.seller.name}</Text>
+                            </View>
+                        )}
+
+                        {/* Delivery/Pickup Info */}
+                        {isPickup ? (
+                            <View style={styles.pickupInfo}>
+                                <Ionicons name="storefront" size={18} color={colors.primary} style={styles.deliveryIcon} />
+                                <Text style={styles.deliveryText}>🏪 Pickup at Store</Text>
+                                {order.preorderTime && (
+                                    <Text style={styles.deliveryTime}>{order.preorderTime}</Text>
+                                )}
+                            </View>
+                        ) : (
+                            <View style={styles.deliveryInfo}>
+                                <Ionicons name="car" size={18} color={colors.textSecondary} style={styles.deliveryIcon} />
+                                <Text style={styles.deliveryText}>🚗 Delivery</Text>
+                                {order.preorderTime && (
+                                    <Text style={styles.deliveryTime}>{order.preorderTime}</Text>
+                                )}
+                            </View>
+                        )}
+
+                        {/* Notes */}
+                        {order.notes && (
+                            <View style={styles.notesBox}>
+                                <Text style={styles.notesLabel}>Note:</Text>
+                                <Text style={styles.notesText}>{order.notes}</Text>
+                            </View>
+                        )}
+
+                        {/* Products */}
+                        {order.products?.map((item, idx) => {
+                            const img = item.product?.images?.[0] ? getImageUrl(item.product.images[0]) : PLACEHOLDER_IMAGE;
+                            return (
+                                <View key={idx} style={styles.orderItem}>
+                                    <Image source={{ uri: img }} style={styles.orderImage} />
+                                    <View style={styles.orderItemInfo}>
+                                        <Text style={styles.orderItemName} numberOfLines={1}>{item.product?.name || 'Product'}</Text>
+                                        {item.variantName ? (
+                                            <Text style={{ fontSize: 11, color: colors.primary, fontWeight: '600' }}>{item.variantName}</Text>
+                                        ) : null}
+                                        {item.selectedOptions?.length > 0 ? (
+                                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 3, marginTop: 1 }}>
+                                                {item.selectedOptions.map((opt, oi) => (
+                                                    <Text key={oi} style={{ fontSize: 9, backgroundColor: colors.input || colors.border, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 3, color: colors.textSecondary }}>
+                                                        {opt.groupName}: {opt.chosen?.join(', ')}
+                                                    </Text>
+                                                ))}
+                                            </View>
+                                        ) : null}
+                                        <Text style={styles.orderItemQty}>Qty: {item.quantity}</Text>
+                                    </View>
+                                    <Text style={styles.orderItemPrice}>{formatPrice(item.price * item.quantity)}</Text>
+                                </View>
+                            );
+                        })}
+
+                        {/* Footer */}
+                        <View style={styles.orderFooter}>
+                            <Text style={styles.totalLabel}>{t.total}</Text>
+                            <Text style={styles.totalValue}>{formatPrice(order.totalAmount)}</Text>
+                        </View>
+                    </View>
+                )}
             </View>
         );
     };
