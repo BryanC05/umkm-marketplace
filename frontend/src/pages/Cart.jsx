@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Trash2, ArrowRight, ArrowLeft, ShoppingBag, MapPin, Plus, Minus, CreditCard, Check, Store, ChevronDown, ChevronUp } from 'lucide-react';
+import { Trash2, ArrowRight, ArrowLeft, ShoppingBag, MapPin, Plus, Minus, CreditCard, Check, Store, ChevronDown, ChevronUp, Truck, Clock } from 'lucide-react';
 import { useCartStore, useAuthStore } from '../store/authStore';
 import { useTranslation } from '../hooks/useTranslation';
 import api from '../utils/api';
@@ -32,10 +32,13 @@ function Cart() {
     });
     const [notes, setNotes] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('cash');
+    const [deliveryType, setDeliveryType] = useState('delivery');
+    const [isPreorder, setIsPreorder] = useState(false);
+    const [preorderTime, setPreorderTime] = useState('');
     const [loading, setLoading] = useState(false);
 
     const subtotal = checkoutSeller ? getSellerTotal(checkoutSeller.sellerId) : 0;
-    const deliveryFee = 15000;
+    const deliveryFee = deliveryType === 'delivery' ? 15000 : 0;
     const total = subtotal + deliveryFee;
 
     const steps = [
@@ -50,6 +53,11 @@ function Cart() {
         { id: 'qris', label: 'QRIS', icon: '📱', desc: 'Scan QR code to pay' },
         { id: 'ewallet', label: 'E-Wallet', icon: '💳', desc: 'GoPay, OVO, Dana' },
         { id: 'bank_transfer', label: 'Bank Transfer', icon: '🏦', desc: 'Transfer to bank account' },
+    ];
+
+    const deliveryTypes = [
+        { id: 'delivery', label: 'Delivery', icon: '🚗', desc: 'Delivered by driver to your address' },
+        { id: 'pickup', label: 'Pickup', icon: '🏪', desc: 'Pick up at store yourself' },
     ];
 
     const toggleSeller = (sellerId) => {
@@ -94,7 +102,10 @@ function Cart() {
                 })),
                 deliveryAddress: address,
                 notes,
-                paymentMethod
+                paymentMethod,
+                deliveryType,
+                isPreorder: isPreorder || false,
+                preorderTime: preorderTime ? new Date(preorderTime).toISOString() : null
             };
 
             await api.post('/orders', orderData);
@@ -188,43 +199,137 @@ function Cart() {
                 return (
                     <div className="space-y-6">
                         <h2 className="text-xl font-semibold flex items-center gap-2">
-                            <MapPin className="h-6 w-6" />
-                            {t('checkout.enterAddress')}
+                            <Truck className="h-6 w-6" />
+                            Delivery Options
                         </h2>
+
                         <div className="space-y-4">
-                            <div>
-                                <Label className="text-base mb-2 block">{t('cart.streetAddress')}</Label>
-                                <Input
-                                    placeholder="Enter your street address"
-                                    value={address.address}
-                                    onChange={(e) => setAddress({ ...address, address: e.target.value })}
-                                    className="h-12 text-base"
-                                    required
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <Label className="text-base mb-2 block">{t('cart.city')}</Label>
-                                    <Input
-                                        placeholder="City"
-                                        value={address.city}
-                                        onChange={(e) => setAddress({ ...address, city: e.target.value })}
-                                        className="h-12 text-base"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <Label className="text-base mb-2 block">{t('cart.postalCode')}</Label>
-                                    <Input
-                                        placeholder="Postal Code"
-                                        value={address.pincode}
-                                        onChange={(e) => setAddress({ ...address, pincode: e.target.value })}
-                                        className="h-12 text-base"
-                                        required
-                                    />
-                                </div>
+                            <Label className="text-base font-semibold">How do you want to receive your order?</Label>
+                            <div className="grid gap-3">
+                                {deliveryTypes.map((type) => (
+                                    <div
+                                        key={type.id}
+                                        onClick={() => setDeliveryType(type.id)}
+                                        className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                                            deliveryType === type.id
+                                                ? 'border-primary bg-primary/5'
+                                                : 'border-border hover:border-primary/50'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <span className="text-2xl">{type.icon}</span>
+                                            <div className="flex-1">
+                                                <p className="font-semibold text-base">{type.label}</p>
+                                                <p className="text-sm text-muted-foreground">{type.desc}</p>
+                                            </div>
+                                            {deliveryType === type.id && (
+                                                <Check className="h-6 w-6 text-primary" />
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
+
+                        {deliveryType === 'pickup' && (
+                            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                <div className="flex items-start gap-3">
+                                    <Store className="h-5 w-5 text-blue-600 mt-0.5" />
+                                    <div>
+                                        <p className="font-medium text-blue-900">Pickup at Store</p>
+                                        <p className="text-sm text-blue-700">
+                                            You will pick up your order at the seller's store. No delivery fee applied.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <Separator />
+
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-base font-semibold flex items-center gap-2">
+                                    <Clock className="h-5 w-5" />
+                                    Preorder / Schedule Pickup
+                                </Label>
+                                <div 
+                                    className={`px-3 py-1 rounded-full text-sm cursor-pointer transition-colors ${
+                                        isPreorder 
+                                            ? 'bg-primary text-primary-foreground' 
+                                            : 'bg-secondary text-secondary-foreground'
+                                    }`}
+                                    onClick={() => setIsPreorder(!isPreorder)}
+                                >
+                                    {isPreorder ? 'Enabled' : 'Enable'}
+                                </div>
+                            </div>
+
+                            {isPreorder && (
+                                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-4">
+                                    <p className="text-sm text-amber-800">
+                                        Schedule when you want to pick up or when your food should be ready. 
+                                        The seller will prepare your order in advance.
+                                    </p>
+                                    <div>
+                                        <Label className="text-base mb-2 block">
+                                            {deliveryType === 'pickup' ? 'Pickup Time' : 'Delivery Time'}
+                                        </Label>
+                                        <Input
+                                            type="datetime-local"
+                                            value={preorderTime}
+                                            onChange={(e) => setPreorderTime(e.target.value)}
+                                            className="h-12 text-base"
+                                            min={new Date().toISOString().slice(0, 16)}
+                                        />
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            Select date and time - seller will prepare your order by this time
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {deliveryType === 'delivery' && (
+                            <>
+                                <Separator />
+                                <h3 className="text-lg font-semibold">Delivery Address</h3>
+                                <div className="space-y-4">
+                                    <div>
+                                        <Label className="text-base mb-2 block">{t('cart.streetAddress')}</Label>
+                                        <Input
+                                            placeholder="Enter your street address"
+                                            value={address.address}
+                                            onChange={(e) => setAddress({ ...address, address: e.target.value })}
+                                            className="h-12 text-base"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <Label className="text-base mb-2 block">{t('cart.city')}</Label>
+                                            <Input
+                                                placeholder="City"
+                                                value={address.city}
+                                                onChange={(e) => setAddress({ ...address, city: e.target.value })}
+                                                className="h-12 text-base"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-base mb-2 block">{t('cart.postalCode')}</Label>
+                                            <Input
+                                                placeholder="Postal Code"
+                                                value={address.pincode}
+                                                onChange={(e) => setAddress({ ...address, pincode: e.target.value })}
+                                                className="h-12 text-base"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
                 );
 
@@ -272,6 +377,18 @@ function Cart() {
                 );
 
             case 4:
+                const formatPreorderTime = (datetimeStr) => {
+                    if (!datetimeStr) return null;
+                    const date = new Date(datetimeStr);
+                    return date.toLocaleString('id-ID', { 
+                        weekday: 'short', 
+                        day: 'numeric', 
+                        month: 'short', 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                };
+
                 return (
                     <div className="space-y-6">
                         <h2 className="text-xl font-semibold flex items-center gap-2">
@@ -286,10 +403,42 @@ function Cart() {
                                 </div>
                                 <Separator />
                                 <div>
-                                    <p className="text-sm text-muted-foreground mb-1">Delivery Address</p>
-                                    <p className="font-medium">{address.address}</p>
-                                    <p className="text-muted-foreground">{address.city}, {address.pincode}</p>
+                                    <p className="text-sm text-muted-foreground mb-1">Delivery Type</p>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xl">
+                                            {deliveryType === 'pickup' ? '🏪' : '🚗'}
+                                        </span>
+                                        <p className="font-medium">
+                                            {deliveryType === 'pickup' ? 'Pickup at Store' : 'Delivery by Driver'}
+                                        </p>
+                                    </div>
                                 </div>
+
+                                {isPreorder && preorderTime && (
+                                    <>
+                                        <Separator />
+                                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                                            <p className="text-sm text-amber-800 font-medium flex items-center gap-2">
+                                                <Clock className="h-4 w-4" />
+                                                Preorder - {formatPreorderTime(preorderTime)}
+                                            </p>
+                                            <p className="text-xs text-amber-700 mt-1">
+                                                Seller will prepare your order by this time
+                                            </p>
+                                        </div>
+                                    </>
+                                )}
+
+                                {deliveryType === 'delivery' && (
+                                    <>
+                                        <Separator />
+                                        <div>
+                                            <p className="text-sm text-muted-foreground mb-1">Delivery Address</p>
+                                            <p className="font-medium">{address.address}</p>
+                                            <p className="text-muted-foreground">{address.city}, {address.pincode}</p>
+                                        </div>
+                                    </>
+                                )}
                                 <Separator />
                                 <div>
                                     <p className="text-sm text-muted-foreground mb-1">Payment Method</p>
@@ -316,7 +465,9 @@ function Cart() {
                                         <span>Rp {subtotal.toLocaleString('id-ID')}</span>
                                     </div>
                                     <div className="flex justify-between text-base">
-                                        <span className="text-muted-foreground">{t('cart.deliveryFee')}</span>
+                                        <span className="text-muted-foreground">
+                                            {deliveryType === 'pickup' ? 'Pickup (Free)' : t('cart.deliveryFee')}
+                                        </span>
                                         <span>Rp {deliveryFee.toLocaleString('id-ID')}</span>
                                     </div>
                                     <Separator />

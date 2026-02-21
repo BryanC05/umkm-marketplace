@@ -38,7 +38,16 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 		DeliveryAddress models.DeliveryAddress `json:"deliveryAddress"`
 		Notes           string                 `json:"notes"`
 		PaymentMethod   string                 `json:"paymentMethod" binding:"required"`
-		PaymentDetails  struct {
+
+		// Delivery options
+		DeliveryType string `json:"deliveryType"` // "delivery" or "pickup"
+		PickupTime   string `json:"pickupTime"`   // ISO 8601 datetime for pickup
+
+		// Preorder for food
+		IsPreorder   bool   `json:"isPreorder"`
+		PreorderTime string `json:"preorderTime"` // ISO 8601 datetime when food should be ready
+
+		PaymentDetails struct {
 			EwalletProvider *string `json:"ewalletProvider"`
 			EwalletPhone    *string `json:"ewalletPhone"`
 			BankName        *string `json:"bankName"`
@@ -58,6 +67,32 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 	if !validMethods[req.PaymentMethod] {
 		c.JSON(400, gin.H{"message": "Invalid payment method"})
 		return
+	}
+
+	// Validate delivery type
+	validDeliveryTypes := map[string]bool{"delivery": true, "pickup": true}
+	if req.DeliveryType == "" {
+		req.DeliveryType = "delivery" // Default to delivery
+	}
+	if !validDeliveryTypes[req.DeliveryType] {
+		c.JSON(400, gin.H{"message": "Invalid delivery type. Must be 'delivery' or 'pickup'"})
+		return
+	}
+
+	// Parse pickup/preorder times
+	var pickupTime *time.Time
+	var preorderTime *time.Time
+
+	if req.PickupTime != "" {
+		if pt, err := time.Parse(time.RFC3339, req.PickupTime); err == nil {
+			pickupTime = &pt
+		}
+	}
+
+	if req.PreorderTime != "" {
+		if pt, err := time.Parse(time.RFC3339, req.PreorderTime); err == nil {
+			preorderTime = &pt
+		}
 	}
 
 	productsCollection := database.GetDB().Collection("products")
@@ -188,7 +223,11 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 			AccountNumber:   req.PaymentDetails.AccountNumber,
 			AccountHolder:   req.PaymentDetails.AccountHolder,
 		},
-		Notes: req.Notes,
+		Notes:        req.Notes,
+		DeliveryType: req.DeliveryType,
+		PickupTime:   pickupTime,
+		IsPreorder:   req.IsPreorder,
+		PreorderTime: preorderTime,
 	}
 
 	result, err := ordersCollection.InsertOne(context.Background(), order)

@@ -18,8 +18,17 @@ type Order struct {
 	PaymentMethod   string             `bson:"paymentMethod" json:"paymentMethod"`
 	PaymentDetails  PaymentDetails     `bson:"paymentDetails" json:"paymentDetails"`
 	Notes           string             `bson:"notes" json:"notes"`
-	CreatedAt       time.Time          `bson:"createdAt" json:"createdAt"`
-	UpdatedAt       time.Time          `bson:"updatedAt" json:"updatedAt"`
+
+	// Delivery options
+	DeliveryType string     `bson:"deliveryType" json:"deliveryType"` // "delivery" or "pickup"
+	PickupTime   *time.Time `bson:"pickupTime" json:"pickupTime"`     // For preorder/pickup
+
+	// Preorder for food
+	IsPreorder   bool       `bson:"isPreorder" json:"isPreorder"`
+	PreorderTime *time.Time `bson:"preorderTime" json:"preorderTime"` // When food should be ready
+
+	CreatedAt time.Time `bson:"createdAt" json:"createdAt"`
+	UpdatedAt time.Time `bson:"updatedAt" json:"updatedAt"`
 }
 
 type OrderProduct struct {
