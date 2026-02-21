@@ -84,7 +84,17 @@
         "lastUpdated": "Last updated",
         "deliveryAddress": "Delivery Address",
         "distanceError": "Location is outside delivery range",
-        "maxDistance": "Maximum 5km from store"
+        "maxDistance": "Maximum 5km from store",
+        "trackDelivery": "Track Delivery Live",
+        "orderTracking": "Order Tracking",
+        "trackOrder": "Track Order",
+        "deliveryProgress": "Delivery Progress",
+        "driverInformation": "Driver Information",
+        "driverActions": "Driver Actions",
+        "updateLocationNow": "Update Location Now",
+        "autoUpdating": "Auto-updating every 15 seconds",
+        "storeLocation": "Store Location",
+        "outForDelivery": "Out for Delivery"
   },
   "home": {
     "heroTitle": "TroliToko",

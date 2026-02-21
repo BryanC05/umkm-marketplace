@@ -25,6 +25,7 @@ import Forums from './pages/Forums';
 import SavedProducts from './pages/SavedProducts';
 import Automation from './pages/Automation/Automation';
 import LogoGenerator from './pages/LogoGenerator';
+import TrackingPage from './pages/TrackingPage';
 import ScrollToTop from './components/ScrollToTop';
 import OnboardingTour from './components/ui/OnboardingTour';
 import { useAuthStore } from './store/authStore';
@@ -92,6 +93,7 @@ function App() {
             <Route path="/saved-products" element={<SavedProducts />} />
             <Route path="/automation" element={<Automation />} />
             <Route path="/logo-generator" element={<LogoGenerator />} />
+            <Route path="/tracking/:orderId" element={<TrackingPage />} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

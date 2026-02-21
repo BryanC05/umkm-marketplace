@@ -355,8 +355,20 @@ function SellerProductTracking() {
                                 </div>
                               )}
 
-                              {/* Action Button */}
-                              <div className="mt-3 flex justify-end">
+                              {/* Action Buttons */}
+                              <div className="mt-3 flex justify-end gap-2">
+                                {order.deliveryType === 'delivery' && 
+                                 order.status !== 'delivered' && 
+                                 order.status !== 'cancelled' && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => window.open(`/tracking/${order.orderId}`, '_blank')}
+                                  >
+                                    <MapPin size={14} className="mr-1" />
+                                    Track Delivery
+                                  </Button>
+                                )}
                                 <Button
                                   variant="outline"
                                   size="sm"

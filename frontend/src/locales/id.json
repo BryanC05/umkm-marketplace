@@ -84,7 +84,17 @@
         "lastUpdated": "Terakhir diperbarui",
         "deliveryAddress": "Alamat Pengiriman",
         "distanceError": "Lokasi di luar jangkauan pengiriman",
-        "maxDistance": "Maksimal 5km dari toko"
+        "maxDistance": "Maksimal 5km dari toko",
+        "trackDelivery": "Lacak Pengiriman Langsung",
+        "orderTracking": "Lacak Pesanan",
+        "trackOrder": "Lacak Pesanan",
+        "deliveryProgress": "Progress Pengiriman",
+        "driverInformation": "Informasi Driver",
+        "driverActions": "Aksi Driver",
+        "updateLocationNow": "Perbarui Lokasi Sekarang",
+        "autoUpdating": "Memperbarui otomatis setiap 15 detik",
+        "storeLocation": "Lokasi Toko",
+        "outForDelivery": "Dalam Perjalanan"
     },
     "home": {
         "heroTitle": "TroliToko",

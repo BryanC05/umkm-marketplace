@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 import {
   Package, Clock, CheckCircle, XCircle, MapPin, Phone,
   ShoppingBag, Truck, ChefHat, CreditCard, Banknote,
-  Smartphone, Building2, ChevronDown, ChevronUp, Calendar
+  Smartphone, Building2, ChevronDown, ChevronUp, Calendar,
+  Navigation
 } from 'lucide-react';
 import api from '../utils/api';
 import { useAuthStore } from '../store/authStore';
@@ -13,7 +14,6 @@ import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { resolveImageUrl } from '@/utils/imageUrl';
-import DriverTracker from '@/components/DriverTracker';
 import './Orders.css';
 
 const statusConfig = {
@@ -355,20 +355,17 @@ function Orders() {
                             </div>
                           )}
 
-                          {/* Driver Tracking - Only for delivery orders in progress */}
+                          {/* Track Order Button - Only for delivery orders in progress */}
                           {order.deliveryType === 'delivery' && 
                            order.status !== 'delivered' && 
-                           order.status !== 'cancelled' && 
-                           order.status !== 'pending' && (
-                            <div style={{ marginTop: '1rem', marginBottom: '1rem' }}>
-                              <DriverTracker 
-                                orderId={orderId}
-                                deliveryAddress={order.deliveryAddress}
-                                driverInfo={{
-                                  driverName: order.driverName,
-                                  driverPhone: order.driverPhone
-                                }}
-                              />
+                           order.status !== 'cancelled' && (
+                            <div className="mt-4">
+                              <Link to={`/tracking/${orderId}`}>
+                                <Button variant="outline" className="w-full gap-2">
+                                  <Navigation className="h-4 w-4" />
+                                  Track Delivery Live
+                                </Button>
+                              </Link>
                             </div>
                           )}
                         </div>
