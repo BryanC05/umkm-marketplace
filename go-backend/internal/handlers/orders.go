@@ -379,14 +379,19 @@ func (h *OrderHandler) GetOrderByID(c *gin.Context) {
 		c.JSON(400, gin.H{"message": "Invalid order ID"})
 		return
 	}
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		c.JSON(400, gin.H{"message": "Invalid user ID"})
+		return
+	}
 
 	ordersCollection := database.GetDB().Collection("orders")
 	var order models.Order
 	err = ordersCollection.FindOne(context.Background(), bson.M{
 		"_id": orderObjID,
 		"$or": []bson.M{
-			{"buyer": bson.M{"$oid": userID}},
-			{"seller": bson.M{"$oid": userID}},
+			{"buyer": userObjID},
+			{"seller": userObjID},
 		},
 	}).Decode(&order)
 	if err != nil {

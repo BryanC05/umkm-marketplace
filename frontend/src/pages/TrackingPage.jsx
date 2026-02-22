@@ -16,6 +16,8 @@ import { Badge } from '@/components/ui/badge';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
+const isNotFoundError = (error) => error?.response?.status === 404;
+
 // Custom icons
 const driverIcon = L.divIcon({
   className: 'custom-driver-icon',
@@ -111,14 +113,25 @@ export default function TrackingPage() {
   const [lastUpdated, setLastUpdated] = useState(null);
 
   // Fetch order details
-  const { data: order, isLoading: orderLoading } = useQuery({
+  const {
+    data: order,
+    isLoading: orderLoading,
+    isError: orderError,
+    error: orderQueryError,
+  } = useQuery({
     queryKey: ['order', orderId],
     queryFn: async () => {
       const response = await api.get(`/orders/${orderId}`);
       return response.data;
     },
     enabled: !!orderId,
-    refetchInterval: 30000, // Refetch every 30 seconds
+    retry: (failureCount, error) => {
+      if (isNotFoundError(error)) return false;
+      return failureCount < 2;
+    },
+    retryOnMount: false,
+    refetchOnMount: false,
+    refetchInterval: (query) => (query.state.data ? 30000 : false), // Refetch every 30 seconds only when order exists
   });
 
   // Fetch driver location (buyer only)
@@ -130,7 +143,53 @@ export default function TrackingPage() {
       return response.data;
     },
     enabled: !!orderId && order?.deliveryType === 'delivery' && order?.status !== 'delivered' && order?.status !== 'cancelled',
+    retry: 1,
     refetchInterval: 10000, // Poll every 10 seconds
+  });
+
+  // Get coordinates (lat, lng)
+  const storeLocation = order?.seller?.location?.coordinates
+    ? [order.seller.location.coordinates[1], order.seller.location.coordinates[0]]
+    : null;
+  const deliveryLocation = order?.deliveryAddress?.coordinates
+    ? [order.deliveryAddress.coordinates[1], order.deliveryAddress.coordinates[0]]
+    : null;
+  const driverLoc = driverLocation
+    ? [driverLocation.latitude, driverLocation.longitude]
+    : null;
+  const routeOrigin = driverLoc || storeLocation;
+
+  const { data: routeData } = useQuery({
+    queryKey: [
+      'deliveryRoute',
+      orderId,
+      routeOrigin?.[0],
+      routeOrigin?.[1],
+      deliveryLocation?.[0],
+      deliveryLocation?.[1],
+      order?.status,
+    ],
+    queryFn: async () => {
+      const response = await api.get('/navigation/route', {
+        params: {
+          originLat: routeOrigin[0],
+          originLng: routeOrigin[1],
+          destinationLat: deliveryLocation[0],
+          destinationLng: deliveryLocation[1],
+          profile: 'driving',
+        },
+      });
+      return response.data;
+    },
+    enabled:
+      !!orderId &&
+      order?.deliveryType === 'delivery' &&
+      order?.status !== 'delivered' &&
+      order?.status !== 'cancelled' &&
+      !!routeOrigin &&
+      !!deliveryLocation,
+    retry: 1,
+    refetchInterval: 10000,
   });
 
   const isSeller = order?.seller?._id === user?.id;
@@ -182,11 +241,19 @@ export default function TrackingPage() {
     );
   }
 
-  if (!order) {
+  if (!order && !orderLoading) {
+    const notFound = isNotFoundError(orderQueryError);
     return (
       <Layout>
         <div className="container py-8 text-center">
-          <h1 className="text-2xl font-bold mb-4">Order Not Found</h1>
+          <h1 className="text-2xl font-bold mb-4">
+            {notFound ? 'Order Not Found' : 'Failed to Load Order'}
+          </h1>
+          {orderError && !notFound && (
+            <p className="text-sm text-muted-foreground mb-4">
+              {orderQueryError?.response?.data?.message || orderQueryError?.message || 'Unexpected error'}
+            </p>
+          )}
           <Button asChild>
             <Link to="/orders">Back to Orders</Link>
           </Button>
@@ -197,18 +264,14 @@ export default function TrackingPage() {
 
   const status = statusConfig[order.status] || statusConfig.pending;
   const isDelivery = order.deliveryType === 'delivery';
-
-  // Get coordinates
-  const storeLocation = order.seller?.location?.coordinates 
-    ? [order.seller.location.coordinates[1], order.seller.location.coordinates[0]] 
+  const routePositions = Array.isArray(routeData?.path) && routeData.path.length > 1
+    ? routeData.path.map((point) => [point.lat, point.lng])
+    : (routeOrigin && deliveryLocation ? [routeOrigin, deliveryLocation] : []);
+  const routeDistanceKm = routeData?.distanceMeters
+    ? routeData.distanceMeters / 1000
     : null;
-  
-  const deliveryLocation = order.deliveryAddress?.coordinates 
-    ? [order.deliveryAddress.coordinates[1], order.deliveryAddress.coordinates[0]] 
-    : null;
-  
-  const driverLoc = driverLocation 
-    ? [driverLocation.latitude, driverLocation.longitude] 
+  const routeDurationMinutes = routeData?.durationSeconds
+    ? Math.round(routeData.durationSeconds / 60)
     : null;
 
   // Calculate center for map
@@ -292,12 +355,11 @@ export default function TrackingPage() {
                   )}
 
                   {/* Route Line */}
-                  {driverLoc && deliveryLocation && (
+                  {routePositions.length > 1 && (
                     <Polyline 
-                      positions={[driverLoc, deliveryLocation]} 
+                      positions={routePositions}
                       color="#22c55e" 
                       weight={4} 
-                      dashArray="10, 10"
                     />
                   )}
                 </MapContainer>
@@ -326,6 +388,15 @@ export default function TrackingPage() {
                     {isDelivery ? '🚗 Delivery' : '🏪 Pickup'}
                   </p>
                 </div>
+                {isDelivery && routeDistanceKm && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Route</p>
+                    <p className="font-medium">
+                      {routeDistanceKm.toFixed(2)} km
+                      {routeDurationMinutes ? ` • ~${routeDurationMinutes} min` : ''}
+                    </p>
+                  </div>
+                )}
                 {order.preorderTime && (
                   <div>
                     <p className="text-sm text-muted-foreground">Scheduled Time</p>

@@ -16,11 +16,30 @@ const isValidCoordinates = (coordinates) =>
   Number.isFinite(coordinates[1]) &&
   (coordinates[0] !== 0 || coordinates[1] !== 0);
 
+const haversineDistanceKm = (pointA, pointB) => {
+  if (!pointA || !pointB) return 0;
+  const toRadians = (value) => (value * Math.PI) / 180;
+  const earthRadiusKm = 6371;
+  const dLat = toRadians(pointB.lat - pointA.lat);
+  const dLng = toRadians(pointB.lng - pointA.lng);
+  const lat1 = toRadians(pointA.lat);
+  const lat2 = toRadians(pointB.lat);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return earthRadiusKm * c;
+};
+
 function NearbyMap() {
   const [userLocation, setUserLocation] = useState(null);
+  const [profileLocation, setProfileLocation] = useState(null);
   const [radius, setRadius] = useState(25000); // 25km default for better coverage
   const [searchQuery, setSearchQuery] = useState('');
   const [isUsingDefaultLocation, setIsUsingDefaultLocation] = useState(false);
+  const [isUsingProfileLocation, setIsUsingProfileLocation] = useState(false);
   const [mapError, setMapError] = useState(null);
   const [mapReady, setMapReady] = useState(false);
   const mapContainerRef = useRef(null);
@@ -31,52 +50,89 @@ function NearbyMap() {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
+  const applyCurrentLocation = (location, source = 'gps') => {
+    if (!location) return;
+    setUserLocation(location);
+    setIsUsingDefaultLocation(source === 'default');
+    setIsUsingProfileLocation(source === 'profile');
+  };
+
   // Get user location
   useEffect(() => {
     let isActive = true;
 
     const applyFallbackLocation = () => {
       if (!isActive) return;
-      setUserLocation(DEFAULT_BEKASI_LOCATION);
-      setIsUsingDefaultLocation(true);
+      applyCurrentLocation(DEFAULT_BEKASI_LOCATION, 'default');
+    };
+
+    const loadProfileLocation = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setProfileLocation(null);
+          return null;
+        }
+
+        const profileResponse = await api.get('/users/profile');
+        const coordinates = profileResponse?.data?.location?.coordinates;
+        if (isValidCoordinates(coordinates) && isActive) {
+          const normalizedProfileLocation = { lat: coordinates[1], lng: coordinates[0] };
+          setProfileLocation(normalizedProfileLocation);
+          return normalizedProfileLocation;
+        }
+
+        setProfileLocation(null);
+        return null;
+      } catch (err) {
+        console.warn('Could not load profile location:', err);
+        setProfileLocation(null);
+        return null;
+      }
     };
 
     const resolveLocation = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (token) {
-          const profileResponse = await api.get('/users/profile');
-          const coordinates = profileResponse?.data?.location?.coordinates;
-          if (isValidCoordinates(coordinates) && isActive) {
-            setUserLocation({ lat: coordinates[1], lng: coordinates[0] });
-            setIsUsingDefaultLocation(false);
-            return;
-          }
+      const savedProfileLocation = await loadProfileLocation();
+
+      if (navigator.geolocation) {
+        const gotGpsLocation = await new Promise((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              if (!isActive) {
+                resolve(false);
+                return;
+              }
+              applyCurrentLocation({
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+              }, 'gps');
+              resolve(true);
+            },
+            (error) => {
+              console.warn('Browser geolocation unavailable, trying profile location:', error);
+              resolve(false);
+            },
+            { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 }
+          );
+        });
+
+        if (gotGpsLocation) {
+          return;
         }
-      } catch (err) {
-        console.warn('Could not load profile location, trying browser geolocation:', err);
       }
 
-      if (!navigator.geolocation) {
-        applyFallbackLocation();
+      if (savedProfileLocation && isActive) {
+        applyCurrentLocation(savedProfileLocation, 'profile');
         return;
       }
 
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          if (!isActive) return;
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-          setIsUsingDefaultLocation(false);
-        },
-        (error) => {
-          console.warn('Browser geolocation unavailable, using Bekasi fallback:', error);
-          applyFallbackLocation();
-        },
-        { timeout: 10000, enableHighAccuracy: false }
-      );
+      if (!navigator.geolocation) {
+        // Browser geolocation unsupported and no valid profile location.
+        applyFallbackLocation();
+        return;
+      }
+      // Browser geolocation supported but unavailable/denied and profile also missing.
+      applyFallbackLocation();
     };
 
     resolveLocation();
@@ -85,6 +141,27 @@ function NearbyMap() {
       isActive = false;
     };
   }, []);
+
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        applyCurrentLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        }, 'gps');
+      },
+      (error) => {
+        console.warn('Could not refresh GPS location:', error);
+      },
+      { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 }
+    );
+  };
+
+  const handleUseProfileLocation = () => {
+    if (!profileLocation) return;
+    applyCurrentLocation(profileLocation, 'profile');
+  };
 
   // Initialize map
   useEffect(() => {
@@ -235,6 +312,33 @@ function NearbyMap() {
     retry: 1,
   });
 
+  // If GPS is far away from seeded/test market and returns no sellers,
+  // automatically switch to profile location when available.
+  useEffect(() => {
+    if (!userLocation || !profileLocation || sellersLoading || sellersError) {
+      return;
+    }
+    if (isUsingProfileLocation || isUsingDefaultLocation) {
+      return;
+    }
+    if (sellers.length > 0) {
+      return;
+    }
+
+    const distanceKm = haversineDistanceKm(userLocation, profileLocation);
+    if (distanceKm >= 2) {
+      applyCurrentLocation(profileLocation, 'profile');
+    }
+  }, [
+    sellers,
+    sellersLoading,
+    sellersError,
+    userLocation,
+    profileLocation,
+    isUsingProfileLocation,
+    isUsingDefaultLocation,
+  ]);
+
   const getSellerDisplayName = (seller) => {
     const businessName = typeof seller?.businessName === 'string' ? seller.businessName.trim() : '';
     const username = typeof seller?.name === 'string' ? seller.name.trim() : '';
@@ -347,6 +451,32 @@ function NearbyMap() {
                 📍 {t('nearby.defaultLocation')}
               </p>
             )}
+            {isUsingProfileLocation && (
+              <p className="mt-2 text-xs bg-blue-100 text-blue-800 p-2 rounded">
+                📍 Using your saved profile location
+              </p>
+            )}
+            <p className="mt-2 text-xs text-muted-foreground">
+              Lat: {userLocation.lat.toFixed(5)}, Lng: {userLocation.lng.toFixed(5)}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={handleUseCurrentLocation}
+                className="px-2 py-1 text-xs rounded border border-border hover:bg-muted"
+              >
+                Use GPS
+              </button>
+              {profileLocation && (
+                <button
+                  type="button"
+                  onClick={handleUseProfileLocation}
+                  className="px-2 py-1 text-xs rounded border border-border hover:bg-muted"
+                >
+                  Use Profile
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="search-box mb-4 relative">

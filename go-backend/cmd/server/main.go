@@ -55,6 +55,7 @@ func main() {
 	forumHandler := handlers.NewForumHandler()
 	workflowHandler := handlers.NewWorkflowHandler()
 	logoHandler := handlers.NewLogoHandler()
+	navigationHandler := handlers.NewNavigationHandler()
 	webhookHandler := handlers.NewWebhookHandler()
 	productImageHandler := handlers.NewProductImageHandler(cfg)
 
@@ -81,6 +82,7 @@ func main() {
 		api.GET("/users/sellers/count", userHandler.GetSellersCount)
 		api.GET("/users/nearby-sellers", userHandler.GetNearbySellers)
 		api.GET("/users/seller/:id", userHandler.GetSellerByID)
+		api.GET("/navigation/route", navigationHandler.GetRoute)
 
 		products := api.Group("/products")
 		{

@@ -10,6 +10,7 @@ import { useLanguageStore } from '../../store/languageStore';
 import { useDriverStore } from '../../store/driverStore';
 import { useTheme } from '../../theme/ThemeContext';
 import LocationService from '../../services/LocationService';
+import api from '../../api/api';
 
 const DELIVERY_STEPS = [
     { status: 'picked_up', label: 'Picked Up', icon: 'cube' },
@@ -32,6 +33,8 @@ export default function ActiveDeliveryScreen() {
 
     const [updating, setUpdating] = useState(false);
     const [locationWatcher, setLocationWatcher] = useState(null);
+    const [routePath, setRoutePath] = useState([]);
+    const [routeSummary, setRouteSummary] = useState(null);
 
     useEffect(() => {
         fetchActiveDelivery();
@@ -131,6 +134,119 @@ export default function ActiveDeliveryScreen() {
         latitudeDelta: 0.02,
         longitudeDelta: 0.02,
     };
+
+    const originPoint = useMemo(() => {
+        if (
+            Number.isFinite(currentLocation?.latitude) &&
+            Number.isFinite(currentLocation?.longitude)
+        ) {
+            return {
+                latitude: currentLocation.latitude,
+                longitude: currentLocation.longitude,
+            };
+        }
+        return {
+            latitude: storeLat,
+            longitude: storeLng,
+        };
+    }, [currentLocation?.latitude, currentLocation?.longitude, storeLat, storeLng]);
+
+    const destinationPoint = useMemo(() => ({
+        latitude: deliveryLat,
+        longitude: deliveryLng,
+    }), [deliveryLat, deliveryLng]);
+
+    useEffect(() => {
+        if (
+            !Number.isFinite(originPoint?.latitude) ||
+            !Number.isFinite(originPoint?.longitude) ||
+            !Number.isFinite(destinationPoint?.latitude) ||
+            !Number.isFinite(destinationPoint?.longitude)
+        ) {
+            setRoutePath([]);
+            setRouteSummary(null);
+            return;
+        }
+
+        let isActive = true;
+
+        const fetchRoute = async () => {
+            try {
+                const response = await api.get('/navigation/route', {
+                    params: {
+                        originLat: originPoint.latitude,
+                        originLng: originPoint.longitude,
+                        destinationLat: destinationPoint.latitude,
+                        destinationLng: destinationPoint.longitude,
+                        profile: 'driving',
+                    },
+                });
+
+                if (!isActive) return;
+
+                const apiPath = Array.isArray(response?.data?.path) ? response.data.path : [];
+                const normalizedPath = apiPath
+                    .map((point) => ({
+                        latitude: point?.lat,
+                        longitude: point?.lng,
+                    }))
+                    .filter(
+                        (point) =>
+                            Number.isFinite(point.latitude) && Number.isFinite(point.longitude)
+                    );
+
+                setRoutePath(normalizedPath);
+                setRouteSummary({
+                    distanceMeters: response?.data?.distanceMeters || 0,
+                    durationSeconds: response?.data?.durationSeconds || 0,
+                });
+            } catch (error) {
+                console.warn('Failed to fetch active delivery route, using fallback:', error?.message || error);
+                if (!isActive) return;
+                setRoutePath([originPoint, destinationPoint]);
+                setRouteSummary(null);
+            }
+        };
+
+        fetchRoute();
+        const interval = setInterval(fetchRoute, 12000);
+
+        return () => {
+            isActive = false;
+            clearInterval(interval);
+        };
+    }, [
+        originPoint?.latitude,
+        originPoint?.longitude,
+        destinationPoint?.latitude,
+        destinationPoint?.longitude,
+    ]);
+
+    const routePolylineCoordinates = useMemo(() => {
+        if (routePath.length > 1) {
+            return routePath;
+        }
+        return [originPoint, destinationPoint];
+    }, [routePath, originPoint, destinationPoint]);
+
+    const routeDistanceKm = useMemo(() => {
+        if (routeSummary?.distanceMeters) {
+            return routeSummary.distanceMeters / 1000;
+        }
+        return calculateDistance(
+            originPoint.latitude,
+            originPoint.longitude,
+            destinationPoint.latitude,
+            destinationPoint.longitude
+        );
+    }, [routeSummary, originPoint, destinationPoint]);
+
+    const routeDurationMinutes = useMemo(() => {
+        if (routeSummary?.durationSeconds) {
+            return Math.round(routeSummary.durationSeconds / 60);
+        }
+        return null;
+    }, [routeSummary]);
 
     const styles = useMemo(() => StyleSheet.create({
         container: {
@@ -303,21 +419,22 @@ export default function ActiveDeliveryScreen() {
                 </Marker>
 
                 <Polyline
-                    coordinates={[
-                        { latitude: storeLat, longitude: storeLng },
-                        { latitude: deliveryLat, longitude: deliveryLng }
-                    ]}
+                    coordinates={routePolylineCoordinates}
                     strokeColor={colors.primary}
                     strokeWidth={3}
                 />
             </MapView>
 
             <View style={styles.infoCard}>
-                <Text style={styles.orderId}>
-                    Order #{activeDelivery._id?.slice(-6)?.toUpperCase()}
-                </Text>
+                    <Text style={styles.orderId}>
+                        Order #{activeDelivery._id?.slice(-6)?.toUpperCase()}
+                    </Text>
+                    <Text style={[styles.addressText, { marginBottom: 8, textAlign: 'center' }]}>
+                        {routeDistanceKm?.toFixed(2)} km
+                        {routeDurationMinutes ? ` • ~${routeDurationMinutes} min` : ''}
+                    </Text>
 
-                <ScrollView showsVerticalScrollIndicator={false}>
+                    <ScrollView showsVerticalScrollIndicator={false}>
                     <Text style={styles.sectionLabel}>{t.pickup || 'PICKUP'}</Text>
                     <View style={styles.addressCard}>
                         <Text style={styles.addressTitle}>{activeDelivery.store?.name || 'Store'}</Text>
@@ -428,4 +545,22 @@ export default function ActiveDeliveryScreen() {
             </View>
         </View>
     );
+}
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRad(lat1)) *
+            Math.cos(toRad(lat2)) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
+
+function toRad(deg) {
+    return deg * (Math.PI / 180);
 }

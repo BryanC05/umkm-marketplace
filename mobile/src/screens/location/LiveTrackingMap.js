@@ -20,6 +20,8 @@ export default function LiveTrackingMap() {
     const [userLocation, setUserLocation] = useState(null);
     const [driverLocation, setDriverLocation] = useState(null);
     const [order, setOrder] = useState(null);
+    const [routePath, setRoutePath] = useState([]);
+    const [routeSummary, setRouteSummary] = useState(null);
     const [loading, setLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState(null);
 
@@ -112,6 +114,108 @@ export default function LiveTrackingMap() {
         }
         return null;
     }, [order]);
+
+    useEffect(() => {
+        if (!destinationCoords) {
+            setRoutePath([]);
+            setRouteSummary(null);
+            return;
+        }
+
+        const fallbackOrigin = userLocation
+            ? { latitude: userLocation.latitude, longitude: userLocation.longitude }
+            : null;
+        const origin = driverLocation || storeCoords || fallbackOrigin;
+        if (!origin) {
+            setRoutePath([]);
+            setRouteSummary(null);
+            return;
+        }
+
+        let isActive = true;
+
+        const fetchRoute = async () => {
+            try {
+                const response = await api.get('/navigation/route', {
+                    params: {
+                        originLat: origin.latitude,
+                        originLng: origin.longitude,
+                        destinationLat: destinationCoords.latitude,
+                        destinationLng: destinationCoords.longitude,
+                        profile: 'driving',
+                    },
+                });
+
+                if (!isActive) return;
+
+                const apiPath = Array.isArray(response?.data?.path) ? response.data.path : [];
+                const normalizedPath = apiPath
+                    .map((point) => ({
+                        latitude: point?.lat,
+                        longitude: point?.lng,
+                    }))
+                    .filter(
+                        (point) =>
+                            Number.isFinite(point.latitude) && Number.isFinite(point.longitude)
+                    );
+
+                setRoutePath(normalizedPath);
+                setRouteSummary({
+                    distanceMeters: response?.data?.distanceMeters || 0,
+                    durationSeconds: response?.data?.durationSeconds || 0,
+                });
+            } catch (error) {
+                console.warn('Failed to fetch routed path, falling back to straight line:', error?.message || error);
+                if (!isActive) return;
+                setRoutePath([origin, destinationCoords]);
+                setRouteSummary(null);
+            }
+        };
+
+        fetchRoute();
+        const interval = setInterval(fetchRoute, 10000);
+
+        return () => {
+            isActive = false;
+            clearInterval(interval);
+        };
+    }, [
+        driverLocation?.latitude,
+        driverLocation?.longitude,
+        destinationCoords?.latitude,
+        destinationCoords?.longitude,
+        storeCoords?.latitude,
+        storeCoords?.longitude,
+        userLocation?.latitude,
+        userLocation?.longitude,
+    ]);
+
+    const routePolylineCoordinates = useMemo(() => {
+        if (routePath.length > 1) {
+            return routePath;
+        }
+        if (driverLocation && destinationCoords) {
+            return [driverLocation, destinationCoords];
+        }
+        if (storeCoords && destinationCoords) {
+            return [storeCoords, destinationCoords];
+        }
+        return [];
+    }, [routePath, driverLocation, storeCoords, destinationCoords]);
+
+    const routeDistanceKm = useMemo(() => {
+        if (routeSummary?.distanceMeters) {
+            return routeSummary.distanceMeters / 1000;
+        }
+        const origin = driverLocation || storeCoords;
+        if (!origin || !destinationCoords) return null;
+        return calculateDistance(
+            origin.latitude,
+            origin.longitude,
+            destinationCoords.latitude,
+            destinationCoords.longitude
+        );
+    }, [routeSummary, driverLocation, storeCoords, destinationCoords]);
 
     const styles = useMemo(() => StyleSheet.create({
         container: { flex: 1, backgroundColor: colors.background },
@@ -324,12 +428,11 @@ export default function LiveTrackingMap() {
                     </Marker>
                 )}
 
-                {driverLocation && destinationCoords && (
+                {routePolylineCoordinates.length > 1 && (
                     <Polyline
-                        coordinates={[driverLocation, destinationCoords]}
+                        coordinates={routePolylineCoordinates}
                         strokeColor={colors.primary}
                         strokeWidth={3}
-                        lineDashPattern={[5, 5]}
                     />
                 )}
             </MapView>
@@ -385,14 +488,15 @@ export default function LiveTrackingMap() {
                     </View>
                 )}
 
-                {driverLocation && destinationCoords && (
+                {routeDistanceKm && (
                     <View style={styles.infoRow}>
                         <Ionicons name="navigate" size={20} color={colors.primary} />
                         <Text style={styles.infoText}>
-                            {calculateDistance(
-                                driverLocation.latitude, driverLocation.longitude,
-                                destinationCoords.latitude, destinationCoords.longitude
-                            ).toFixed(2)} km {t.distance || 'away'}
+                            {routeDistanceKm.toFixed(2)} km
+                            {routeSummary?.durationSeconds
+                                ? ` • ~${Math.round(routeSummary.durationSeconds / 60)} min`
+                                : ''}
+                            {' '}{t.distance || 'away'}
                         </Text>
                     </View>
                 )}
