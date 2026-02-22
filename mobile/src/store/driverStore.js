@@ -43,11 +43,19 @@ export const useDriverStore = create((set, get) => ({
 
     toggleDriverMode: async (isActive) => {
         try {
-            await api.post('/driver/toggle', { isActive });
-            await AsyncStorage.setItem('driverMode', isActive ? 'true' : 'false');
-            set({ isDriverMode: isActive, isAvailable: isActive });
+            const nextActive = !!isActive;
+            const response = await api.post('/driver/toggle', {
+                isActive: nextActive,
+                isAvailable: nextActive,
+            });
+
+            const resolvedIsActive = response?.data?.isActive ?? nextActive;
+            const resolvedIsAvailable = response?.data?.isAvailable ?? resolvedIsActive;
+
+            await AsyncStorage.setItem('driverMode', resolvedIsActive ? 'true' : 'false');
+            set({ isDriverMode: resolvedIsActive, isAvailable: resolvedIsAvailable });
             
-            if (isActive) {
+            if (resolvedIsActive) {
                 await get().fetchDriverProfile();
                 await get().fetchDriverStats();
             } else {
@@ -61,7 +69,15 @@ export const useDriverStore = create((set, get) => ({
             return { success: true };
         } catch (error) {
             console.error('Failed to toggle driver mode:', error);
-            return { success: false, error: error.response?.data?.error || 'Failed to toggle driver mode' };
+            if (error?.response?.status === 401) {
+                return { success: false, error: 'Session expired. Please log in again.' };
+            }
+            const message =
+                error?.response?.data?.message ||
+                error?.response?.data?.error ||
+                error?.message ||
+                'Failed to activate driver mode';
+            return { success: false, error: message };
         }
     },
 
@@ -114,8 +130,18 @@ export const useDriverStore = create((set, get) => ({
             const response = await api.get('/driver/available-orders', {
                 params: { lat: latitude, lng: longitude, radius }
             });
-            
-            const rawOrders = response.data || [];
+
+            const payload = response?.data;
+            const rawOrders = Array.isArray(payload)
+                ? payload
+                : Array.isArray(payload?.orders)
+                    ? payload.orders
+                    : Array.isArray(payload?.data)
+                        ? payload.data
+                        : Array.isArray(payload?.data?.orders)
+                            ? payload.data.orders
+                            : [];
+
             const orders = rawOrders.map(item => ({
                 _id: item.order?._id || item._id,
                 store: {

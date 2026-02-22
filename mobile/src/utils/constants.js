@@ -1,3 +1,5 @@
+import * as Location from 'expo-location';
+
 // Default location coordinates
 export const DEFAULT_LOCATION = {
     Bekasi: { lat: -6.2349, lng: 106.9896 },

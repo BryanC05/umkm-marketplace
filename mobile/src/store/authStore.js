@@ -57,19 +57,20 @@ export const useAuthStore = create((set, get) => ({
                         const response = await api.get('/users/profile');
                         set({ user: response.data, token, isAuthenticated: true, isLoading: false });
                     } catch {
-                        // Token may be invalid on server side
-                        set({ token, isAuthenticated: true, isLoading: false });
+                        // Token rejected by server (e.g. revoked/invalid) -> force fresh login
+                        await AsyncStorage.removeItem('token');
+                        set({ user: null, token: null, isAuthenticated: false, isLoading: false });
                     }
                 } else {
                     await AsyncStorage.removeItem('token');
-                    set({ isLoading: false });
+                    set({ user: null, token: null, isAuthenticated: false, isLoading: false });
                 }
             } else {
-                set({ isLoading: false });
+                set({ user: null, token: null, isAuthenticated: false, isLoading: false });
             }
         } catch {
             await AsyncStorage.removeItem('token');
-            set({ isLoading: false });
+            set({ user: null, token: null, isAuthenticated: false, isLoading: false });
         }
     },
 

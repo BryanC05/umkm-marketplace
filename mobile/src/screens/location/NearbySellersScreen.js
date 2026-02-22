@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
-    View, Text, TouchableOpacity, FlatList, TextInput, ActivityIndicator, ScrollView, Dimensions, StyleSheet, Animated, PanResponder, Modal, Pressable, Alert, Linking, Platform
+    View, Text, TouchableOpacity, FlatList, TextInput, ActivityIndicator, ScrollView, Dimensions, StyleSheet, Animated, PanResponder, Pressable, Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -25,6 +25,8 @@ const DEFAULT_FALLBACK_LOCATION = {
     latitude: DEFAULT_LOCATION.Bekasi.lat,
     longitude: DEFAULT_LOCATION.Bekasi.lng,
 };
+const NAVIGATION_UPDATE_MS = 10000;
+const NAVIGATION_DISTANCE_INTERVAL_METERS = 10;
 
 const toNumber = (value) => {
     const parsed = Number(value);
@@ -58,7 +60,13 @@ export default function NearbySellersScreen() {
     const [locationWarning, setLocationWarning] = useState(null);
     const [selectedSeller, setSelectedSeller] = useState(null);
     const [dropdownVisible, setDropdownVisible] = useState(false);
+    const [isNavigating, setIsNavigating] = useState(false);
+    const [routePath, setRoutePath] = useState([]);
+    const [routeSummary, setRouteSummary] = useState(null);
+    const [trackingLocation, setTrackingLocation] = useState(null);
+    const [navigationError, setNavigationError] = useState(null);
     const mapRef = useRef(null);
+    const locationWatchRef = useRef(null);
 
     // Calculate max sheet height based on content
     const calculatedMaxHeight = useMemo(() => {
@@ -116,6 +124,15 @@ export default function NearbySellersScreen() {
             fetchNearbySellers();
         }
     }, [location, radius]);
+
+    useEffect(() => {
+        return () => {
+            if (locationWatchRef.current) {
+                locationWatchRef.current.remove();
+                locationWatchRef.current = null;
+            }
+        };
+    }, []);
 
     const getUserLocation = async () => {
         try {
@@ -208,60 +225,161 @@ export default function NearbySellersScreen() {
         return 'Local Seller';
     };
 
-    const navigateToStore = useCallback((seller) => {
-        const coords = getSellerCoordinates(seller);
-        if (!coords) {
-            Alert.alert('Error', 'Seller location not available');
+    const stopNavigation = useCallback(() => {
+        if (locationWatchRef.current) {
+            locationWatchRef.current.remove();
+            locationWatchRef.current = null;
+        }
+        setIsNavigating(false);
+        setTrackingLocation(null);
+        setRoutePath([]);
+        setRouteSummary(null);
+        setNavigationError(null);
+    }, []);
+
+    const startNavigation = useCallback(async (seller) => {
+        if (!seller) {
             return;
         }
 
-        const sellerName = getSellerDisplayName(seller);
-        const lat = coords.lat;
-        const lng = coords.lng;
+        try {
+            const coords = getSellerCoordinates(seller);
+            if (!coords) {
+                Alert.alert('Error', 'Seller location not available');
+                return;
+            }
 
-        // Try to open native maps app with directions
-        const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&destination_place_id=${sellerName}`;
-        const appleMapsUrl = `maps://app?daddr=${lat},${lng}&q=${encodeURIComponent(sellerName)}`;
+            setSelectedSeller(seller);
+            setIsNavigating(true);
+            setNavigationError(null);
 
-        const openMaps = (url) => {
-            Linking.canOpenURL(url).then((supported) => {
-                if (supported) {
-                    Linking.openURL(url);
-                } else {
-                    // Fallback to Google Maps web
-                    Linking.openURL(googleMapsUrl);
+            if (locationWatchRef.current) {
+                locationWatchRef.current.remove();
+                locationWatchRef.current = null;
+            }
+
+            locationWatchRef.current = await Location.watchPositionAsync(
+                {
+                    accuracy: Location.Accuracy.High,
+                    timeInterval: 5000,
+                    distanceInterval: NAVIGATION_DISTANCE_INTERVAL_METERS,
+                },
+                (newLocation) => {
+                    const nextLocation = {
+                        lat: newLocation.coords.latitude,
+                        lng: newLocation.coords.longitude,
+                        latitude: newLocation.coords.latitude,
+                        longitude: newLocation.coords.longitude,
+                    };
+                    setTrackingLocation(nextLocation);
                 }
-            }).catch(() => {
-                Linking.openURL(googleMapsUrl);
-            });
-        };
-
-        // Try Apple Maps on iOS, fallback to Google Maps
-        if (Platform.OS === 'ios') {
-            openMaps(appleMapsUrl);
-        } else {
-            openMaps(googleMapsUrl);
+            );
+        } catch (error) {
+            console.error('Navigation error:', error);
+            setNavigationError('Unable to start live navigation.');
+            setIsNavigating(false);
         }
-    }, [location]);
+    }, []);
+
+    const activeLocation = trackingLocation || location;
 
     const calculateDistance = (sellerLocation) => {
-        if (!location) return null;
+        if (!activeLocation) return null;
         const coords = getSellerCoordinates({ location: sellerLocation });
         if (!coords) return null;
-        const distance = haversineDistanceKm(location, coords);
+        const distance = haversineDistanceKm(activeLocation, coords);
         return distance.toFixed(1);
     };
 
+    useEffect(() => {
+        if (!isNavigating || !selectedSeller || !activeLocation) {
+            return;
+        }
+
+        const sellerCoords = getSellerCoordinates(selectedSeller);
+        if (!sellerCoords) return;
+
+        let isActive = true;
+
+        const fetchRoute = async () => {
+            try {
+                const response = await api.get('/navigation/route', {
+                    params: {
+                        originLat: activeLocation.lat,
+                        originLng: activeLocation.lng,
+                        destinationLat: sellerCoords.lat,
+                        destinationLng: sellerCoords.lng,
+                        profile: 'driving',
+                    },
+                });
+
+                if (!isActive) return;
+
+                const apiPath = Array.isArray(response?.data?.path) ? response.data.path : [];
+                const normalizedPath = apiPath
+                    .map((point) => ({
+                        latitude: point?.lat,
+                        longitude: point?.lng,
+                    }))
+                    .filter(
+                        (point) =>
+                            Number.isFinite(point.latitude) && Number.isFinite(point.longitude)
+                    );
+
+                setRoutePath(normalizedPath);
+                setRouteSummary({
+                    distanceMeters: response?.data?.distanceMeters || 0,
+                    durationSeconds: response?.data?.durationSeconds || 0,
+                });
+                setNavigationError(null);
+            } catch (err) {
+                console.warn('Failed to fetch navigation route:', err?.message || err);
+                if (!isActive) return;
+                setRoutePath([
+                    { latitude: activeLocation.lat, longitude: activeLocation.lng },
+                    { latitude: sellerCoords.lat, longitude: sellerCoords.lng },
+                ]);
+                setRouteSummary(null);
+                setNavigationError('Using fallback route line. Live route is temporarily unavailable.');
+            }
+        };
+
+        fetchRoute();
+        const interval = setInterval(fetchRoute, NAVIGATION_UPDATE_MS);
+
+        return () => {
+            isActive = false;
+            clearInterval(interval);
+        };
+    }, [isNavigating, selectedSeller, activeLocation?.lat, activeLocation?.lng]);
+
     const mapRegion = useMemo(() => {
-        if (!location) return null;
+        if (!activeLocation) return null;
+
+        if (isNavigating && selectedSeller) {
+            const destination = getSellerCoordinates(selectedSeller);
+            if (destination) {
+                const latitude = (activeLocation.lat + destination.lat) / 2;
+                const longitude = (activeLocation.lng + destination.lng) / 2;
+                const latDiff = Math.abs(activeLocation.lat - destination.lat) + 0.02;
+                const lngDiff = Math.abs(activeLocation.lng - destination.lng) + 0.02;
+                return {
+                    latitude,
+                    longitude,
+                    latitudeDelta: Math.max(0.01, latDiff * 1.8),
+                    longitudeDelta: Math.max(0.01, lngDiff * 1.8),
+                };
+            }
+        }
+
         const radiusInDegrees = radius / 111000;
         return {
-            latitude: location.lat,
-            longitude: location.lng,
+            latitude: activeLocation.lat,
+            longitude: activeLocation.lng,
             latitudeDelta: radiusInDegrees * 2.5,
             longitudeDelta: radiusInDegrees * 2.5 * (width / height),
         };
-    }, [location, radius]);
+    }, [activeLocation, radius, isNavigating, selectedSeller]);
 
     const mapMarkers = useMemo(() => {
         return sellers
@@ -281,7 +399,7 @@ export default function NearbySellersScreen() {
                 };
             })
             .filter(Boolean);
-    }, [sellers, location]);
+    }, [sellers, activeLocation]);
 
     const normalizedSearch = searchQuery.trim().toLowerCase();
     const filteredSellers = sellers.filter((seller) => {
@@ -296,6 +414,16 @@ export default function NearbySellersScreen() {
         const distB = parseFloat(calculateDistance(b.location)) || 999;
         return distA - distB;
     });
+
+    const remainingDistanceKm = useMemo(() => {
+        if (!isNavigating || !selectedSeller || !activeLocation) return null;
+        const sellerCoords = getSellerCoordinates(selectedSeller);
+        if (!sellerCoords) return null;
+        if (routeSummary?.distanceMeters) {
+            return routeSummary.distanceMeters / 1000;
+        }
+        return haversineDistanceKm(activeLocation, sellerCoords);
+    }, [isNavigating, selectedSeller, activeLocation, routeSummary]);
 
     const renderSeller = ({ item, index }) => {
         const distance = calculateDistance(item.location);
@@ -332,21 +460,23 @@ export default function NearbySellersScreen() {
                     )}
                 </View>
                 <View style={styles.sellerRight}>
-                    {ratingText && (
-                        <View style={[styles.distanceBadge, { backgroundColor: '#f59e0b' }]}>
-                            <Ionicons name="star" size={12} color="#fff" />
-                            <Text style={styles.distance}>{ratingText}</Text>
-                        </View>
-                    )}
-                    {distance && (
-                        <View style={[styles.distanceBadge, { backgroundColor: colors.primary }]}>
-                            <Ionicons name="location" size={12} color="#fff" />
-                            <Text style={styles.distance}>{distance} km</Text>
-                        </View>
-                    )}
+                    <View style={styles.sellerMetaStack}>
+                        {ratingText && (
+                            <View style={[styles.distanceBadge, styles.metaBadge, { backgroundColor: '#f59e0b' }]}>
+                                <Ionicons name="star" size={11} color="#fff" />
+                                <Text style={styles.distance}>{ratingText}</Text>
+                            </View>
+                        )}
+                        {distance && (
+                            <View style={[styles.distanceBadge, styles.metaBadge, { backgroundColor: colors.primary }]}>
+                                <Ionicons name="location" size={11} color="#fff" />
+                                <Text style={styles.distance}>{distance} km</Text>
+                            </View>
+                        )}
+                    </View>
                     <TouchableOpacity 
                         style={[styles.navigateBtn, { backgroundColor: '#22c55e' }]}
-                        onPress={() => navigateToStore(item)}
+                        onPress={() => startNavigation(item)}
                     >
                         <Ionicons name="navigate" size={16} color="#fff" />
                     </TouchableOpacity>
@@ -422,15 +552,44 @@ export default function NearbySellersScreen() {
                 <Map
                     ref={mapRef}
                     region={mapRegion}
-                    userLocation={{ latitude: location.lat, longitude: location.lng }}
+                    userLocation={{ latitude: activeLocation.lat, longitude: activeLocation.lng }}
                     radius={radius}
                     markers={mapMarkers}
+                    polylineCoordinates={isNavigating ? routePath : []}
+                    polylineColor="#22c55e"
+                    polylineWidth={5}
                     onMarkerPress={(marker) => {
                         const seller = sellers.find((s) => getSellerId(s) === marker.id);
                         setSelectedSeller(seller);
                     }}
                     selectedMarkerId={getSellerId(selectedSeller)}
                 />
+
+                {isNavigating && selectedSeller && (
+                    <View style={[styles.navigationCard, { backgroundColor: colors.card }]}>
+                        <View style={styles.navigationCardHeader}>
+                            <View style={styles.navigationTitleWrap}>
+                                <Ionicons name="navigate-circle" size={20} color="#22c55e" />
+                                <View>
+                                    <Text style={[styles.navigationTitle, { color: colors.text }]}>Navigating to</Text>
+                                    <Text style={[styles.navigationSeller, { color: colors.text }]} numberOfLines={1}>
+                                        {getSellerDisplayName(selectedSeller)}
+                                    </Text>
+                                </View>
+                            </View>
+                            <TouchableOpacity onPress={stopNavigation} style={styles.stopBtn}>
+                                <Ionicons name="close" size={18} color={colors.textSecondary} />
+                            </TouchableOpacity>
+                        </View>
+                        <Text style={[styles.navigationMeta, { color: colors.textSecondary }]}>
+                            {remainingDistanceKm ? `${remainingDistanceKm.toFixed(2)} km` : '--'}
+                            {routeSummary?.durationSeconds ? ` • ~${Math.round(routeSummary.durationSeconds / 60)} min` : ''}
+                        </Text>
+                        {navigationError && (
+                            <Text style={styles.navigationWarning}>{navigationError}</Text>
+                        )}
+                    </View>
+                )}
 
                 {/* Close dropdown when tapping map */}
                 {dropdownVisible && (
@@ -710,6 +869,57 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
     },
+    navigationCard: {
+        position: 'absolute',
+        top: 64,
+        right: 12,
+        left: 12,
+        borderRadius: 12,
+        padding: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.12,
+        shadowRadius: 4,
+        elevation: 4,
+        zIndex: 11,
+    },
+    navigationCardHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    navigationTitleWrap: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    navigationTitle: {
+        fontSize: 12,
+        fontWeight: '500',
+        marginLeft: 8,
+    },
+    navigationSeller: {
+        fontSize: 14,
+        fontWeight: '700',
+        marginLeft: 8,
+    },
+    navigationMeta: {
+        marginTop: 8,
+        fontSize: 13,
+        fontWeight: '600',
+    },
+    navigationWarning: {
+        marginTop: 6,
+        fontSize: 12,
+        color: '#b45309',
+    },
+    stopBtn: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     infoBadge: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -845,9 +1055,10 @@ const styles = StyleSheet.create({
     },
     sellerCard: {
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         borderRadius: 12,
-        padding: 14,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
         marginBottom: 10,
         borderWidth: 1,
         borderColor: 'transparent',
@@ -856,7 +1067,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 2,
         elevation: 2,
-        height: 72,
+        minHeight: 92,
     },
     sellerCardSelected: {
         borderColor: 'rgba(59, 130, 246, 0.5)',
@@ -875,6 +1086,7 @@ const styles = StyleSheet.create({
     },
     sellerInfo: {
         flex: 1,
+        minWidth: 0,
     },
     sellerName: {
         fontSize: 15,
@@ -892,27 +1104,36 @@ const styles = StyleSheet.create({
     },
     sellerRight: {
         alignItems: 'flex-end',
+        justifyContent: 'space-between',
+        minHeight: 72,
+        marginLeft: 8,
+        flexShrink: 0,
+    },
+    sellerMetaStack: {
+        alignItems: 'flex-end',
     },
     distanceBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 10,
-        paddingVertical: 6,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
         borderRadius: 12,
     },
+    metaBadge: {
+        marginBottom: 6,
+    },
     distance: {
-        fontSize: 12,
+        fontSize: 11,
         fontWeight: '700',
         color: '#fff',
         marginLeft: 4,
     },
     navigateBtn: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+        width: 34,
+        height: 34,
+        borderRadius: 17,
         justifyContent: 'center',
         alignItems: 'center',
-        marginLeft: 8,
     },
     emptyContainer: {
         alignItems: 'center',

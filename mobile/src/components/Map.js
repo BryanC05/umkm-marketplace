@@ -5,16 +5,19 @@ import { useThemeStore } from '../store/themeStore';
 const { width, height } = Dimensions.get('window');
 
 // Try to import MapView - it may crash on standalone builds without a valid API key
-let MapView, Marker, Circle;
+let MapView, Marker, Circle, Polyline;
 try {
     const maps = require('react-native-maps');
     MapView = maps.default;
     Marker = maps.Marker;
     Circle = maps.Circle;
+    Polyline = maps.Polyline;
 } catch (e) {
+    console.warn('Failed to load react-native-maps:', e);
     MapView = null;
     Marker = null;
     Circle = null;
+    Polyline = null;
 }
 
 // Error boundary to catch runtime map crashes
@@ -57,6 +60,9 @@ const Map = forwardRef(({
     userLocation,
     radius,
     markers = [],
+    polylineCoordinates = [],
+    polylineColor,
+    polylineWidth = 4,
     onMarkerPress,
     selectedMarkerId,
     style,
@@ -132,6 +138,14 @@ const Map = forwardRef(({
                             </Marker>
                         ) : null
                     ))}
+
+                    {Polyline && Array.isArray(polylineCoordinates) && polylineCoordinates.length > 1 && (
+                        <Polyline
+                            coordinates={polylineCoordinates}
+                            strokeColor={polylineColor || colors.primary}
+                            strokeWidth={polylineWidth}
+                        />
+                    )}
 
                     {children}
                 </MapView>

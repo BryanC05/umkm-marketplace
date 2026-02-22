@@ -366,6 +366,7 @@ const badgeStyles = StyleSheet.create({
 export default function AppNavigator() {
     const { colors, isDarkMode } = useThemeStore();
     const { t } = useLanguageStore();
+    const isDriverMode = useDriverStore((s) => s.isDriverMode);
 
     return (
         <Tab.Navigator
@@ -427,7 +428,9 @@ export default function AppNavigator() {
             <Tab.Screen name="HomeTab" component={HomeStackNavigator} options={{ tabBarLabel: t.tabHome }} />
             <Tab.Screen name="ProductsTab" component={ProductsStackNavigator} options={{ tabBarLabel: t.tabProducts }} />
             <Tab.Screen name="CartTab" component={CartStackNavigator} options={{ tabBarLabel: t.tabCart }} />
-            <Tab.Screen name="DeliveryTab" component={DeliveryStackNavigator} options={{ tabBarLabel: t.tabDelivery || 'Delivery' }} />
+            {isDriverMode && (
+                <Tab.Screen name="DeliveryTab" component={DeliveryStackNavigator} options={{ tabBarLabel: t.tabDelivery || 'Delivery' }} />
+            )}
             <Tab.Screen name="AddTab" component={AddStackNavigator} options={{ tabBarLabel: t.tabAdd }} />
             <Tab.Screen name="ProfileTab" component={ProfileStackNavigator} options={{ tabBarLabel: t.tabProfile }} />
         </Tab.Navigator>

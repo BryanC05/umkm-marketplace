@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Alert } from 'react-native';
 import { useThemeStore } from '../../store/themeStore';
 import { useLanguageStore } from '../../store/languageStore';
 import { useDriverStore } from '../../store/driverStore';
@@ -18,8 +18,11 @@ function DriverModePrompt() {
 
     const handleEnable = async () => {
         setLoading(true);
-        await toggleDriverMode(true);
+        const result = await toggleDriverMode(true);
         setLoading(false);
+        if (!result?.success) {
+            Alert.alert(t.error || 'Error', result?.error || 'Failed to activate driver mode');
+        }
     };
 
     const styles = useMemo(() => StyleSheet.create({

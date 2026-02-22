@@ -132,7 +132,10 @@ From `mobile/`:
 npm install
 
 # start Expo dev server
-npm start
+npx expo start
+
+# if LAN connection fails, use tunnel mode
+npx expo start --tunnel
 
 # run on Android emulator/device (native run)
 npm run android
@@ -183,12 +186,17 @@ export const SOCKET_URL = API_HOST;
 
 1. Start the development server:
 ```bash
-npm start
+npx expo start
 ```
 
 2. Scan the QR code with Expo Go app on your phone
 
 3. Make sure your phone and computer are on the same Wi-Fi
+
+4. If device cannot connect on LAN, use:
+```bash
+npx expo start --tunnel
+```
 
 #### Option 2: iOS Simulator
 
