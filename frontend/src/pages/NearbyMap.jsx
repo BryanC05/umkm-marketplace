@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Store, Search } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -7,9 +7,14 @@ import { useTranslation } from '../hooks/useTranslation';
 import Layout from '@/components/layout/Layout';
 import './NearbyMap.css';
 
-// Module-level flag to track if map was initialized
-let mapInitialized = false;
-let initAttempt = 0;
+const DEFAULT_BEKASI_LOCATION = { lat: -6.2349, lng: 106.9896 };
+
+const isValidCoordinates = (coordinates) =>
+  Array.isArray(coordinates) &&
+  coordinates.length >= 2 &&
+  Number.isFinite(coordinates[0]) &&
+  Number.isFinite(coordinates[1]) &&
+  (coordinates[0] !== 0 || coordinates[1] !== 0);
 
 function NearbyMap() {
   const [userLocation, setUserLocation] = useState(null);
@@ -20,6 +25,7 @@ function NearbyMap() {
   const [mapReady, setMapReady] = useState(false);
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
+  const userMarkerRef = useRef(null);
   const markersLayerRef = useRef(null);
   const radiusCircleRef = useRef(null);
   const navigate = useNavigate();
@@ -27,37 +33,65 @@ function NearbyMap() {
 
   // Get user location
   useEffect(() => {
-    if (navigator.geolocation) {
+    let isActive = true;
+
+    const applyFallbackLocation = () => {
+      if (!isActive) return;
+      setUserLocation(DEFAULT_BEKASI_LOCATION);
+      setIsUsingDefaultLocation(true);
+    };
+
+    const resolveLocation = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          const profileResponse = await api.get('/users/profile');
+          const coordinates = profileResponse?.data?.location?.coordinates;
+          if (isValidCoordinates(coordinates) && isActive) {
+            setUserLocation({ lat: coordinates[1], lng: coordinates[0] });
+            setIsUsingDefaultLocation(false);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Could not load profile location, trying browser geolocation:', err);
+      }
+
+      if (!navigator.geolocation) {
+        applyFallbackLocation();
+        return;
+      }
+
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          if (!isActive) return;
           setUserLocation({
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           });
           setIsUsingDefaultLocation(false);
         },
-        () => {
-          // Default to Delhi, India (matching simulation data)
-          setUserLocation({ lat: 28.6139, lng: 77.2090 });
-          setIsUsingDefaultLocation(true);
+        (error) => {
+          console.warn('Browser geolocation unavailable, using Bekasi fallback:', error);
+          applyFallbackLocation();
         },
         { timeout: 10000, enableHighAccuracy: false }
       );
-    } else {
-      // Default to Delhi, India (matching simulation data)
-      setUserLocation({ lat: 28.6139, lng: 77.2090 });
-      setIsUsingDefaultLocation(true);
-    }
+    };
+
+    resolveLocation();
+
+    return () => {
+      isActive = false;
+    };
   }, []);
 
   // Initialize map
   useEffect(() => {
-    if (!userLocation || !mapContainerRef.current || mapInitialized) return;
+    if (!userLocation || !mapContainerRef.current || mapRef.current) return;
 
     let map = null;
     let isActive = true;
-    initAttempt++;
-    const currentAttempt = initAttempt;
 
     const initMap = async () => {
       try {
@@ -77,10 +111,13 @@ function NearbyMap() {
         });
         L.Marker.prototype.options.icon = DefaultIcon;
 
-        // Check if container is already initialized
+        // In dev strict mode/hot-reload, a stale leaflet id can remain.
         const container = mapContainerRef.current;
-        if (!container || container._leaflet_id || !isActive) {
+        if (!container || !isActive) {
           return;
+        }
+        if (container._leaflet_id) {
+          delete container._leaflet_id;
         }
 
         // Create map
@@ -95,7 +132,6 @@ function NearbyMap() {
           return;
         }
 
-        mapInitialized = true;
         mapRef.current = map;
         setMapReady(true);
 
@@ -113,12 +149,12 @@ function NearbyMap() {
         }).addTo(map);
 
         // Add user marker
-        L.marker([userLocation.lat, userLocation.lng])
+        userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng])
           .addTo(map)
           .bindPopup(t('nearby.youAreHere') || 'You are here');
 
       } catch (err) {
-        if (isActive && currentAttempt === initAttempt) {
+        if (isActive) {
           console.error('Map init error:', err);
           setMapError(err.message);
         }
@@ -131,23 +167,43 @@ function NearbyMap() {
     return () => {
       isActive = false;
       clearTimeout(timer);
-      if (map) {
-        map.remove();
+      if (mapRef.current) {
+        mapRef.current.remove();
         mapRef.current = null;
-        mapInitialized = false;
+        userMarkerRef.current = null;
+        markersLayerRef.current = null;
+        radiusCircleRef.current = null;
         setMapReady(false);
       }
     };
   }, [userLocation]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Update radius circle when radius changes (without reinitializing map)
+  // Keep user marker and radius circle synced with latest location.
+  useEffect(() => {
+    if (!mapRef.current || !userLocation) return;
+    const latLng = [userLocation.lat, userLocation.lng];
+    mapRef.current.setView(latLng, mapRef.current.getZoom());
+    if (radiusCircleRef.current) {
+      radiusCircleRef.current.setLatLng(latLng);
+    }
+    if (userMarkerRef.current) {
+      userMarkerRef.current.setLatLng(latLng);
+    }
+  }, [userLocation]);
+
+  // Update radius circle when radius changes (without reinitializing map).
   useEffect(() => {
     if (radiusCircleRef.current && mapRef.current) {
       radiusCircleRef.current.setRadius(radius);
     }
   }, [radius]);
 
-  const { data: sellers, isLoading: sellersLoading } = useQuery({
+  const {
+    data: sellers = [],
+    isLoading: sellersLoading,
+    isError: sellersError,
+    error: sellersQueryError,
+  } = useQuery({
     queryKey: ['nearbySellers', userLocation, radius],
     queryFn: async () => {
       if (!userLocation) return [];
@@ -162,14 +218,21 @@ function NearbyMap() {
             ? payload.sellers
             : [];
 
-        console.log('Nearby sellers found:', sellersData.length);
-        return sellersData;
+        const validSellers = sellersData.filter((seller) => {
+          const sellerId = seller?._id || seller?.id;
+          return sellerId && isValidCoordinates(seller?.location?.coordinates);
+        });
+
+        console.log('Nearby sellers found:', validSellers.length);
+        return validSellers;
       } catch (err) {
         console.error('Error fetching nearby sellers:', err);
         throw err;
       }
     },
     enabled: !!userLocation,
+    staleTime: 30000,
+    retry: 1,
   });
 
   const getSellerDisplayName = (seller) => {
@@ -186,22 +249,34 @@ function NearbyMap() {
     return 'Local Seller';
   };
 
-  // Add seller markers when sellers data changes and map is ready
-  useEffect(() => {
-    if (!mapReady || !mapRef.current || !sellers || sellers.length === 0) return;
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+  const filteredSellers = useMemo(() => {
+    return sellers.filter((seller) => {
+      if (!normalizedSearch) return true;
+      const displayName = getSellerDisplayName(seller).toLowerCase();
+      const city = (seller.location?.city || '').toLowerCase();
+      return displayName.includes(normalizedSearch) || city.includes(normalizedSearch);
+    });
+  }, [sellers, normalizedSearch]);
 
-    console.log('Adding seller markers:', sellers.length);
+  // Add seller markers when sellers data changes and map is ready.
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) return;
 
     const addMarkers = async () => {
       try {
         const L = (await import('leaflet')).default;
 
-        // Clear existing markers
-        if (markersLayerRef.current) {
-          markersLayerRef.current.clearLayers();
-        } else {
+        if (!markersLayerRef.current) {
           markersLayerRef.current = L.layerGroup().addTo(mapRef.current);
         }
+        markersLayerRef.current.clearLayers();
+
+        if (filteredSellers.length === 0) {
+          return;
+        }
+
+        console.log('Adding seller markers:', filteredSellers.length);
 
         // Create custom seller icon
         const sellerIcon = L.divIcon({
@@ -212,9 +287,9 @@ function NearbyMap() {
         });
 
         // Add seller markers
-        sellers.forEach(seller => {
+        filteredSellers.forEach((seller) => {
           const sellerId = seller?._id || seller?.id;
-          if (seller.location?.coordinates && sellerId) {
+          if (sellerId && isValidCoordinates(seller?.location?.coordinates)) {
             const displayName = getSellerDisplayName(seller);
             const subtitle = getSellerSubtitle(seller);
             const [lng, lat] = seller.location.coordinates;
@@ -246,15 +321,7 @@ function NearbyMap() {
     };
 
     addMarkers();
-  }, [sellers, userLocation, mapReady]);
-
-  const normalizedSearch = searchQuery.trim().toLowerCase();
-  const filteredSellers = (sellers || []).filter((seller) => {
-    if (!normalizedSearch) return true;
-    const displayName = getSellerDisplayName(seller).toLowerCase();
-    const city = (seller.location?.city || '').toLowerCase();
-    return displayName.includes(normalizedSearch) || city.includes(normalizedSearch);
-  });
+  }, [filteredSellers, userLocation, mapReady]);
 
 
 
@@ -315,6 +382,10 @@ function NearbyMap() {
             <h3 className="font-semibold mb-3">{t('nearby.nearbySellers')} ({filteredSellers.length})</h3>
             {sellersLoading ? (
               <p className="text-sm text-muted-foreground">{t('nearby.loadingSellers')}</p>
+            ) : sellersError ? (
+              <p className="text-sm text-destructive">
+                {t('nearby.errorLoadingMap')}: {sellersQueryError?.message || 'Failed to load sellers'}
+              </p>
             ) : filteredSellers.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t('nearby.noSellers')}</p>
             ) : (
