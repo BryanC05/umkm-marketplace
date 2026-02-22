@@ -206,6 +206,27 @@ go run ./cmd/server
 
 The backend will run on http://localhost:5000
 
+### Adding Test Data (Seed Simulation)
+
+To populate the database with test sellers and products for testing the Nearby feature:
+
+```bash
+cd go-backend
+npm install
+npm run seed:food
+```
+
+This will create 3 test seller accounts and 2 buyer accounts in the Bekasi area:
+
+**Seller Accounts:**
+- Dapur Summarecon (email: seller.summarecon@trolitoko.test, password: test123)
+- BINUS Student Kitchen (email: seller.binusbekasi@trolitoko.test, password: test123)
+- Warung Harapan Indah (email: seller.harapanindah@trolitoko.test, password: test123)
+
+**Buyer Accounts:**
+- Budi Test Nearby (email: buyer.nearby1@trolitoko.test, password: test123)
+- Nadia Test Nearby (email: buyer.nearby2@trolitoko.test, password: test123)
+
 ### Frontend Setup
 
 1. Navigate to the frontend directory:

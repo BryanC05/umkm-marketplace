@@ -55,3 +55,27 @@ secret*.yaml
 *.bak
 *.backup
 *.old
+
+# Dependency and build artifacts
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+build/
+**/build/
+.cache/
+**/.cache/
+.vite/
+**/.vite/
+
+# OS/editor noise
+.DS_Store
+**/.DS_Store
+Thumbs.db
+
+# Expo / EAS local artifacts
+**/.expo/
+**/.expo-shared/
+**/.eas/
+*.apk
+*.aab

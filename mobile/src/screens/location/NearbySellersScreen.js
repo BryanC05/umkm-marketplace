@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
-    View, Text, TouchableOpacity, FlatList, TextInput, ActivityIndicator, ScrollView, Dimensions, StyleSheet, Animated, PanResponder, Modal, Pressable
+    View, Text, TouchableOpacity, FlatList, TextInput, ActivityIndicator, ScrollView, Dimensions, StyleSheet, Animated, PanResponder, Modal, Pressable, Alert, Linking, Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -208,6 +208,42 @@ export default function NearbySellersScreen() {
         return 'Local Seller';
     };
 
+    const navigateToStore = useCallback((seller) => {
+        const coords = getSellerCoordinates(seller);
+        if (!coords) {
+            Alert.alert('Error', 'Seller location not available');
+            return;
+        }
+
+        const sellerName = getSellerDisplayName(seller);
+        const lat = coords.lat;
+        const lng = coords.lng;
+
+        // Try to open native maps app with directions
+        const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&destination_place_id=${sellerName}`;
+        const appleMapsUrl = `maps://app?daddr=${lat},${lng}&q=${encodeURIComponent(sellerName)}`;
+
+        const openMaps = (url) => {
+            Linking.canOpenURL(url).then((supported) => {
+                if (supported) {
+                    Linking.openURL(url);
+                } else {
+                    // Fallback to Google Maps web
+                    Linking.openURL(googleMapsUrl);
+                }
+            }).catch(() => {
+                Linking.openURL(googleMapsUrl);
+            });
+        };
+
+        // Try Apple Maps on iOS, fallback to Google Maps
+        if (Platform.OS === 'ios') {
+            openMaps(appleMapsUrl);
+        } else {
+            openMaps(googleMapsUrl);
+        }
+    }, [location]);
+
     const calculateDistance = (sellerLocation) => {
         if (!location) return null;
         const coords = getSellerCoordinates({ location: sellerLocation });
@@ -308,6 +344,12 @@ export default function NearbySellersScreen() {
                             <Text style={styles.distance}>{distance} km</Text>
                         </View>
                     )}
+                    <TouchableOpacity 
+                        style={[styles.navigateBtn, { backgroundColor: '#22c55e' }]}
+                        onPress={() => navigateToStore(item)}
+                    >
+                        <Ionicons name="navigate" size={16} color="#fff" />
+                    </TouchableOpacity>
                 </View>
             </TouchableOpacity>
         );
@@ -863,6 +905,14 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: '#fff',
         marginLeft: 4,
+    },
+    navigateBtn: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: 8,
     },
     emptyContainer: {
         alignItems: 'center',

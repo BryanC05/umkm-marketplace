@@ -6,6 +6,7 @@ Seed script:
 cd go-backend
 npm install
 node seed-food-simulation.js
+npm run seed:food
 ```
 
 Database cleanup before reseed (optional):

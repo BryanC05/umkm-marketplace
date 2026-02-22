@@ -19,6 +19,7 @@ function NearbyMap() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isUsingDefaultLocation, setIsUsingDefaultLocation] = useState(false);
   const [isUsingProfileLocation, setIsUsingProfileLocation] = useState(false);
+  const [geolocationError, setGeolocationError] = useState(null);
   const [mapError, setMapError] = useState(null);
   const [mapReady, setMapReady] = useState(false);
   const [selectedSeller, setSelectedSeller] = useState(null);
@@ -33,6 +34,7 @@ function NearbyMap() {
   const routeLineRef = useRef(null);
   const navigationMarkerRef = useRef(null);
   const watchIdRef = useRef(null);
+  const liveLocationWatchIdRef = useRef(null);
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -162,6 +164,7 @@ function NearbyMap() {
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        setGeolocationError(null);
         applyCurrentLocation({
           lat: position.coords.latitude,
           lng: position.coords.longitude,
@@ -169,6 +172,7 @@ function NearbyMap() {
       },
       (error) => {
         console.warn('Could not refresh GPS location:', error);
+        setGeolocationError('Unable to access GPS. Please allow location permission in your browser.');
       },
       { timeout: GEOLOCATION_TIMEOUT, enableHighAccuracy: true, maximumAge: GEOLOCATION_MAX_AGE }
     );
@@ -284,6 +288,57 @@ function NearbyMap() {
     }
   }, [userLocation]);
 
+  // Keep tracking user movement continuously, even outside navigation mode.
+  useEffect(() => {
+    if (!navigator.geolocation || liveLocationWatchIdRef.current !== null) {
+      return;
+    }
+
+    liveLocationWatchIdRef.current = navigator.geolocation.watchPosition(
+      (position) => {
+        const latestLocation = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+
+        setGeolocationError(null);
+        setUserLocation((previousLocation) => {
+          if (!previousLocation) {
+            return latestLocation;
+          }
+          const movedDistanceKm = haversineDistanceKm(previousLocation, latestLocation);
+          // Prevent noisy GPS jitter from triggering unnecessary rerenders/API calls.
+          if (movedDistanceKm < 0.03) {
+            return previousLocation;
+          }
+          return latestLocation;
+        });
+        setIsUsingDefaultLocation(false);
+        setIsUsingProfileLocation(false);
+      },
+      (error) => {
+        console.warn('Live location tracking unavailable:', error);
+        if (error.code === 1) {
+          setGeolocationError('Location permission denied. Enable location access to track your live position.');
+          return;
+        }
+        setGeolocationError('Live location temporarily unavailable.');
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: GEOLOCATION_TIMEOUT,
+        maximumAge: GEOLOCATION_MAX_AGE,
+      }
+    );
+
+    return () => {
+      if (liveLocationWatchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(liveLocationWatchIdRef.current);
+        liveLocationWatchIdRef.current = null;
+      }
+    };
+  }, []);
+
   // Update radius circle when radius changes (without reinitializing map).
   useEffect(() => {
     if (radiusCircleRef.current && mapRef.current) {
@@ -304,16 +359,21 @@ function NearbyMap() {
         const response = await api.get(
           `/users/nearby-sellers?lat=${userLocation.lat}&lng=${userLocation.lng}&radius=${radius}`
         );
+        console.log('API response:', response);
         const payload = response?.data;
+        console.log('API payload:', payload);
         const sellersData = Array.isArray(payload)
           ? payload
           : Array.isArray(payload?.sellers)
             ? payload.sellers
             : [];
 
+        console.log('Sellers data raw:', sellersData);
         const validSellers = sellersData.filter((seller) => {
           const sellerId = seller?._id || seller?.id;
-          return sellerId && isValidCoordinates(seller?.location?.coordinates);
+          const hasValidCoords = isValidCoordinates(seller?.location?.coordinates);
+          console.log('Seller:', seller?.businessName || seller?.name, 'coords:', seller?.location?.coordinates, 'valid:', hasValidCoords);
+          return sellerId && hasValidCoords;
         });
 
         console.log('Nearby sellers found:', validSellers.length);
@@ -415,8 +475,9 @@ function NearbyMap() {
             const [lng, lat] = seller.location.coordinates;
             const marker = L.marker([lat, lng], { icon: sellerIcon });
             
+            // When clicking marker, just show popup without starting navigation
             marker.on('click', () => {
-              setSelectedSeller(seller);
+              // Just let the popup show - don't set selectedSeller here
             });
 
             const popupContent = `
@@ -665,6 +726,11 @@ function NearbyMap() {
                 </button>
               )}
             </div>
+            {geolocationError && (
+              <p className="mt-2 text-xs bg-amber-100 text-amber-800 p-2 rounded">
+                {geolocationError}
+              </p>
+            )}
           </div>
 
           <div className="search-box mb-4 relative">

@@ -123,9 +123,33 @@ mobile/
 - Android Studio (for Android builds)
 - Xcode (for iOS builds, macOS only)
 
-### Build Android by Expo Go
+## Commands (Run and Build)
+
+From `mobile/`:
+
 ```bash
-npx eas-cli build --platform android --profile preview
+# install dependencies
+npm install
+
+# start Expo dev server
+npm start
+
+# run on Android emulator/device (native run)
+npm run android
+
+# run on iOS simulator/device (macOS only)
+npm run ios
+
+# run web preview
+npm run web
+
+# cloud build Android (EAS preview profile)
+npm run build:android
+# or
+npx eas build --platform android --profile preview
+
+# cloud build iOS (EAS preview profile)
+npx eas build --platform ios --profile preview
 ```
 
 ### Installation
@@ -182,30 +206,29 @@ npm run android
 
 ### Option 1: EAS Build (Recommended)
 
-1. Install EAS CLI:
-```bash
-npm install -g eas-cli
-```
-
-2. Login to Expo:
+1. Login to Expo:
 ```bash
 npx expo login
 ```
 
-3. Configure build:
+2. Configure EAS in this project (first time only):
 ```bash
 npx eas build:configure
 ```
 
-4. Build for Android:
+3. Build for Android (Preview profile):
 ```bash
 npx eas build -p android --profile preview
 ```
 
-5. Build for iOS:
+4. Build for iOS (Preview profile):
 ```bash
 npx eas build -p ios --profile preview
 ```
+
+Notes:
+- `eas-cli` is already listed in `devDependencies`, so global install is not required.
+- If you prefer script usage, run `npm run build:android`.
 
 ### Option 2: Local Build
 
