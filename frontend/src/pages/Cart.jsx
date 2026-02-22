@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Trash2, ArrowRight, ArrowLeft, ShoppingBag, MapPin, Plus, Minus, CreditCard, Check, Store, ChevronDown, ChevronUp, Truck, Clock, Navigation } from 'lucide-react';
+import { Trash2, ArrowRight, ArrowLeft, ShoppingBag, MapPin, Plus, Minus, CreditCard, Check, Store, ChevronDown, ChevronUp, Truck, Clock, Navigation, AlertCircle } from 'lucide-react';
 import { useCartStore, useAuthStore } from '../store/authStore';
 import { useTranslation } from '../hooks/useTranslation';
 import api from '../utils/api';
@@ -37,6 +37,7 @@ function Cart() {
     const [paymentMethod, setPaymentMethod] = useState('cash');
     const [deliveryType, setDeliveryType] = useState('delivery');
     const [preorderTime, setPreorderTime] = useState('');
+    const [preorderDate, setPreorderDate] = useState('');
     const [loading, setLoading] = useState(false);
     const [deliveryLocation, setDeliveryLocation] = useState(null);
     const [distanceError, setDistanceError] = useState(null);
@@ -169,8 +170,9 @@ function Cart() {
                 notes,
                 paymentMethod,
                 deliveryType,
-                isPreorder: !!preorderTime,
-                preorderTime: preorderTime || null
+                isPreorder: !!preorderTime || !!preorderDate,
+                preorderTime: preorderTime || null,
+                deliveryDate: preorderDate || null
             };
 
             await api.post('/orders', orderData);
@@ -365,6 +367,55 @@ function Cart() {
                                         : 'Tell the driver when to deliver your order'
                                     }
                                 </p>
+                            </div>
+
+                            {/* Preorder Date - Optional for advance orders */}
+                            <div className="border rounded-lg p-4 bg-secondary/30">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <input
+                                        type="checkbox"
+                                        id="enablePreorder"
+                                        checked={!!preorderDate}
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                // Set default to tomorrow
+                                                const tomorrow = new Date();
+                                                tomorrow.setDate(tomorrow.getDate() + 1);
+                                                setPreorderDate(tomorrow.toISOString().split('T')[0]);
+                                            } else {
+                                                setPreorderDate('');
+                                            }
+                                        }}
+                                        className="w-4 h-4"
+                                    />
+                                    <Label htmlFor="enablePreorder" className="text-base font-semibold cursor-pointer">
+                                        Preorder for a future date
+                                    </Label>
+                                </div>
+                                {preorderDate && (
+                                    <div className="space-y-3">
+                                        <div>
+                                            <Label className="text-sm">Select Date</Label>
+                                            <Input
+                                                type="date"
+                                                value={preorderDate}
+                                                min={new Date().toISOString().split('T')[0]}
+                                                max={new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                                                onChange={(e) => setPreorderDate(e.target.value)}
+                                                className="h-10"
+                                            />
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                Order will be prepared for this date. Maximum 30 days in advance.
+                                            </p>
+                                        </div>
+                                        <Alert>
+                                            <AlertCircle className="h-4 w-4" />
+                                            <AlertDescription className="text-sm">
+                                                Seller needs to approve your preorder request before payment.
+                                            </AlertDescription>
+                                        </Alert>
+                                    </div>
+                                )}
                             </div>
 
                             <div>

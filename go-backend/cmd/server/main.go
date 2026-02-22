@@ -112,6 +112,8 @@ func main() {
 			orders.GET("/:id", orderHandler.GetOrderByID)
 			orders.PUT("/:id/status", orderHandler.UpdateOrderStatus)
 			orders.PUT("/:id/payment", orderHandler.UpdatePayment)
+			orders.PUT("/:id/seller-response", orderHandler.SellerResponse)
+			orders.PUT("/:id/buyer-confirm", orderHandler.BuyerConfirm)
 			orders.GET("/:id/chat-room", orderHandler.GetOrderChatRoom)
 			orders.GET("/seller/product-tracking", orderHandler.GetProductTracking)
 

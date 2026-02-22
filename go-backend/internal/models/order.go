@@ -22,9 +22,17 @@ type Order struct {
 	// Delivery options
 	DeliveryType string `bson:"deliveryType" json:"deliveryType"` // "delivery" or "pickup"
 
-	// Preorder for food
-	IsPreorder   bool   `bson:"isPreorder" json:"isPreorder"`
-	PreorderTime string `bson:"preorderTime" json:"preorderTime"` // Time like "14:30" when food should be ready
+	// Preorder / Scheduled delivery
+	IsPreorder     bool   `bson:"isPreorder" json:"isPreorder"`         // used for scheduled delivery
+	PreorderTime   string `bson:"preorderTime" json:"preorderTime"`     // delivery time "19:00"
+	DeliveryDate   string `bson:"deliveryDate" json:"deliveryDate"`     // "2026-02-25"
+	ScheduledNotes string `bson:"scheduledNotes" json:"scheduledNotes"` // buyer notes for scheduled delivery
+
+	// Request status for scheduled delivery flow
+	RequestStatus       string    `bson:"requestStatus" json:"requestStatus"`             // pending_seller_review, seller_accepted, seller_declined, awaiting_buyer_confirm
+	RequestDeadline     time.Time `bson:"requestDeadline" json:"requestDeadline"`         // 24h from creation
+	SellerResponseNotes string    `bson:"sellerResponseNotes" json:"sellerResponseNotes"` // seller reason for decline/changes
+	BuyerConfirmed      bool      `bson:"buyerConfirmed" json:"buyerConfirmed"`           // buyer confirmed after seller accepted
 
 	// Driver tracking for delivery
 	DriverID       *primitive.ObjectID  `bson:"driverId,omitempty" json:"driverId,omitempty"`

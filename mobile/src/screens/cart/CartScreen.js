@@ -35,6 +35,12 @@ export default function CartScreen({ navigation }) {
     const [notes, setNotes] = useState('');
     const [processing, setProcessing] = useState(false);
     const [expandedSellers, setExpandedSellers] = useState({});
+    
+    // Scheduled delivery states
+    const [enableScheduledDelivery, setEnableScheduledDelivery] = useState(false);
+    const [scheduledDate, setScheduledDate] = useState('');
+    const [scheduledTime, setScheduledTime] = useState('');
+    const [scheduledNotes, setScheduledNotes] = useState('');
 
     useEffect(() => {
         if (!isLoaded) loadCart();
@@ -192,6 +198,8 @@ export default function CartScreen({ navigation }) {
                 deliveryType,
                 preorderTime: preorderTime || null,
                 notes: notes || '',
+                deliveryDate: enableScheduledDelivery ? scheduledDate : '',
+                scheduledNotes: enableScheduledDelivery ? scheduledNotes : '',
                 deliveryAddress: deliveryType === 'delivery' ? {
                     address: 'Default Address',
                     coordinates: [0, 0]
@@ -406,15 +414,107 @@ export default function CartScreen({ navigation }) {
                             <Text style={styles.sectionLabel}>
                                 {deliveryType === 'pickup' ? 'When do you want to pick up?' : 'When should we deliver?'}
                             </Text>
-                            <View style={styles.inputContainer}>
-                                <Text style={styles.inputLabel}>Select Time</Text>
-                                {/* Time input - using text input for simplicity */}
+                            
+                            {/* Scheduled Delivery Toggle */}
+                            <TouchableOpacity 
+                                style={[styles.optionCard, { marginBottom: 12 }]}
+                                onPress={() => setEnableScheduledDelivery(!enableScheduledDelivery)}
+                            >
+                                <View style={styles.optionIcon}>
+                                    <Ionicons name="calendar-outline" size={22} color={enableScheduledDelivery ? '#10b981' : colors.primary} />
+                                </View>
+                                <View style={styles.optionInfo}>
+                                    <Text style={[styles.optionName, { color: enableScheduledDelivery ? '#10b981' : colors.text }]}>
+                                        Schedule for later
+                                    </Text>
+                                    <Text style={styles.optionDesc}>
+                                        Set specific date & time for delivery
+                                    </Text>
+                                </View>
+                                <View style={[
+                                    styles.checkIcon, 
+                                    { backgroundColor: enableScheduledDelivery ? '#10b981' : colors.border }
+                                ]}>
+                                    <Ionicons name="checkmark" size={16} color="#fff" />
+                                </View>
+                            </TouchableOpacity>
+                            
+                            {enableScheduledDelivery && (
+                                <View style={{ gap: 12 }}>
+                                    {/* Date Selection */}
+                                    <View style={styles.inputContainer}>
+                                        <Text style={styles.inputLabel}>Delivery Date</Text>
+                                        <TouchableOpacity 
+                                            style={styles.timeInput}
+                                            onPress={() => {
+                                                // Generate next 30 days
+                                                const today = new Date();
+                                                const maxDate = new Date();
+                                                maxDate.setDate(today.getDate() + 30);
+                                                
+                                                // For simplicity, set a default date (tomorrow)
+                                                const tomorrow = new Date();
+                                                tomorrow.setDate(tomorrow.getDate() + 1);
+                                                const dateStr = tomorrow.toISOString().split('T')[0];
+                                                setScheduledDate(dateStr);
+                                            }}
+                                        >
+                                            <Text style={{ fontSize: 16, color: scheduledDate ? colors.text : colors.textSecondary }}>
+                                                {scheduledDate || 'Select date'}
+                                            </Text>
+                                            <Ionicons name="calendar-outline" size={20} color={colors.textSecondary} />
+                                        </TouchableOpacity>
+                                        <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 4 }}>
+                                            Maximum 30 days ahead
+                                        </Text>
+                                    </View>
+                                    
+                                    {/* Time Selection */}
+                                    <View style={styles.inputContainer}>
+                                        <Text style={styles.inputLabel}>Delivery Time</Text>
+                                        <TouchableOpacity 
+                                            style={styles.timeInput}
+                                            onPress={() => {
+                                                // Default to 19:00
+                                                setScheduledTime('19:00');
+                                            }}
+                                        >
+                                            <Text style={{ fontSize: 16, color: scheduledTime ? colors.text : colors.textSecondary }}>
+                                                {scheduledTime || 'Select time'}
+                                            </Text>
+                                            <Ionicons name="time-outline" size={20} color={colors.textSecondary} />
+                                        </TouchableOpacity>
+                                    </View>
+                                    
+                                    {/* Scheduled Delivery Notes */}
+                                    <View style={styles.inputContainer}>
+                                        <Text style={styles.inputLabel}>Delivery Notes (optional)</Text>
+                                        <TouchableOpacity 
+                                            style={styles.noteInput}
+                                            onPress={() => {
+                                                // In real app, show text input
+                                            }}
+                                        >
+                                            <Text style={{ fontSize: 14, color: scheduledNotes ? colors.text : colors.textSecondary }}>
+                                                {scheduledNotes || 'e.g., Leave at door, Ring bell...'}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                    
+                                    <View style={[styles.infoBox, { backgroundColor: '#dbeafe' }]}>
+                                        <Ionicons name="information-circle" size={20} color="#2563eb" />
+                                        <Text style={[styles.infoText, { color: '#1e40af' }]}>
+                                            Seller needs to approve your request before payment
+                                        </Text>
+                                    </View>
+                                </View>
+                            )}
+                            
+                            {!enableScheduledDelivery && (
                                 <View style={styles.timeInput}>
                                     <TouchableOpacity 
-                                        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                                        style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
                                         onPress={() => {
-                                            // In real app, show time picker
-                                            // For now, set a default time
                                             setPreorderTime('14:00');
                                         }}
                                     >
@@ -424,13 +524,7 @@ export default function CartScreen({ navigation }) {
                                         <Ionicons name="time-outline" size={20} color={colors.textSecondary} />
                                     </TouchableOpacity>
                                 </View>
-                                <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 4 }}>
-                                    {deliveryType === 'pickup' 
-                                        ? 'Tell the seller when you plan to pick up'
-                                        : 'Tell the driver when to deliver'
-                                    }
-                                </Text>
-                            </View>
+                            )}
                         </View>
 
                         {/* Note for Seller */}
@@ -508,7 +602,12 @@ export default function CartScreen({ navigation }) {
                             disabled={processing}
                         >
                             <Text style={styles.payBtnText}>
-                                {processing ? 'Processing...' : `Place Order`}
+                                {processing 
+                                    ? 'Processing...' 
+                                    : enableScheduledDelivery 
+                                        ? 'Send Request' 
+                                        : 'Place Order'
+                                }
                             </Text>
                         </TouchableOpacity>
 

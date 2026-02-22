@@ -60,9 +60,11 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 		// Delivery options
 		DeliveryType string `json:"deliveryType"` // "delivery" or "pickup"
 
-		// Preorder for food
-		IsPreorder   bool   `json:"isPreorder"`
-		PreorderTime string `json:"preorderTime"` // Time like "14:30" when food should be ready
+		// Preorder / Scheduled delivery
+		IsPreorder     bool   `json:"isPreorder"`
+		PreorderTime   string `json:"preorderTime"`   // delivery time "19:00"
+		DeliveryDate   string `json:"deliveryDate"`   // "2026-02-25"
+		ScheduledNotes string `json:"scheduledNotes"` // buyer notes for scheduled delivery
 
 		PaymentDetails struct {
 			EwalletProvider *string `json:"ewalletProvider"`
@@ -94,6 +96,35 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 	if !validDeliveryTypes[req.DeliveryType] {
 		c.JSON(400, gin.H{"message": "Invalid delivery type. Must be 'delivery' or 'pickup'"})
 		return
+	}
+
+	// Validate scheduled delivery
+	isScheduled := req.DeliveryDate != "" && req.PreorderTime != ""
+	if isScheduled {
+		parsedDate, err := time.Parse("2006-01-02", req.DeliveryDate)
+		if err != nil {
+			c.JSON(400, gin.H{"message": "Invalid delivery date format. Use YYYY-MM-DD"})
+			return
+		}
+
+		today := time.Now().Truncate(24 * time.Hour)
+		maxDate := today.AddDate(0, 0, 30) // Max 30 days ahead
+
+		if parsedDate.Before(today) {
+			c.JSON(400, gin.H{"message": "Delivery date cannot be in the past"})
+			return
+		}
+		if parsedDate.After(maxDate) {
+			c.JSON(400, gin.H{"message": "Delivery date cannot be more than 30 days ahead"})
+			return
+		}
+
+		// Validate time format
+		_, err = time.Parse("15:04", req.PreorderTime)
+		if err != nil {
+			c.JSON(400, gin.H{"message": "Invalid delivery time format. Use HH:MM (24-hour)"})
+			return
+		}
 	}
 
 	productsCollection := database.GetDB().Collection("products")
@@ -259,8 +290,17 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 		},
 		Notes:        req.Notes,
 		DeliveryType: req.DeliveryType,
-		IsPreorder:   req.IsPreorder,
+		IsPreorder:   isScheduled,
 		PreorderTime: req.PreorderTime,
+		DeliveryDate: req.DeliveryDate,
+	}
+
+	// Handle scheduled delivery flow
+	if isScheduled {
+		order.RequestStatus = "pending_seller_review"
+		order.RequestDeadline = time.Now().Add(24 * time.Hour)
+		order.ScheduledNotes = req.ScheduledNotes
+		order.Status = "pending_seller_review"
 	}
 
 	result, err := ordersCollection.InsertOne(context.Background(), order)
@@ -447,6 +487,12 @@ func (h *OrderHandler) UpdateOrderStatus(c *gin.Context) {
 		return
 	}
 
+	// Prevent status update while pending seller review
+	if order.RequestStatus == "pending_seller_review" {
+		c.JSON(400, gin.H{"message": "Please respond to the scheduled delivery request first"})
+		return
+	}
+
 	_, err = ordersCollection.UpdateOne(
 		context.Background(),
 		bson.M{"_id": orderObjID},
@@ -509,6 +555,17 @@ func (h *OrderHandler) UpdatePayment(c *gin.Context) {
 	if !isBuyer && !isSeller {
 		c.JSON(403, gin.H{"message": "Not authorized"})
 		return
+	}
+
+	// Validate buyer confirmation for scheduled delivery orders
+	if order.RequestStatus != "" && !order.BuyerConfirmed {
+		if isBuyer {
+			c.JSON(400, gin.H{
+				"message":         "Please confirm the order after seller accepted",
+				"requiresConfirm": true,
+			})
+			return
+		}
 	}
 
 	update := bson.M{}
@@ -893,4 +950,231 @@ func (h *OrderHandler) AssignDriver(c *gin.Context) {
 		"driverName":  req.DriverName,
 		"driverPhone": req.DriverPhone,
 	})
+}
+
+// SellerResponse handles seller's response to a scheduled delivery request
+func (h *OrderHandler) SellerResponse(c *gin.Context) {
+	userID := c.GetString("userID")
+	orderID := c.Param("id")
+
+	var req struct {
+		Action string `json:"action" binding:"required"` // accept, decline, request_changes
+		Notes  string `json:"notes"`                     // required for request_changes
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"message": err.Error()})
+		return
+	}
+
+	// Validate action
+	validActions := map[string]bool{
+		"accept":          true,
+		"decline":         true,
+		"request_changes": true,
+	}
+	if !validActions[req.Action] {
+		c.JSON(400, gin.H{"message": "Invalid action. Must be: accept, decline, or request_changes"})
+		return
+	}
+
+	// Request changes requires notes
+	if req.Action == "request_changes" && req.Notes == "" {
+		c.JSON(400, gin.H{"message": "Notes are required when requesting changes"})
+		return
+	}
+
+	orderObjID, err := primitive.ObjectIDFromHex(orderID)
+	if err != nil {
+		c.JSON(400, gin.H{"message": "Invalid order ID"})
+		return
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		c.JSON(400, gin.H{"message": "Invalid user ID"})
+		return
+	}
+
+	ordersCollection := database.GetDB().Collection("orders")
+	var order models.Order
+	err = ordersCollection.FindOne(context.Background(), bson.M{
+		"_id":    orderObjID,
+		"seller": userObjID,
+	}).Decode(&order)
+	if err != nil {
+		c.JSON(404, gin.H{"message": "Order not found or unauthorized"})
+		return
+	}
+
+	// Validate order is in pending_seller_review status
+	if order.RequestStatus != "pending_seller_review" {
+		c.JSON(400, gin.H{"message": "Order is not pending seller review"})
+		return
+	}
+
+	// Update order based on action
+	update := bson.M{
+		"sellerResponseNotes": req.Notes,
+		"updatedAt":           time.Now(),
+	}
+
+	switch req.Action {
+	case "accept":
+		update["requestStatus"] = "seller_accepted"
+		update["status"] = "seller_accepted"
+	case "decline":
+		update["requestStatus"] = "seller_declined"
+		update["status"] = "cancelled"
+	case "request_changes":
+		update["requestStatus"] = "awaiting_buyer_confirm"
+		update["status"] = "awaiting_buyer_confirm"
+	}
+
+	_, err = ordersCollection.UpdateOne(
+		context.Background(),
+		bson.M{"_id": orderObjID},
+		bson.M{"$set": update},
+	)
+	if err != nil {
+		c.JSON(500, gin.H{"message": "Failed to update order"})
+		return
+	}
+
+	// Fetch updated order
+	var updatedOrder models.Order
+	ordersCollection.FindOne(context.Background(), bson.M{"_id": orderObjID}).Decode(&updatedOrder)
+
+	// TODO: Send notification to buyer
+
+	c.JSON(200, updatedOrder)
+}
+
+// BuyerConfirm handles buyer's confirmation after seller accepted
+func (h *OrderHandler) BuyerConfirm(c *gin.Context) {
+	userID := c.GetString("userID")
+	orderID := c.Param("id")
+
+	var req struct {
+		Confirm bool `json:"confirm"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"message": err.Error()})
+		return
+	}
+
+	orderObjID, err := primitive.ObjectIDFromHex(orderID)
+	if err != nil {
+		c.JSON(400, gin.H{"message": "Invalid order ID"})
+		return
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		c.JSON(400, gin.H{"message": "Invalid user ID"})
+		return
+	}
+
+	ordersCollection := database.GetDB().Collection("orders")
+	var order models.Order
+	err = ordersCollection.FindOne(context.Background(), bson.M{
+		"_id":   orderObjID,
+		"buyer": userObjID,
+	}).Decode(&order)
+	if err != nil {
+		c.JSON(404, gin.H{"message": "Order not found or unauthorized"})
+		return
+	}
+
+	// Validate order is in seller_accepted or awaiting_buyer_confirm status
+	if order.RequestStatus != "seller_accepted" && order.RequestStatus != "awaiting_buyer_confirm" {
+		c.JSON(400, gin.H{"message": "Order is not awaiting buyer confirmation"})
+		return
+	}
+
+	if !req.Confirm {
+		// Buyer declines - cancel order
+		_, err = ordersCollection.UpdateOne(
+			context.Background(),
+			bson.M{"_id": orderObjID},
+			bson.M{"$set": bson.M{
+				"requestStatus": "buyer_declined",
+				"status":        "cancelled",
+				"updatedAt":     time.Now(),
+			}},
+		)
+		if err != nil {
+			c.JSON(500, gin.H{"message": "Failed to update order"})
+			return
+		}
+
+		c.JSON(200, gin.H{"message": "Order cancelled", "status": "cancelled"})
+		return
+	}
+
+	// Buyer confirms - proceed to payment
+	_, err = ordersCollection.UpdateOne(
+		context.Background(),
+		bson.M{"_id": orderObjID},
+		bson.M{"$set": bson.M{
+			"buyerConfirmed": true,
+			"requestStatus":  "",
+			"status":         "pending",
+			"updatedAt":      time.Now(),
+		}},
+	)
+	if err != nil {
+		c.JSON(500, gin.H{"message": "Failed to update order"})
+		return
+	}
+
+	// Fetch updated order
+	var updatedOrder models.Order
+	ordersCollection.FindOne(context.Background(), bson.M{"_id": orderObjID}).Decode(&updatedOrder)
+
+	// TODO: Send notification to seller
+
+	c.JSON(200, updatedOrder)
+}
+
+// CleanupExpiredRequests auto-declines orders that exceeded seller response deadline
+func (h *OrderHandler) CleanupExpiredRequests() {
+	ordersCollection := database.GetDB().Collection("orders")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	cursor, err := ordersCollection.Find(ctx, bson.M{
+		"requestStatus":   "pending_seller_review",
+		"requestDeadline": bson.M{"$lt": time.Now()},
+	})
+	if err != nil {
+		return
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var order models.Order
+		if err := cursor.Decode(&order); err != nil {
+			continue
+		}
+
+		_, err = ordersCollection.UpdateOne(
+			ctx,
+			bson.M{"_id": order.ID},
+			bson.M{"$set": bson.M{
+				"requestStatus":       "seller_declined",
+				"status":              "cancelled",
+				"scheduledNotes":      "Auto-declined: seller did not respond in time",
+				"sellerResponseNotes": "Auto-declined: seller did not respond in time",
+				"updatedAt":           time.Now(),
+			}},
+		)
+		if err != nil {
+			continue
+		}
+
+		// TODO: Send notification to buyer about auto-decline
+	}
 }

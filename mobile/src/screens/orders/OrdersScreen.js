@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     View, Text, FlatList, TouchableOpacity,
-    RefreshControl, Image,
+    RefreshControl, Image, Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeStore } from '../../store/themeStore';
 import { useLanguageStore } from '../../store/languageStore';
+import { useAuthStore } from '../../store/authStore';
 import api from '../../api/api';
 import { getImageUrl, formatPrice, formatDate } from '../../utils/helpers';
 import { PLACEHOLDER_IMAGE } from '../../config';
@@ -17,6 +18,7 @@ const DELIVERY_STATUSES = ['claimed', 'picked_up', 'on_the_way', 'arrived'];
 export default function OrdersScreen({ navigation }) {
     const { colors } = useThemeStore();
     const { t } = useLanguageStore();
+    const { user } = useAuthStore();
     const STATUS_COLORS = {
         pending: { bg: '#fef3c7', text: '#92400e', label: t.pending },
         confirmed: { bg: '#dbeafe', text: '#1e40af', label: t.confirmed },
@@ -28,6 +30,11 @@ export default function OrdersScreen({ navigation }) {
         arrived: { bg: '#d1fae5', text: '#065f46', label: t.arrived || 'Arrived' },
         delivered: { bg: '#d1fae5', text: '#065f46', label: t.delivered },
         cancelled: { bg: '#fee2e2', text: '#991b1b', label: t.cancelled },
+        // Scheduled delivery statuses
+        pending_seller_review: { bg: '#fef3c7', text: '#92400e', label: 'Waiting for Seller' },
+        seller_accepted: { bg: '#dbeafe', text: '#1e40af', label: 'Awaiting Confirmation' },
+        seller_declined: { bg: '#fee2e2', text: '#991b1b', label: 'Request Declined' },
+        awaiting_buyer_confirm: { bg: '#fef3c7', text: '#92400e', label: 'Review Required' },
     };
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -57,6 +64,40 @@ export default function OrdersScreen({ navigation }) {
 
     const toggleExpand = (orderId) => {
         setExpandedOrders(prev => ({ ...prev, [orderId]: !prev[orderId] }));
+    };
+
+    const handleSellerResponse = async (orderId, action, notes = '') => {
+        try {
+            await api.put(`/orders/${orderId}/seller-response`, { action, notes });
+            Alert.alert('Success', `Order ${action} successfully`);
+            fetchOrders();
+        } catch (error) {
+            Alert.alert('Error', error.response?.data?.message || 'Failed to respond to order');
+        }
+    };
+
+    const showSellerResponseModal = (order) => {
+        Alert.alert(
+            'Respond to Request',
+            'Choose an action for this scheduled delivery request',
+            [
+                { text: 'Accept', onPress: () => handleSellerResponse(order._id, 'accept') },
+                { text: 'Request Changes', onPress: () => {
+                    Alert.prompt(
+                        'Request Changes',
+                        'Enter reason for changes:',
+                        (notes) => handleSellerResponse(order._id, 'request_changes', notes)
+                    );
+                }},
+                { text: 'Decline', onPress: () => handleSellerResponse(order._id, 'decline'), style: 'destructive' },
+                { text: 'Cancel', style: 'cancel' },
+            ]
+        );
+    };
+
+    const isSeller = (order) => {
+        const sellerId = order.seller?._id || order.seller;
+        return sellerId === user?._id;
     };
 
     if (loading) return <LoadingSpinner />;
@@ -145,7 +186,8 @@ export default function OrdersScreen({ navigation }) {
     };
 
     const renderOrder = ({ item: order }) => {
-        const statusInfo = STATUS_COLORS[order.status] || STATUS_COLORS.pending;
+        const displayStatus = order.requestStatus || order.status;
+        const statusInfo = STATUS_COLORS[displayStatus] || STATUS_COLORS.pending;
         const isPickup = order.deliveryType === 'pickup';
         const isExpanded = !!expandedOrders[order._id];
         const orderIdShort = order._id.slice(-8).toUpperCase();
@@ -199,6 +241,38 @@ export default function OrdersScreen({ navigation }) {
                                 <Text style={styles.deliveryText}>🚗 Delivery</Text>
                                 {order.preorderTime && (
                                     <Text style={styles.deliveryTime}>{order.preorderTime}</Text>
+                                )}
+                            </View>
+                        )}
+
+                        {/* Scheduled Delivery Info */}
+                        {order.isPreorder && order.deliveryDate && (
+                            <View style={{ 
+                                backgroundColor: colors.primary + '10', 
+                                padding: 12, 
+                                borderRadius: 10, 
+                                marginBottom: 12,
+                                borderWidth: 1,
+                                borderColor: colors.primary + '30',
+                            }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                    <Ionicons name="calendar" size={18} color={colors.primary} />
+                                    <Text style={{ fontSize: 14, fontWeight: '700', color: colors.primary }}>
+                                        Scheduled Delivery
+                                    </Text>
+                                </View>
+                                <Text style={{ fontSize: 13, color: colors.text, marginTop: 4 }}>
+                                    📅 {order.deliveryDate} at {order.preorderTime}
+                                </Text>
+                                {order.scheduledNotes && (
+                                    <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 4, fontStyle: 'italic' }}>
+                                        📝 {order.scheduledNotes}
+                                    </Text>
+                                )}
+                                {order.requestDeadline && (
+                                    <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 6 }}>
+                                        ⏰ Seller has to respond within 24 hours
+                                    </Text>
                                 )}
                             </View>
                         )}
@@ -268,6 +342,94 @@ export default function OrdersScreen({ navigation }) {
                                 <Ionicons name="star" size={18} color="#fff" />
                                 <Text style={styles.rateBtnText}>{t.rateDriver || 'Rate Driver'}</Text>
                             </TouchableOpacity>
+                        )}
+
+                        {/* Scheduled Delivery Actions for Buyer */}
+                        {order.requestStatus === 'seller_accepted' && (
+                            <TouchableOpacity 
+                                style={[styles.trackBtn, { backgroundColor: '#10b981' }]}
+                                onPress={() => navigation.navigate('OrderDetail', { orderId: order._id })}
+                            >
+                                <Ionicons name="checkmark-circle" size={18} color="#fff" />
+                                <Text style={styles.trackBtnText}>Confirm & Pay</Text>
+                            </TouchableOpacity>
+                        )}
+
+                        {order.requestStatus === 'awaiting_buyer_confirm' && (
+                            <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+                                <TouchableOpacity 
+                                    style={[styles.trackBtn, { flex: 1, backgroundColor: '#10b981' }]}
+                                    onPress={() => navigation.navigate('OrderDetail', { orderId: order._id })}
+                                >
+                                    <Text style={styles.trackBtnText}>Accept Changes</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity 
+                                    style={[styles.trackBtn, { flex: 1, backgroundColor: '#ef4444' }]}
+                                    onPress={() => navigation.navigate('OrderDetail', { orderId: order._id })}
+                                >
+                                    <Text style={styles.trackBtnText}>Decline</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+
+                        {/* SELLER ACTIONS - Scheduled Delivery Request */}
+                        {order.requestStatus === 'pending_seller_review' && isSeller(order) && (
+                            <View style={{ gap: 8, marginTop: 12 }}>
+                                <View style={{ 
+                                    backgroundColor: '#fef3c7', 
+                                    padding: 10, 
+                                    borderRadius: 8,
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                }}>
+                                    <Ionicons name="time" size={18} color="#92400e" />
+                                    <Text style={{ color: '#92400e', fontSize: 13, flex: 1 }}>
+                                        New scheduled delivery request
+                                    </Text>
+                                </View>
+                                <View style={{ flexDirection: 'row', gap: 8 }}>
+                                    <TouchableOpacity 
+                                        style={[styles.trackBtn, { flex: 1, backgroundColor: '#10b981' }]}
+                                        onPress={() => handleSellerResponse(order._id, 'accept')}
+                                    >
+                                        <Ionicons name="checkmark" size={18} color="#fff" />
+                                        <Text style={styles.trackBtnText}>Accept</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity 
+                                        style={[styles.trackBtn, { flex: 1, backgroundColor: '#6b7280' }]}
+                                        onPress={() => showSellerResponseModal(order)}
+                                    >
+                                        <Ionicons name="chatbubble" size={18} color="#fff" />
+                                        <Text style={styles.trackBtnText}>Chat/Changes</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity 
+                                        style={[styles.trackBtn, { flex: 1, backgroundColor: '#ef4444' }]}
+                                        onPress={() => handleSellerResponse(order._id, 'decline')}
+                                    >
+                                        <Ionicons name="close" size={18} color="#fff" />
+                                        <Text style={styles.trackBtnText}>Decline</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        )}
+
+                        {order.requestStatus === 'seller_declined' && (
+                            <View style={{ 
+                                backgroundColor: '#fee2e2', 
+                                padding: 12, 
+                                borderRadius: 10, 
+                                marginTop: 12 
+                            }}>
+                                <Text style={{ color: '#991b1b', fontWeight: '600' }}>
+                                    Request declined by seller
+                                </Text>
+                                {order.sellerResponseNotes && (
+                                    <Text style={{ color: '#991b1b', fontSize: 12, marginTop: 4 }}>
+                                        Reason: {order.sellerResponseNotes}
+                                    </Text>
+                                )}
+                            </View>
                         )}
 
                         {/* Already Rated Badge */}
