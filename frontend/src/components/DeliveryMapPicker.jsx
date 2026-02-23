@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Circle, useMapEvents } from 'react-leaflet';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { MapPin, AlertCircle, Navigation, Share2 } from 'lucide-react';
+import { MapPin, AlertCircle, Navigation } from 'lucide-react';
 import { DEFAULT_LOCATION, EARTH_RADIUS_KM } from '../utils/constants';
 import { haversineDistanceKm } from '../utils/helpers';
 import 'leaflet/dist/leaflet.css';
@@ -98,32 +98,6 @@ export default function DeliveryMapPicker({
         }
     };
 
-    const handleShareLocation = async () => {
-        if (!position || !sellerLocation) return;
-        
-        const storeUrl = `https://www.openstreetmap.org/?mlat=${sellerLocation.lat}&mlon=${sellerLocation.lng}&zoom=15`;
-        const destUrl = `https://www.openstreetmap.org/?mlat=${position.lat}&mlon=${position.lng}&zoom=15`;
-        
-        const shareText = `Store Location: ${storeUrl}\nDestination: ${destUrl}\nDistance: ${distance?.toFixed(2)} km`;
-        
-        if (navigator.share) {
-            try {
-                await navigator.share({
-                    title: 'Delivery Locations',
-                    text: shareText,
-                });
-            } catch (err) {
-                // User cancelled or share failed, try clipboard
-                await navigator.clipboard.writeText(shareText);
-                alert('Location copied to clipboard!');
-            }
-        } else {
-            // Fallback to clipboard
-            await navigator.clipboard.writeText(shareText);
-            alert('Location copied to clipboard!');
-        }
-    };
-
     const handleConfirm = () => {
         if (position && distance <= maxDistance) {
             onLocationSelect({
@@ -194,15 +168,6 @@ export default function DeliveryMapPicker({
                     <Navigation className="h-4 w-4 mr-2" />
                     {isLoading ? 'Getting location...' : 'Use My Location'}
                 </Button>
-                {position && sellerLocation && distance && (
-                    <Button 
-                        variant="outline"
-                        onClick={handleShareLocation}
-                        title="Share locations"
-                    >
-                        <Share2 className="h-4 w-4" />
-                    </Button>
-                )}
             </div>
 
             {distance !== null && (

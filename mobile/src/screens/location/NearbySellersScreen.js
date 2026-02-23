@@ -12,6 +12,7 @@ import Map from '../../components/Map';
 import api from '../../api/api';
 import { DEFAULT_LOCATION, DEFAULT_RADIUS_METERS } from '../../utils/constants';
 import { haversineDistanceKm } from '../../utils/helpers';
+import { SellerListSkeleton } from '../../components/LoadingSkeleton';
 
 const { width, height } = Dimensions.get('window');
 const MIN_SHEET_HEIGHT = 70; // Just the drag handle (collapsible to show only handle)
@@ -474,12 +475,42 @@ export default function NearbySellersScreen() {
                             </View>
                         )}
                     </View>
-                    <TouchableOpacity 
-                        style={[styles.navigateBtn, { backgroundColor: '#22c55e' }]}
-                        onPress={() => startNavigation(item)}
-                    >
-                        <Ionicons name="navigate" size={16} color="#fff" />
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', gap: 6 }}>
+                        {/* Share Button */}
+                        {item.location?.coordinates && (
+                            <TouchableOpacity 
+                                style={[styles.navigateBtn, { backgroundColor: '#6366f1' }]}
+                                onPress={() => {
+                                    const coords = getSellerCoordinates(item);
+                                    if (coords) {
+                                        const mapUrl = `https://www.openstreetmap.org/?mlat=${coords.lat}&mlon=${coords.lng}&zoom=16`;
+                                        const shareText = `Check out ${displayName}!\n${mapUrl}`;
+                                        
+                                        // Try native share, fallback to clipboard
+                                        if (navigator.share) {
+                                            navigator.share({
+                                                title: displayName,
+                                                text: shareText,
+                                            }).catch(() => {
+                                                // User cancelled or error
+                                            });
+                                        } else {
+                                            // For React Native, use Clipboard or Alert
+                                            Alert.alert('Store Location', `Location link:\n${mapUrl}`);
+                                        }
+                                    }
+                                }}
+                            >
+                                <Ionicons name="share-social" size={16} color="#fff" />
+                            </TouchableOpacity>
+                        )}
+                        <TouchableOpacity 
+                            style={[styles.navigateBtn, { backgroundColor: '#22c55e' }]}
+                            onPress={() => startNavigation(item)}
+                        >
+                            <Ionicons name="navigate" size={16} color="#fff" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </TouchableOpacity>
         );
@@ -495,12 +526,7 @@ export default function NearbySellersScreen() {
                     <Text style={[styles.headerTitle, { color: colors.text }]}>Nearby Sellers</Text>
                     <View style={styles.placeholder} />
                 </View>
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={colors.primary} />
-                    <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-                        Getting your location...
-                    </Text>
-                </View>
+                <SellerListSkeleton count={5} />
             </View>
         );
     }

@@ -6,6 +6,7 @@ import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../hooks/useTranslation';
 import api from '../utils/api';
 import Layout from '@/components/layout/Layout';
+import { Skeleton } from '@/components/ui/skeleton';
 import './Forum.css';
 
 const categoryKeys = [
@@ -100,7 +101,20 @@ function Forum() {
 
                     <main className="forum-main lg:col-span-3">
                         {isLoading ? (
-                            <div className="loading text-center py-12 text-muted-foreground">{t('forum.loadingDiscussions')}</div>
+                            <div className="space-y-4">
+                                {[1, 2, 3, 4, 5].map((i) => (
+                                    <div key={i} className="border rounded-lg p-6 bg-card">
+                                        <Skeleton className="h-6 w-3/4 mb-2" />
+                                        <Skeleton className="h-4 w-full mb-1" />
+                                        <Skeleton className="h-4 w-2/3 mb-4" />
+                                        <div className="flex gap-4">
+                                            <Skeleton className="h-4 w-16" />
+                                            <Skeleton className="h-4 w-16" />
+                                            <Skeleton className="h-4 w-16" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         ) : data?.threads?.length === 0 ? (
                             <div className="empty-state text-center py-16 border rounded-lg bg-card bg-muted/10">
                                 <MessageSquare size={48} className="mx-auto mb-4 text-muted-foreground/50" />

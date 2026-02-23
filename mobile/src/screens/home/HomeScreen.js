@@ -11,6 +11,7 @@ import api from '../../api/api';
 import ProductCard from '../../components/ProductCard';
 import ForumPostCard from '../../components/ForumPostCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { ProductsListSkeleton, SellerCardSkeleton } from '../../components/LoadingSkeleton';
 import { CATEGORIES } from '../../config';
 
 const { width } = Dimensions.get('window');
@@ -75,10 +76,6 @@ export default function HomeScreen({ navigation }) {
         setRefreshing(false);
     };
 
-    if (loading) return <LoadingSpinner />;
-
-    const categories = CATEGORIES.filter((c) => c.id !== 'all');
-
     const styles = {
         container: { flex: 1, backgroundColor: colors.background },
         hero: {
@@ -122,10 +119,22 @@ export default function HomeScreen({ navigation }) {
             shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
             borderWidth: 1, borderColor: colors.border,
         },
-        catIcon: { fontSize: 28, marginBottom: 6 },
         catName: { fontSize: 12, fontWeight: '700', color: colors.text, textAlign: 'center', lineHeight: 16 },
         catCount: { fontSize: 11, color: colors.textSecondary, marginTop: 3, fontWeight: '500' },
+        catIcon: { fontSize: 28, marginBottom: 6 },
     };
+
+    if (loading) {
+        return (
+            <View style={[styles.container, { backgroundColor: colors.background }]}>
+                <View style={{ padding: 16 }}>
+                    <ProductsListSkeleton count={6} />
+                </View>
+            </View>
+        );
+    }
+
+    const categories = CATEGORIES.filter((c) => c.id !== 'all');
 
     const statsData = [
         { key: 'sellers', icon: 'people', label: t.seller, value: stats.sellers },

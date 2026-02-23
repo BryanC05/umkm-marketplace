@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Heart, ArrowLeft, Package } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import ProductCard from '@/components/products/ProductCard';
+import { ProductsGridSkeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useSavedProductsStore } from '@/store/savedProductsStore';
 import { useAuthStore } from '@/store/authStore';
@@ -41,11 +42,7 @@ function SavedProducts() {
         </div>
 
         {/* Loading State */}
-        {isLoading && (
-          <div className="flex items-center justify-center min-h-[40vh]">
-            <div className="animate-pulse text-muted-foreground">Loading saved products...</div>
-          </div>
-        )}
+        {isLoading && <ProductsGridSkeleton count={8} />}
 
         {/* Empty State */}
         {!isLoading && savedProducts.length === 0 && (

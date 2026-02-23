@@ -12,7 +12,11 @@ export const formatPrice = (price) => {
 };
 
 export const formatDate = (dateString) => {
+    if (!dateString) return '';
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+    // Handle zero date (0001-01-01) which shows as "1 Jan 1"
+    if (date.getFullYear() < 2000) return '';
     return date.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',

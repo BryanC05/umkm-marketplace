@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -92,8 +93,19 @@ const ProfileOrders = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <Card key={i} className="p-4">
+            <div className="flex gap-4">
+              <Skeleton className="h-16 w-16 rounded" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-5 w-1/3" />
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            </div>
+          </Card>
+        ))}
       </div>
     );
   }
@@ -322,8 +334,32 @@ const Profile = () => {
   if (loading) {
     return (
       <Layout>
-        <div className="container py-20 flex justify-center items-center min-h-[50vh]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="container py-8">
+          <div className="flex flex-col md:flex-row gap-8">
+            {/* Sidebar Skeleton */}
+            <div className="w-full md:w-1/3 space-y-4">
+              <Card className="p-6">
+                <div className="flex flex-col items-center">
+                  <Skeleton className="h-24 w-24 rounded-full mb-4" />
+                  <Skeleton className="h-6 w-32 mb-2" />
+                  <Skeleton className="h-4 w-24 mb-4" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              </Card>
+            </div>
+            
+            {/* Main Content Skeleton */}
+            <div className="w-full md:w-2/3 space-y-4">
+              <Card className="p-6">
+                <Skeleton className="h-6 w-32 mb-4" />
+                <div className="space-y-3">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              </Card>
+            </div>
+          </div>
         </div>
       </Layout>
     );

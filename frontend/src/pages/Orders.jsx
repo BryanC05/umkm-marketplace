@@ -14,6 +14,7 @@ import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { resolveImageUrl } from '@/utils/imageUrl';
+import { OrdersListSkeleton } from '@/components/ui/skeleton';
 import './Orders.css';
 
 const statusConfig = {
@@ -125,12 +126,8 @@ function Orders() {
   if (isLoading) {
     return (
       <Layout>
-        <div className="orders-page container py-12">
-          <div className="orders-skeleton">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="skeleton-card" />
-            ))}
-          </div>
+        <div className="orders-page container py-8">
+          <OrdersListSkeleton count={4} />
         </div>
       </Layout>
     );
@@ -201,10 +198,68 @@ function Orders() {
               const payment = paymentIcons[order.paymentMethod] || paymentIcons.cash;
               const PaymentIcon = payment.icon;
 
+              // Preorder badge
+              const isPreorder = order.isPreorder && order.deliveryDate;
+
               return (
+                <>
+                  {isPreorder && (
+                    <div 
+                      key={`preorder-${orderId}`}
+                      className="preorder-card"
+                      style={{
+                        backgroundColor: '#fef3c7',
+                        border: '2px solid #f59e0b',
+                        borderRadius: '12px',
+                        padding: '16px',
+                        marginBottom: '12px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                            <Calendar size={20} style={{ color: '#f59e0b' }} />
+                            <span style={{ fontSize: '14px', fontWeight: 700, color: '#92400e' }}>PREORDER</span>
+                          </div>
+                          <div style={{ fontSize: '18px', fontWeight: 800, color: '#92400e' }}>
+                            {formatDate(order.deliveryDate)}
+                          </div>
+                          <div style={{ fontSize: '14px', color: '#92400e', marginTop: '2px' }}>
+                            at {order.preorderTime}
+                          </div>
+                        </div>
+                        <div style={{
+                          backgroundColor: order.requestStatus === 'seller_accepted' ? '#10b981' : 
+                                          order.requestStatus === 'seller_declined' ? '#ef4444' : 
+                                          order.requestStatus === 'pending_seller_review' ? '#f59e0b' : '#6b7280',
+                          padding: '4px 10px',
+                          borderRadius: '12px',
+                        }}>
+                          <span style={{ color: '#fff', fontSize: '11px', fontWeight: 700 }}>
+                            {order.requestStatus === 'pending_seller_review' ? 'WAITING' :
+                             order.requestStatus === 'seller_accepted' ? 'APPROVED' :
+                             order.requestStatus === 'seller_declined' ? 'DECLINED' : 'PENDING'}
+                          </span>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                        <Package size={16} style={{ color: '#92400e' }} />
+                        <span style={{ fontSize: '13px', color: '#92400e', flex: 1 }}>
+                          {order.products?.length || 0} items • {formatCurrency(order.totalAmount)}
+                        </span>
+                      </div>
+                      {order.requestStatus === 'seller_accepted' && (
+                        <Button size="sm" style={{ marginTop: '8px', backgroundColor: '#10b981', width: '100%' }}>
+                          <CheckCircle size={16} style={{ marginRight: '6px' }} />
+                          Confirm & Pay
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                
                 <div 
                   key={orderId} 
-                  className={`order-card ${order.status} ${isExpanded ? 'expanded' : ''}`}
+                  className={`order-card ${order.status} ${isExpanded ? 'expanded' : ''} ${isPreorder ? 'preorder' : ''}`}
                   onClick={() => toggleExpand(orderId)}
                 >
                   {/* Order Header */}
@@ -212,6 +267,7 @@ function Orders() {
                     <div className="order-header-left">
                       <div className="order-id-section">
                         <span className="order-label">{t('orders.order')}</span>
+                        {isPreorder && <span style={{ backgroundColor: '#f59e0b', color: 'white', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', marginLeft: '4px' }}>PREORDER</span>}
                         <span className="order-id">#{orderId.slice(-8).toUpperCase()}</span>
                       </div>
                       <div className="order-date">
@@ -397,8 +453,9 @@ function Orders() {
                         </div>
                       </div>
                     </div>
-                  )}
+                    )}
                 </div>
+                </>
               );
             })
           )}

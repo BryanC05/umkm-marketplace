@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-    View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, FlatList, ActivityIndicator
+    View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, FlatList, ActivityIndicator, Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -8,6 +8,7 @@ import api from '../../api/api';
 import { getImageUrl, formatPrice } from '../../utils/helpers';
 import { PLACEHOLDER_IMAGE } from '../../config';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { BusinessDetailSkeleton } from '../../components/LoadingSkeleton';
 
 export default function BusinessDetailsScreen() {
     const navigation = useNavigation();
@@ -38,7 +39,7 @@ export default function BusinessDetailsScreen() {
         }
     };
 
-    if (loading) return <LoadingSpinner />;
+    if (loading) return <BusinessDetailSkeleton />;
 
     if (!seller) {
         return (
@@ -82,6 +83,25 @@ export default function BusinessDetailsScreen() {
         </TouchableOpacity>
     );
 
+    const handleShareStore = () => {
+        if (!seller?.location?.coordinates) {
+            Alert.alert('Error', 'Store location not available');
+            return;
+        }
+        
+        const [lng, lat] = seller.location.coordinates;
+        const mapUrl = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}&zoom=16`;
+        const shareText = `Check out ${seller.businessName || seller.name}!\n${mapUrl}`;
+        
+        Alert.alert(
+            'Share Store Location',
+            shareText,
+            [
+                { text: 'OK' }
+            ]
+        );
+    };
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
@@ -89,7 +109,9 @@ export default function BusinessDetailsScreen() {
                     <Ionicons name="arrow-back" size={24} color="#333" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle} numberOfLines={1}>{seller.businessName || seller.name}</Text>
-                <View style={{ width: 40 }} />
+                <TouchableOpacity style={styles.shareBtn} onPress={handleShareStore}>
+                    <Ionicons name="share-social" size={22} color="#333" />
+                </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
@@ -230,6 +252,14 @@ const styles = StyleSheet.create({
         borderBottomColor: '#e5e7eb',
     },
     backBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#f3f4f6',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    shareBtn: {
         width: 40,
         height: 40,
         borderRadius: 20,

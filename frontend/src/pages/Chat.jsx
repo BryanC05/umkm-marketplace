@@ -18,6 +18,7 @@ import { useAuthStore } from '../store/authStore';
 import api from '../utils/api';
 import { getBackendUrl } from '../config';
 import Layout from '@/components/layout/Layout';
+import { ChatListSkeleton } from '@/components/ui/skeleton';
 import './Chat.css';
 
 const SOCKET_URL = getBackendUrl();
@@ -311,7 +312,7 @@ function Chat() {
 
           <div className="chat-rooms-list flex-1 overflow-y-auto">
             {roomsLoading ? (
-              <div className="chat-loading p-4 text-center text-muted-foreground">Loading chats...</div>
+              <ChatListSkeleton count={6} />
             ) : chatRooms?.length === 0 ? (
               <div className="chat-empty p-8 text-center flex flex-col items-center justify-center h-full text-muted-foreground">
                 <MessageCircle size={48} className="mb-4 opacity-20" />

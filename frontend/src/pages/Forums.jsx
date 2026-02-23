@@ -1,5 +1,6 @@
 import Layout from "@/components/layout/Layout";
 import ForumPostCard from "@/components/forums/ForumPostCard";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -137,11 +138,19 @@ const Forums = () => {
 
                             <TabsContent value="latest" className="space-y-4">
                                 {isLoading ? (
-                                    <Card className="py-12 text-center">
-                                        <CardContent>
-                                            <p className="text-muted-foreground">Loading discussions...</p>
-                                        </CardContent>
-                                    </Card>
+                                    <div className="space-y-4">
+                                        {[1, 2, 3, 4].map((i) => (
+                                            <Card key={i} className="p-6">
+                                                <Skeleton className="h-6 w-3/4 mb-3" />
+                                                <Skeleton className="h-4 w-full mb-2" />
+                                                <Skeleton className="h-4 w-2/3 mb-4" />
+                                                <div className="flex gap-4">
+                                                    <Skeleton className="h-4 w-20" />
+                                                    <Skeleton className="h-4 w-20" />
+                                                </div>
+                                            </Card>
+                                        ))}
+                                    </div>
                                 ) : sortedPosts.length > 0 ? (
                                     sortedPosts.map((post) => (
                                         <ForumPostCard key={post._id} post={post} />
@@ -159,11 +168,19 @@ const Forums = () => {
 
                             <TabsContent value="trending" className="space-y-4">
                                 {isLoading ? (
-                                    <Card className="py-12 text-center">
-                                        <CardContent>
-                                            <p className="text-muted-foreground">Loading discussions...</p>
-                                        </CardContent>
-                                    </Card>
+                                    <div className="space-y-4">
+                                        {[1, 2, 3, 4].map((i) => (
+                                            <Card key={i} className="p-6">
+                                                <Skeleton className="h-6 w-3/4 mb-3" />
+                                                <Skeleton className="h-4 w-full mb-2" />
+                                                <Skeleton className="h-4 w-2/3 mb-4" />
+                                                <div className="flex gap-4">
+                                                    <Skeleton className="h-4 w-20" />
+                                                    <Skeleton className="h-4 w-20" />
+                                                </div>
+                                            </Card>
+                                        ))}
+                                    </div>
                                 ) : sortedPosts.length > 0 ? (
                                     sortedPosts.map((post) => (
                                         <ForumPostCard key={post._id} post={post} />
@@ -181,11 +198,19 @@ const Forums = () => {
 
                             <TabsContent value="unanswered" className="space-y-4">
                                 {isLoading ? (
-                                    <Card className="py-12 text-center">
-                                        <CardContent>
-                                            <p className="text-muted-foreground">Loading discussions...</p>
-                                        </CardContent>
-                                    </Card>
+                                    <div className="space-y-4">
+                                        {[1, 2, 3, 4].map((i) => (
+                                            <Card key={i} className="p-6">
+                                                <Skeleton className="h-6 w-3/4 mb-3" />
+                                                <Skeleton className="h-4 w-full mb-2" />
+                                                <Skeleton className="h-4 w-2/3 mb-4" />
+                                                <div className="flex gap-4">
+                                                    <Skeleton className="h-4 w-20" />
+                                                    <Skeleton className="h-4 w-20" />
+                                                </div>
+                                            </Card>
+                                        ))}
+                                    </div>
                                 ) : unansweredPosts.length > 0 ? (
                                     unansweredPosts.map((post) => (
                                         <ForumPostCard key={post._id} post={post} />

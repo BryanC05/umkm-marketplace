@@ -49,29 +49,41 @@ export default function MyProductsScreen({ navigation }) {
         );
     };
 
-    const renderItem = ({ item }) => (
-        <View style={styles.card}>
-            <Image
-                source={{ uri: item.images?.[0] ? getImageUrl(item.images[0]) : PLACEHOLDER_IMAGE }}
-                style={styles.image}
-            />
-            <View style={styles.info}>
-                <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
-                <Text style={styles.price}>{formatPrice(item.price)}</Text>
-                <View style={[styles.stockBadge, item.stock < 5 ? styles.lowStock : styles.inStock]}>
-                    <Text style={[styles.stockText, item.stock < 5 ? styles.lowStockText : styles.inStockText]}>
-                        Stock: {item.stock}
-                    </Text>
-                </View>
-            </View>
-            <TouchableOpacity
-                style={styles.deleteBtn}
-                onPress={() => handleDelete(item._id)}
-            >
-                <Ionicons name="trash-outline" size={20} color="#ef4444" />
-            </TouchableOpacity>
-        </View>
-    );
+    const styles = {
+        container: { flex: 1, backgroundColor: '#f8fafc' },
+        center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+        list: { padding: 16, paddingBottom: 80 },
+        card: {
+            flexDirection: 'row', backgroundColor: '#fff', borderRadius: 12, padding: 12,
+            marginBottom: 12, alignItems: 'center',
+            shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
+        },
+        image: { width: 60, height: 60, borderRadius: 8, backgroundColor: '#f3f4f6' },
+        info: { flex: 1, marginLeft: 12, marginRight: 8 },
+        name: { fontSize: 15, fontWeight: '600', color: '#111827', marginBottom: 4 },
+        price: { fontSize: 14, fontWeight: '700', color: '#3b82f6', marginBottom: 4 },
+        stockBadge: {
+            alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2,
+            borderRadius: 6, backgroundColor: '#f3f4f6'
+        },
+        inStock: { backgroundColor: '#dcfce7' },
+        lowStock: { backgroundColor: '#fee2e2' },
+        stockText: { fontSize: 11, fontWeight: '600' },
+        inStockText: { color: '#16a34a' },
+        lowStockText: { color: '#b91c1c' },
+        deleteBtn: { padding: 8 },
+        fab: {
+            position: 'absolute', bottom: 24, right: 24,
+            width: 56, height: 56, borderRadius: 28, backgroundColor: '#3b82f6',
+            justifyContent: 'center', alignItems: 'center',
+            shadowColor: '#3b82f6', shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
+        },
+        empty: { alignItems: 'center', paddingTop: 60 },
+        emptyTitle: { fontSize: 16, fontWeight: '600', color: '#6b7280', marginTop: 12 },
+        emptyText: { fontSize: 13, color: '#9ca3af', marginTop: 4 },
+    };
 
     if (loading) {
         return <View style={styles.center}><ActivityIndicator size="large" color="#3b82f6" /></View>;
@@ -101,39 +113,3 @@ export default function MyProductsScreen({ navigation }) {
         </View>
     );
 }
-
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#f8fafc' },
-    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    list: { padding: 16, paddingBottom: 80 },
-    card: {
-        flexDirection: 'row', backgroundColor: '#fff', borderRadius: 12, padding: 12,
-        marginBottom: 12, alignItems: 'center',
-        shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
-    },
-    image: { width: 60, height: 60, borderRadius: 8, backgroundColor: '#f3f4f6' },
-    info: { flex: 1, marginLeft: 12, marginRight: 8 },
-    name: { fontSize: 15, fontWeight: '600', color: '#111827', marginBottom: 4 },
-    price: { fontSize: 14, fontWeight: '700', color: '#3b82f6', marginBottom: 4 },
-    stockBadge: {
-        alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2,
-        borderRadius: 6, backgroundColor: '#f3f4f6'
-    },
-    inStock: { backgroundColor: '#dcfce7' },
-    lowStock: { backgroundColor: '#fee2e2' },
-    stockText: { fontSize: 11, fontWeight: '600' },
-    inStockText: { color: '#16a34a' },
-    lowStockText: { color: '#b91c1c' },
-    deleteBtn: { padding: 8 },
-    fab: {
-        position: 'absolute', bottom: 24, right: 24,
-        width: 56, height: 56, borderRadius: 28, backgroundColor: '#3b82f6',
-        justifyContent: 'center', alignItems: 'center',
-        shadowColor: '#3b82f6', shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
-    },
-    empty: { alignItems: 'center', paddingTop: 60 },
-    emptyTitle: { fontSize: 16, fontWeight: '600', color: '#6b7280', marginTop: 12 },
-    emptyText: { fontSize: 13, color: '#9ca3af', marginTop: 4 },
-});

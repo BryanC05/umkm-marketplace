@@ -1,11 +1,12 @@
 
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { MapPin, Store, Star, Package, ArrowLeft, Phone, Clock, MessageCircle } from 'lucide-react';
+import { MapPin, Store, Star, Package, ArrowLeft, Phone, Clock, MessageCircle, Share2 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import api from '../utils/api';
 import ProductCard from '../components/ProductCard';
 import Layout from '@/components/layout/Layout';
+import { ProductsGridSkeleton, SellersListSkeleton } from '@/components/ui/skeleton';
 import './SellerStore.css';
 
 function SellerStore() {
@@ -39,8 +40,8 @@ function SellerStore() {
     if (sellerLoading) {
         return (
             <Layout>
-                <div className="loading-container flex items-center justify-center min-h-[50vh]">
-                    <div className="loading-spinner">Loading store...</div>
+                <div className="seller-store-page container py-8">
+                    <ProductsGridSkeleton count={8} />
                 </div>
             </Layout>
         );
@@ -134,6 +135,34 @@ function SellerStore() {
                             >
                                 <MessageCircle size={18} />
                                 Chat with Store
+                            </button>
+                        )}
+                        
+                        {/* Share Store Location Button */}
+                        {seller.location?.coordinates && (
+                            <button
+                                className="btn-share-store inline-flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 transition-colors ml-2"
+                                onClick={() => {
+                                    const [lng, lat] = seller.location.coordinates;
+                                    const mapUrl = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}&zoom=16`;
+                                    const shareText = `Check out ${seller.businessName || seller.name}!\n${mapUrl}`;
+                                    
+                                    if (navigator.share) {
+                                        navigator.share({
+                                            title: seller.businessName || seller.name,
+                                            text: shareText,
+                                        }).catch(() => {
+                                            navigator.clipboard.writeText(shareText);
+                                            alert('Store link copied to clipboard!');
+                                        });
+                                    } else {
+                                        navigator.clipboard.writeText(shareText);
+                                        alert('Store link copied to clipboard!');
+                                    }
+                                }}
+                            >
+                                <Share2 size={18} />
+                                Share Location
                             </button>
                         )}
                     </div>

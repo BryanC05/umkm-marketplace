@@ -582,6 +582,8 @@ function NearbyMap() {
               
               // Update navigation marker
               const updateNavigationMarker = async () => {
+                if (!mapRef.current) return;
+                
                 const L = await import('leaflet');
                 
                 if (navigationMarkerRef.current) {
@@ -620,6 +622,8 @@ function NearbyMap() {
               
               // Recalculate route to destination
               const recalculateRoute = async () => {
+                if (!mapRef.current) return;
+                
                 try {
                   const newResponse = await api.get('/navigation/route', {
                     params: {
@@ -638,7 +642,7 @@ function NearbyMap() {
                   const L = await import('leaflet');
                   const newPath = newRouteData.path.map(p => [p.lat, p.lng]);
                   
-                  if (routeLineRef.current) {
+                  if (routeLineRef.current && mapRef.current) {
                     mapRef.current.removeLayer(routeLineRef.current);
                   }
                   

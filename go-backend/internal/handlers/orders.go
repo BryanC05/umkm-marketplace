@@ -293,6 +293,8 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 		IsPreorder:   isScheduled,
 		PreorderTime: req.PreorderTime,
 		DeliveryDate: req.DeliveryDate,
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
 	}
 
 	// Handle scheduled delivery flow

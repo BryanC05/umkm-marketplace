@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useThemeStore } from '../../store/themeStore';
 import api from '../../api/api';
 import ProductCard from '../../components/ProductCard';
+import { ProductsListSkeleton } from '../../components/LoadingSkeleton';
 import { CATEGORIES, SORT_OPTIONS } from '../../config';
 
 const { width } = Dimensions.get('window');
@@ -152,29 +153,28 @@ export default function ProductsScreen({ navigation, route }) {
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
-            <FlatList
-                data={products}
-                numColumns={2}
-                keyExtractor={(item) => item._id}
-                columnWrapperStyle={styles.row}
-                contentContainerStyle={styles.list}
-                ListHeaderComponent={renderHeader}
-                ListEmptyComponent={!loading ? renderEmpty : null}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3b82f6" />}
-                onEndReached={onEndReached}
-                onEndReachedThreshold={0.3}
-                ListFooterComponent={loadingMore ? <ActivityIndicator style={{ padding: 16 }} color="#3b82f6" /> : null}
-                renderItem={({ item }) => (
-                    <ProductCard
-                        product={item}
-                        onPress={() => navigation.navigate('ProductDetail', { productId: item._id })}
-                    />
-                )}
-            />
-            {loading && products.length === 0 && (
-                <View style={styles.loadingOverlay}>
-                    <ActivityIndicator size="large" color="#3b82f6" />
-                </View>
+            {loading && products.length === 0 ? (
+                <ProductsListSkeleton count={8} />
+            ) : (
+                <FlatList
+                    data={products}
+                    keyExtractor={(item) => item._id}
+                    numColumns={2}
+                    columnWrapperStyle={styles.row}
+                    contentContainerStyle={styles.list}
+                    ListHeaderComponent={renderHeader}
+                    ListEmptyComponent={!loading ? renderEmpty : null}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3b82f6" />}
+                    onEndReached={onEndReached}
+                    onEndReachedThreshold={0.3}
+                    ListFooterComponent={loadingMore ? <ActivityIndicator style={{ padding: 16 }} color="#3b82f6" /> : null}
+                    renderItem={({ item }) => (
+                        <ProductCard
+                            product={item}
+                            onPress={() => navigation.navigate('ProductDetail', { productId: item._id })}
+                        />
+                    )}
+                />
             )}
         </View>
     );

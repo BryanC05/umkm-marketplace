@@ -6,6 +6,7 @@ import { useAuthStore } from '../store/authStore';
 import api from '../utils/api';
 import { getBackendUrl } from '../config';
 import Layout from '@/components/layout/Layout';
+import { Skeleton } from '@/components/ui/skeleton';
 import './Forum.css';
 
 function ThreadDetail() {
@@ -95,7 +96,21 @@ function ThreadDetail() {
     if (isLoading) {
         return (
             <Layout>
-                <div className="forum-page loading flex justify-center items-center h-[50vh]">Loading thread...</div>
+                <div className="container py-8">
+                    <div className="space-y-4">
+                        <Skeleton className="h-8 w-3/4" />
+                        <div className="flex gap-4">
+                            <Skeleton className="h-4 w-24" />
+                            <Skeleton className="h-4 w-24" />
+                        </div>
+                        <Skeleton className="h-32 w-full" />
+                        <div className="space-y-2 pt-4">
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-2/3" />
+                        </div>
+                    </div>
+                </div>
             </Layout>
         );
     }
