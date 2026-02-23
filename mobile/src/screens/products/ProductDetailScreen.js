@@ -6,6 +6,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useThemeStore } from '../../store/themeStore';
+import { useLanguageStore } from '../../store/languageStore';
 import api from '../../api/api';
 import { useCartStore } from '../../store/cartStore';
 import { useAuthStore } from '../../store/authStore';
@@ -18,6 +19,7 @@ const { width } = Dimensions.get('window');
 export default function ProductDetailScreen({ route }) {
     const navigation = useNavigation();
     const { colors } = useThemeStore();
+    const { t } = useLanguageStore();
     const { productId } = route.params;
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -35,14 +37,14 @@ export default function ProductDetailScreen({ route }) {
                 setProduct(response.data);
             } catch (error) {
                 console.error('Failed to fetch product:', error);
-                Alert.alert('Error', 'Failed to load product');
+                Alert.alert(t.error || 'Error', t.failedLoadProduct || 'Failed to load product');
                 navigation.goBack();
             } finally {
                 setLoading(false);
             }
         };
         fetchProduct();
-    }, [productId]);
+    }, [productId, navigation, t.error, t.failedLoadProduct]);
 
     const getUnitPrice = () => {
         if (!product) return 0;
@@ -84,31 +86,31 @@ export default function ProductDetailScreen({ route }) {
 
     const handleAddToCart = async () => {
         if (!isAuthenticated) {
-            Alert.alert('Login Required', 'Please login to add items to cart');
+            Alert.alert(t.loginRequired || 'Login Required', t.loginRequiredAddCart || 'Please login to add items to cart');
             return;
         }
         if (product.hasVariants && !selectedVariant) {
-            Alert.alert('Select Variant', 'Please select a variant first.');
+            Alert.alert(t.selectVariant || 'Select Variant', t.selectVariantFirst || 'Please select a variant first.');
             return;
         }
         const missingRequired = product.optionGroups?.filter(g => g.required && (!selectedOptions[g.name] || selectedOptions[g.name].chosen.length === 0));
         if (missingRequired?.length > 0) {
-            Alert.alert('Required Options', `Please select: ${missingRequired.map(g => g.name).join(', ')}`);
+            Alert.alert(t.requiredOptions || 'Required Options', `${t.pleaseSelect || 'Please select'}: ${missingRequired.map(g => g.name).join(', ')}`);
             return;
         }
         const variant = selectedVariant ? { name: selectedVariant.name, price: selectedVariant.price } : null;
         const optionsArr = Object.values(selectedOptions).filter(o => o.chosen.length > 0);
         const result = await addToCart(product, quantity, variant, optionsArr);
         if (result === 'replaced') {
-            Alert.alert('Cart Updated', 'Previous cart items from another seller were replaced');
+            Alert.alert(t.cartUpdated || 'Cart Updated', t.cartReplacedWithSeller || 'Previous cart items from another seller were replaced');
         } else {
-            Alert.alert('Added to Cart', `${product.name} added to your cart`);
+            Alert.alert(t.addedToCartTitle || 'Added to Cart', `${product.name} ${t.addedToCartSuffix || 'added to your cart'}`);
         }
     };
 
     const handleChat = () => {
         if (!isAuthenticated) {
-            Alert.alert('Login Required', 'Please login to chat with seller');
+            Alert.alert(t.loginRequired || 'Login Required', t.loginRequiredChat || 'Please login to chat with seller');
             return;
         }
         navigation.navigate('ProfileTab', {
@@ -265,20 +267,20 @@ export default function ProductDetailScreen({ route }) {
                             })}
                         >
                             <Ionicons name="map" size={18} color={colors.primary} />
-                            <Text style={styles.mapBtnText}>View on Map</Text>
+                            <Text style={styles.mapBtnText}>{t.viewMap || 'View on Map'}</Text>
                         </TouchableOpacity>
                     )}
 
                     {/* Description */}
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Description</Text>
-                        <Text style={styles.description}>{product.description || 'No description available.'}</Text>
+                        <Text style={styles.sectionTitle}>{t.description || 'Description'}</Text>
+                        <Text style={styles.description}>{product.description || t.noDescriptionAvailable || 'No description available.'}</Text>
                     </View>
 
                     {/* Variant Selector */}
                     {product.hasVariants && product.variants?.length > 0 && (
                         <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>Select Variant</Text>
+                            <Text style={styles.sectionTitle}>{t.selectVariant || 'Select Variant'}</Text>
                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                                 {product.variants.map((v) => (
                                     <TouchableOpacity
@@ -309,7 +311,7 @@ export default function ProductDetailScreen({ route }) {
                     {product.optionGroups?.length > 0 && product.optionGroups.map((group) => (
                         <View key={group.name} style={styles.section}>
                             <Text style={styles.sectionTitle}>
-                                {group.name} {group.required ? '*' : ''} {group.multiple ? '(multi)' : ''}
+                                {group.name} {group.required ? '*' : ''} {group.multiple ? `(${t.multi || 'multi'})` : ''}
                             </Text>
                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                                 {group.options.map((opt) => {
@@ -337,16 +339,16 @@ export default function ProductDetailScreen({ route }) {
 
                     {/* Stock */}
                     <View style={styles.stockRow}>
-                        <Text style={styles.stockLabel}>Stock:</Text>
+                        <Text style={styles.stockLabel}>{t.stock || 'Stock'}:</Text>
                         <Text style={[styles.stockValue, getAvailableStock() < 5 && { color: '#ef4444' }]}>
-                            {getAvailableStock() > 0 ? `${getAvailableStock()} available` : 'Out of stock'}
+                            {getAvailableStock() > 0 ? `${getAvailableStock()} ${t.availableLabel || 'available'}` : (t.outOfStock || 'Out of stock')}
                         </Text>
                     </View>
 
                     {/* Quantity Selector */}
                     {getAvailableStock() > 0 && (
                         <View style={styles.quantityRow}>
-                            <Text style={styles.quantityLabel}>Quantity:</Text>
+                            <Text style={styles.quantityLabel}>{t.quantity || 'Quantity'}:</Text>
                             <View style={styles.quantityStepper}>
                                 <TouchableOpacity
                                     style={styles.stepperBtn}
@@ -379,7 +381,9 @@ export default function ProductDetailScreen({ route }) {
                 >
                     <Ionicons name="cart" size={20} color="#fff" />
                     <Text style={styles.addToCartText}>
-                        {getAvailableStock() === 0 ? 'Out of Stock' : `Add to Cart - ${formatPrice(getUnitPrice() * quantity)}`}
+                        {getAvailableStock() === 0
+                            ? (t.outOfStock || 'Out of Stock')
+                            : `${t.addToCart || 'Add to Cart'} - ${formatPrice(getUnitPrice() * quantity)}`}
                     </Text>
                 </TouchableOpacity>
             </View>

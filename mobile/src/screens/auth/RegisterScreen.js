@@ -31,7 +31,7 @@ export default function RegisterScreen({ navigation }) {
             return;
         }
         if (!validateEmail(form.email)) {
-            Alert.alert(t.error, 'Please enter a valid email address');
+            Alert.alert(t.error, t.invalidEmailAddress || 'Please enter a valid email address');
             return;
         }
         if (form.password.length < 6) {
@@ -39,7 +39,7 @@ export default function RegisterScreen({ navigation }) {
             return;
         }
         if (form.isSeller && !form.businessName.trim()) {
-            Alert.alert(t.error, t.businessName + ' is required');
+            Alert.alert(t.error, `${t.businessName} ${t.isRequired || 'is required'}`);
             return;
         }
         setLoading(true);
@@ -54,7 +54,7 @@ export default function RegisterScreen({ navigation }) {
                 businessType: form.isSeller ? form.businessType : 'none',
             });
         } catch (err) {
-            let errorMessage = 'Something went wrong';
+            let errorMessage = t.somethingWentWrong || 'Something went wrong';
             if (err.response?.data?.message) {
                 errorMessage = err.response.data.message;
             } else if (err.message) {

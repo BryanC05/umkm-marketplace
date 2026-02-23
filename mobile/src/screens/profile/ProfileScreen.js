@@ -122,7 +122,7 @@ export default function ProfileScreen({ navigation }) {
     const pickProfileImage = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
-            Alert.alert(t.error, 'Camera roll access is needed to change your profile picture.');
+            Alert.alert(t.error, t.cameraRollPermissionNeeded || 'Camera roll access is needed to change your profile picture.');
             return;
         }
 
@@ -150,7 +150,7 @@ export default function ProfileScreen({ navigation }) {
             const response = await api.put('/auth/profile', { profileImage: dataUrl });
             setUser(response.data.user);
         } catch (error) {
-            Alert.alert(t.error, 'Failed to upload profile picture');
+            Alert.alert(t.error, t.failedUploadProfilePicture || 'Failed to upload profile picture');
             console.error(error);
         } finally {
             setUploadingImage(false);
@@ -165,7 +165,7 @@ export default function ProfileScreen({ navigation }) {
             setEditing(false);
             Alert.alert(t.success, t.profileUpdated);
         } catch (error) {
-            Alert.alert(t.error, error.response?.data?.message || 'Failed to update profile');
+            Alert.alert(t.error, error.response?.data?.message || t.failedUpdateProfile || 'Failed to update profile');
         } finally {
             setSaving(false);
         }
@@ -202,6 +202,8 @@ export default function ProfileScreen({ navigation }) {
             onPress: () => navigation.navigate('SellerDashboard'), color: '#16a34a'
         }] : []),
         { icon: 'chatbubbles-outline', label: t.forum, onPress: () => navigation.navigate('Forum'), color: '#8b5cf6' },
+        // Admin option (manual access for now)
+        { icon: 'shield-checkmark-outline', label: t.membershipApprovals || 'Membership Approvals', onPress: () => navigation.navigate('AdminMembership'), color: '#f59e0b' },
         {
             icon: 'globe-outline', label: t.language,
             onPress: toggleLanguage, color: '#f59e0b', isToggle: true, toggleValue: language === 'id',

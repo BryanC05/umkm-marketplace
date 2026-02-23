@@ -135,13 +135,13 @@ export default function NearbySellersScreen() {
         };
     }, []);
 
-    const getUserLocation = async () => {
+    const getUserLocation = useCallback(async () => {
         try {
             setError(null);
             setLocationWarning(null);
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
-                setLocationWarning('Location permission denied. Using default location for nearby sellers.');
+                setLocationWarning(t.locationPermissionDeniedFallback || 'Location permission denied. Using default location for nearby sellers.');
                 setLocation(DEFAULT_FALLBACK_LOCATION);
                 return;
             }
@@ -157,10 +157,10 @@ export default function NearbySellersScreen() {
             });
         } catch (err) {
             console.warn('Failed to get location, using default fallback:', err);
-            setLocationWarning('Failed to get your current location. Using default location.');
+            setLocationWarning(t.locationDetectFailedFallback || 'Failed to get your current location. Using default location.');
             setLocation(DEFAULT_FALLBACK_LOCATION);
         }
-    };
+    }, [t.locationPermissionDeniedFallback, t.locationDetectFailedFallback]);
 
     const fetchNearbySellers = async () => {
         try {
@@ -215,15 +215,15 @@ export default function NearbySellersScreen() {
     const getSellerDisplayName = (seller) => {
         const businessName = typeof seller?.businessName === 'string' ? seller.businessName.trim() : '';
         const username = typeof seller?.name === 'string' ? seller.name.trim() : '';
-        return businessName || username || 'Seller';
+        return businessName || username || t.seller || 'Seller';
     };
 
     const getSellerSubtitle = (seller) => {
         const businessType = typeof seller?.businessType === 'string' ? seller.businessType.trim().toLowerCase() : '';
-        if (businessType === 'micro') return 'Micro Business';
-        if (businessType === 'small') return 'Small Business';
-        if (businessType === 'medium') return 'Medium Business';
-        return 'Local Seller';
+        if (businessType === 'micro') return t.microBusiness || 'Micro Business';
+        if (businessType === 'small') return t.smallBusiness || 'Small Business';
+        if (businessType === 'medium') return t.mediumBusiness || 'Medium Business';
+        return t.localSeller || 'Local Seller';
     };
 
     const stopNavigation = useCallback(() => {
@@ -246,7 +246,7 @@ export default function NearbySellersScreen() {
         try {
             const coords = getSellerCoordinates(seller);
             if (!coords) {
-                Alert.alert('Error', 'Seller location not available');
+                Alert.alert(t.error || 'Error', t.sellerLocationUnavailable || 'Seller location not available');
                 return;
             }
 
@@ -277,10 +277,10 @@ export default function NearbySellersScreen() {
             );
         } catch (error) {
             console.error('Navigation error:', error);
-            setNavigationError('Unable to start live navigation.');
+            setNavigationError(t.unableStartNavigation || 'Unable to start live navigation.');
             setIsNavigating(false);
         }
-    }, []);
+    }, [t.error, t.sellerLocationUnavailable, t.unableStartNavigation]);
 
     const activeLocation = trackingLocation || location;
 
@@ -341,7 +341,7 @@ export default function NearbySellersScreen() {
                     { latitude: sellerCoords.lat, longitude: sellerCoords.lng },
                 ]);
                 setRouteSummary(null);
-                setNavigationError('Using fallback route line. Live route is temporarily unavailable.');
+                setNavigationError(t.fallbackRouteWarning || 'Using fallback route line. Live route is temporarily unavailable.');
             }
         };
 
@@ -395,12 +395,12 @@ export default function NearbySellersScreen() {
                     id: sellerId,
                     coordinate: { latitude: lat, longitude: lng },
                     title: getSellerDisplayName(seller),
-                    description: `${distance} km away`,
+                    description: distance ? `${distance} ${t.km || 'km'}` : '',
                     number: index + 1,
                 };
             })
             .filter(Boolean);
-    }, [sellers, activeLocation]);
+    }, [sellers, activeLocation, t.km]);
 
     const normalizedSearch = searchQuery.trim().toLowerCase();
     const filteredSellers = sellers.filter((seller) => {
@@ -484,7 +484,7 @@ export default function NearbySellersScreen() {
                                     const coords = getSellerCoordinates(item);
                                     if (coords) {
                                         const mapUrl = `https://www.openstreetmap.org/?mlat=${coords.lat}&mlon=${coords.lng}&zoom=16`;
-                                        const shareText = `Check out ${displayName}!\n${mapUrl}`;
+                                        const shareText = `${t.checkOutStore || 'Check out'} ${displayName}!\n${mapUrl}`;
                                         
                                         // Try native share, fallback to clipboard
                                         if (navigator.share) {
@@ -496,7 +496,7 @@ export default function NearbySellersScreen() {
                                             });
                                         } else {
                                             // For React Native, use Clipboard or Alert
-                                            Alert.alert('Store Location', `Location link:\n${mapUrl}`);
+                                            Alert.alert(t.storeLocation || 'Store Location', `${t.locationLink || 'Location link'}:\n${mapUrl}`);
                                         }
                                     }
                                 }}
@@ -523,7 +523,7 @@ export default function NearbySellersScreen() {
                     <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
                         <Ionicons name="arrow-back" size={24} color={colors.text} />
                     </TouchableOpacity>
-                    <Text style={[styles.headerTitle, { color: colors.text }]}>Nearby Sellers</Text>
+                    <Text style={[styles.headerTitle, { color: colors.text }]}>{t.nearbySellersTitle || 'Nearby Sellers'}</Text>
                     <View style={styles.placeholder} />
                 </View>
                 <SellerListSkeleton count={5} />
@@ -538,7 +538,7 @@ export default function NearbySellersScreen() {
                     <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
                         <Ionicons name="arrow-back" size={24} color={colors.text} />
                     </TouchableOpacity>
-                    <Text style={[styles.headerTitle, { color: colors.text }]}>Nearby Sellers</Text>
+                    <Text style={[styles.headerTitle, { color: colors.text }]}>{t.nearbySellersTitle || 'Nearby Sellers'}</Text>
                     <View style={styles.placeholder} />
                 </View>
                 <View style={styles.errorContainer}>
@@ -548,7 +548,7 @@ export default function NearbySellersScreen() {
                         style={[styles.retryBtn, { backgroundColor: colors.primary }]}
                         onPress={getUserLocation}
                     >
-                        <Text style={styles.retryText}>Retry</Text>
+                        <Text style={styles.retryText}>{t.retry || 'Retry'}</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -562,7 +562,7 @@ export default function NearbySellersScreen() {
                 <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
                     <Ionicons name="arrow-back" size={24} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: colors.text }]}>Nearby Sellers</Text>
+                <Text style={[styles.headerTitle, { color: colors.text }]}>{t.nearbySellersTitle || 'Nearby Sellers'}</Text>
                 <View style={styles.placeholder} />
             </View>
 
@@ -634,7 +634,7 @@ export default function NearbySellersScreen() {
                     >
                         <Ionicons name="storefront" size={14} color={colors.primary} />
                         <Text style={[styles.infoText, { color: colors.text }]}>
-                            {sellers.length} sellers
+                            {sellers.length} {t.sellersLabel || 'sellers'}
                         </Text>
                         <Ionicons
                             name={dropdownVisible ? 'chevron-up' : 'chevron-down'}
@@ -697,7 +697,7 @@ export default function NearbySellersScreen() {
                                                     <View style={styles.dropdownRating}>
                                                         <Ionicons name="star" size={12} color="#f59e0b" />
                                                         <Text style={[styles.dropdownMetaText, { color: colors.textSecondary }]}>
-                                                            {seller.rating ? seller.rating.toFixed(1) : 'N/A'}
+                                                            {seller.rating ? seller.rating.toFixed(1) : (t.notAvailableShort || 'N/A')}
                                                         </Text>
                                                     </View>
                                                     {distance && (
@@ -717,7 +717,7 @@ export default function NearbySellersScreen() {
                                 {sortedSellers.length === 0 && (
                                     <View style={styles.dropdownEmpty}>
                                         <Text style={[styles.dropdownMetaText, { color: colors.textSecondary }]}>
-                                            No sellers found
+                                            {t.noNearbySellers || 'No sellers found nearby'}
                                         </Text>
                                     </View>
                                 )}
@@ -741,7 +741,9 @@ export default function NearbySellersScreen() {
                 <View {...panResponder.panHandlers} style={styles.dragHandle}>
                     <View style={[styles.dragIndicator, { backgroundColor: colors.textSecondary }]} />
                     <Text style={[styles.dragText, { color: colors.textSecondary }]}>
-                        {sellers.length === 0 ? 'No sellers nearby' : `Swipe down to collapse • ${sellers.length} found`}
+                        {sellers.length === 0
+                            ? (t.noNearbySellers || 'No sellers nearby')
+                            : `${t.swipeDownCollapse || 'Swipe down to collapse'} • ${sellers.length} ${t.foundLabel || 'found'}`}
                     </Text>
                 </View>
 
@@ -751,7 +753,7 @@ export default function NearbySellersScreen() {
                         <Ionicons name="search" size={18} color={colors.textSecondary} />
                         <TextInput
                             style={[styles.searchInput, { color: colors.text }]}
-                            placeholder="Search sellers..."
+                            placeholder={t.searchSellers || 'Search sellers...'}
                             placeholderTextColor={colors.textSecondary}
                             value={searchQuery}
                             onChangeText={setSearchQuery}
@@ -790,10 +792,10 @@ export default function NearbySellersScreen() {
                         <View style={styles.emptyContainer}>
                             <Ionicons name="storefront-outline" size={48} color={colors.textSecondary} />
                             <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>
-                                No sellers found
+                                {t.noNearbySellers || 'No sellers found nearby'}
                             </Text>
                             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                                Try increasing the search radius
+                                {t.expandRadius || 'Try expanding the search radius'}
                             </Text>
                         </View>
                     }

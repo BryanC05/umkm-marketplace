@@ -32,10 +32,10 @@ export default function OrdersScreen({ navigation }) {
         delivered: { bg: '#d1fae5', text: '#065f46', label: t.delivered },
         cancelled: { bg: '#fee2e2', text: '#991b1b', label: t.cancelled },
         // Scheduled delivery statuses
-        pending_seller_review: { bg: '#fef3c7', text: '#92400e', label: 'Waiting for Seller' },
-        seller_accepted: { bg: '#dbeafe', text: '#1e40af', label: 'Awaiting Confirmation' },
-        seller_declined: { bg: '#fee2e2', text: '#991b1b', label: 'Request Declined' },
-        awaiting_buyer_confirm: { bg: '#fef3c7', text: '#92400e', label: 'Review Required' },
+        pending_seller_review: { bg: '#fef3c7', text: '#92400e', label: t.waitingForSeller || 'Waiting for Seller' },
+        seller_accepted: { bg: '#dbeafe', text: '#1e40af', label: t.awaitingConfirmation || 'Awaiting Confirmation' },
+        seller_declined: { bg: '#fee2e2', text: '#991b1b', label: t.requestDeclined || 'Request Declined' },
+        awaiting_buyer_confirm: { bg: '#fef3c7', text: '#92400e', label: t.reviewRequired || 'Review Required' },
     };
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -70,38 +70,43 @@ export default function OrdersScreen({ navigation }) {
     const handleSellerResponse = async (orderId, action, notes = '') => {
         try {
             await api.put(`/orders/${orderId}/seller-response`, { action, notes });
-            Alert.alert('Success', `Order ${action} successfully`);
+            Alert.alert(t.success || 'Success', `${t.orderActionSuccessPrefix || 'Order'} ${action} ${t.orderActionSuccessSuffix || 'successfully'}`);
             fetchOrders();
         } catch (error) {
-            Alert.alert('Error', error.response?.data?.message || 'Failed to respond to order');
+            Alert.alert(t.error || 'Error', error.response?.data?.message || t.failedRespondOrder || 'Failed to respond to order');
         }
     };
 
     const handleBuyerConfirm = async (orderId, confirm = true) => {
         try {
             await api.put(`/orders/${orderId}/buyer-confirm`, { confirm });
-            Alert.alert('Success', confirm ? 'Order confirmed! Please proceed to payment.' : 'Order declined.');
+            Alert.alert(
+                t.success || 'Success',
+                confirm
+                    ? (t.orderConfirmedProceedPayment || 'Order confirmed! Please proceed to payment.')
+                    : (t.orderDeclined || 'Order declined.')
+            );
             fetchOrders();
         } catch (error) {
-            Alert.alert('Error', error.response?.data?.message || 'Failed to confirm order');
+            Alert.alert(t.error || 'Error', error.response?.data?.message || t.failedConfirmOrder || 'Failed to confirm order');
         }
     };
 
     const showSellerResponseModal = (order) => {
         Alert.alert(
-            'Respond to Request',
-            'Choose an action for this scheduled delivery request',
+            t.respondToRequest || 'Respond to Request',
+            t.chooseActionForScheduledRequest || 'Choose an action for this scheduled delivery request',
             [
-                { text: 'Accept', onPress: () => handleSellerResponse(order._id, 'accept') },
-                { text: 'Request Changes', onPress: () => {
+                { text: t.accept || 'Accept', onPress: () => handleSellerResponse(order._id, 'accept') },
+                { text: t.requestChanges || 'Request Changes', onPress: () => {
                     Alert.prompt(
-                        'Request Changes',
-                        'Enter reason for changes:',
+                        t.requestChanges || 'Request Changes',
+                        t.enterReasonForChanges || 'Enter reason for changes:',
                         (notes) => handleSellerResponse(order._id, 'request_changes', notes)
                     );
                 }},
-                { text: 'Decline', onPress: () => handleSellerResponse(order._id, 'decline'), style: 'destructive' },
-                { text: 'Cancel', style: 'cancel' },
+                { text: t.decline || 'Decline', onPress: () => handleSellerResponse(order._id, 'decline'), style: 'destructive' },
+                { text: t.cancel || 'Cancel', style: 'cancel' },
             ]
         );
     };
@@ -124,14 +129,38 @@ export default function OrdersScreen({ navigation }) {
             backgroundColor: colors.card, borderRadius: 14, padding: 16, marginBottom: 12,
             shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
             shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
+            borderWidth: 1,
+            borderColor: colors.border,
+        },
+        orderCardDelivery: {
+            borderLeftWidth: 4,
+            borderLeftColor: '#2563eb',
+        },
+        orderCardPickup: {
+            borderLeftWidth: 4,
+            borderLeftColor: '#16a34a',
         },
         orderHeader: {
             flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
             paddingBottom: 10,
         },
         orderHeaderLeft: { flex: 1 },
+        orderHeaderMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
         orderId: { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
         orderDate: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
+        orderTypePill: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+            paddingHorizontal: 8,
+            paddingVertical: 3,
+            borderRadius: 999,
+        },
+        orderTypeText: {
+            fontSize: 10,
+            fontWeight: '700',
+            letterSpacing: 0.2,
+        },
         orderHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
         statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
         statusText: { fontSize: 11, fontWeight: '700' },
@@ -286,26 +315,34 @@ export default function OrdersScreen({ navigation }) {
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                                 <Ionicons name="calendar" size={24} color="#f59e0b" />
                                 <Text style={{ fontSize: 14, fontWeight: '700', color: '#92400e' }}>
-                                    PREORDER
+                                    {t.preorder || 'PREORDER'}
                                 </Text>
                             </View>
                         </View>
                         <View style={[styles.preorderBadge, { backgroundColor: displayStatus === 'pending_seller_review' ? '#f59e0b' : displayStatus === 'seller_accepted' ? '#10b981' : displayStatus === 'seller_declined' ? '#ef4444' : '#6b7280' }]}>
                             <Text style={styles.preorderBadgeText}>
-                                {displayStatus === 'pending_seller_review' ? 'WAITING APPROVAL' : displayStatus === 'seller_accepted' ? 'APPROVED' : displayStatus === 'seller_declined' ? 'DECLINED' : displayStatus === 'awaiting_buyer_confirm' ? 'ACTION NEEDED' : 'PENDING'}
+                                {displayStatus === 'pending_seller_review'
+                                    ? (t.waitingApproval || 'WAITING APPROVAL')
+                                    : displayStatus === 'seller_accepted'
+                                        ? (t.approved || 'APPROVED')
+                                        : displayStatus === 'seller_declined'
+                                            ? (t.declinedUpper || 'DECLINED')
+                                            : displayStatus === 'awaiting_buyer_confirm'
+                                                ? (t.actionNeeded || 'ACTION NEEDED')
+                                                : (t.pendingUpper || 'PENDING')}
                             </Text>
                         </View>
                     </View>
                     
                     {/* Scheduled Date & Time */}
                     <Text style={styles.preorderDate}>{scheduledDateFormatted}</Text>
-                    <Text style={styles.preorderTime}>at {order.preorderTime}</Text>
+                    <Text style={styles.preorderTime}>{t.atLabel || 'at'} {order.preorderTime}</Text>
                     
                     {/* Products Preview */}
                     <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                         <Ionicons name="cube-outline" size={16} color="#92400e" />
                         <Text style={{ fontSize: 13, color: '#92400e', flex: 1 }}>
-                            {order.products?.length || 0} items • {formatPrice(order.totalAmount)}
+                            {order.products?.length || 0} {t.items || 'items'} • {formatPrice(order.totalAmount)}
                         </Text>
                     </View>
                     
@@ -313,7 +350,7 @@ export default function OrdersScreen({ navigation }) {
                     <View style={styles.preorderProof}>
                         <Ionicons name="receipt-outline" size={14} color="#92400e" />
                         <Text style={styles.preorderProofText}>
-                            Order #{orderIdShort} • {formatDate(order.createdAt) || 'Just now'}
+                            {t.orderLabel || 'Order'} #{orderIdShort} • {formatDate(order.createdAt) || (t.justNow || 'Just now')}
                         </Text>
                     </View>
                     
@@ -324,20 +361,20 @@ export default function OrdersScreen({ navigation }) {
                             onPress={() => navigation.navigate('OrderDetail', { orderId: order._id })}
                         >
                             <Ionicons name="checkmark-circle" size={18} color="#fff" />
-                            <Text style={styles.trackBtnText}>Confirm & Pay</Text>
+                            <Text style={styles.trackBtnText}>{t.confirmAndPay || 'Confirm & Pay'}</Text>
                         </TouchableOpacity>
                     )}
                     
                     {displayStatus === 'pending_seller_review' && (
                         <View style={[styles.preorderCountdown, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
                             <Ionicons name="time-outline" size={12} color="#b45309" />
-                            <Text style={{ fontSize: 12, color: '#b45309' }}>Waiting for seller to respond</Text>
+                            <Text style={{ fontSize: 12, color: '#b45309' }}>{t.waitingSellerResponse || 'Waiting for seller to respond'}</Text>
                         </View>
                     )}
                     
                     {displayStatus === 'seller_declined' && (
                         <View style={{ marginTop: 12, padding: 10, backgroundColor: '#fee2e2', borderRadius: 8 }}>
-                            <Text style={{ color: '#991b1b', fontSize: 13 }}>Request declined</Text>
+                            <Text style={{ color: '#991b1b', fontSize: 13 }}>{t.requestDeclined || 'Request declined'}</Text>
                             {order.sellerResponseNotes && (
                                 <Text style={{ color: '#991b1b', fontSize: 12, marginTop: 4 }}>{order.sellerResponseNotes}</Text>
                             )}
@@ -349,7 +386,7 @@ export default function OrdersScreen({ navigation }) {
                         onPress={() => toggleExpand(order._id)}
                     >
                         <Text style={{ color: '#92400e', fontSize: 12, textDecorationLine: 'underline' }}>
-                            {isExpanded ? 'Hide details' : 'View details'}
+                            {isExpanded ? (t.hideDetails || 'Hide details') : (t.viewDetails || 'View details')}
                         </Text>
                     </TouchableOpacity>
                     
@@ -378,7 +415,7 @@ export default function OrdersScreen({ navigation }) {
                             {/* Products */}
                             {order.products?.map((item, idx) => (
                                 <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                                    <Text style={{ fontSize: 12, color: '#92400e' }}>• {item.product?.name || 'Product'} x{item.quantity}</Text>
+                                    <Text style={{ fontSize: 12, color: '#92400e' }}>• {item.product?.name || (t.productLabel || 'Product')} x{item.quantity}</Text>
                                 </View>
                             ))}
                         </View>
@@ -389,12 +426,31 @@ export default function OrdersScreen({ navigation }) {
         
         // Regular order card
         return (
-            <View style={styles.orderCard}>
+            <View style={[styles.orderCard, isPickup ? styles.orderCardPickup : styles.orderCardDelivery]}>
                 {/* Header - Clickable */}
                 <TouchableOpacity style={styles.orderHeader} onPress={() => toggleExpand(order._id)}>
                     <View style={styles.orderHeaderLeft}>
-                        <Text style={styles.orderId}>#{orderIdShort}</Text>
-                        <Text style={styles.orderDate}>{formatDate(order.createdAt) || 'Just now'}</Text>
+                        <View style={styles.orderHeaderMeta}>
+                            <Text style={styles.orderId}>#{orderIdShort}</Text>
+                            <View
+                                style={[
+                                    styles.orderTypePill,
+                                    {
+                                        backgroundColor: isPickup ? 'rgba(34, 197, 94, 0.16)' : 'rgba(37, 99, 235, 0.14)',
+                                    },
+                                ]}
+                            >
+                                <Ionicons
+                                    name={isPickup ? 'storefront' : 'car'}
+                                    size={11}
+                                    color={isPickup ? '#166534' : '#1e40af'}
+                                />
+                                <Text style={[styles.orderTypeText, { color: isPickup ? '#166534' : '#1e40af' }]}>
+                                    {isPickup ? (t.pickupLabel || 'PICKUP') : (t.deliveryLabel || 'DELIVERY')}
+                                </Text>
+                            </View>
+                        </View>
+                        <Text style={styles.orderDate}>{formatDate(order.createdAt) || (t.justNow || 'Just now')}</Text>
                     </View>
                     <View style={styles.orderHeaderRight}>
                         <View style={[styles.statusBadge, { backgroundColor: statusInfo.bg }]}>
@@ -426,7 +482,7 @@ export default function OrdersScreen({ navigation }) {
                         {isPickup ? (
                             <View style={styles.pickupInfo}>
                                 <Ionicons name="storefront" size={18} color={colors.primary} style={styles.deliveryIcon} />
-                                <Text style={styles.deliveryText}>🏪 Pickup at Store</Text>
+                                <Text style={styles.deliveryText}>🏪 {t.pickupAtStore || 'Pickup at Store'}</Text>
                                 {order.preorderTime && (
                                     <Text style={styles.deliveryTime}>{order.preorderTime}</Text>
                                 )}
@@ -434,7 +490,7 @@ export default function OrdersScreen({ navigation }) {
                         ) : (
                             <View style={styles.deliveryInfo}>
                                 <Ionicons name="car" size={18} color={colors.textSecondary} style={styles.deliveryIcon} />
-                                <Text style={styles.deliveryText}>🚗 Delivery</Text>
+                                <Text style={styles.deliveryText}>🚗 {t.deliveryLabel || 'Delivery'}</Text>
                                 {order.preorderTime && (
                                     <Text style={styles.deliveryTime}>{order.preorderTime}</Text>
                                 )}
@@ -454,11 +510,11 @@ export default function OrdersScreen({ navigation }) {
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                                     <Ionicons name="calendar" size={18} color={colors.primary} />
                                     <Text style={{ fontSize: 14, fontWeight: '700', color: colors.primary }}>
-                                        Scheduled Delivery
+                                        {t.scheduledDelivery || 'Scheduled Delivery'}
                                     </Text>
                                 </View>
                                 <Text style={{ fontSize: 13, color: colors.text, marginTop: 4 }}>
-                                    📅 {order.deliveryDate} at {order.preorderTime}
+                                    📅 {order.deliveryDate} {t.atLabel || 'at'} {order.preorderTime}
                                 </Text>
                                 {order.scheduledNotes && (
                                     <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 4, fontStyle: 'italic' }}>
@@ -467,7 +523,7 @@ export default function OrdersScreen({ navigation }) {
                                 )}
                                 {order.requestDeadline && (
                                     <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 6 }}>
-                                        ⏰ Seller has to respond within 24 hours
+                                        ⏰ {t.sellerRespond24Hours || 'Seller has to respond within 24 hours'}
                                     </Text>
                                 )}
                             </View>
@@ -476,7 +532,7 @@ export default function OrdersScreen({ navigation }) {
                         {/* Notes */}
                         {order.notes && (
                             <View style={styles.notesBox}>
-                                <Text style={styles.notesLabel}>Note:</Text>
+                                <Text style={styles.notesLabel}>{t.noteLabel || 'Note'}:</Text>
                                 <Text style={styles.notesText}>{order.notes}</Text>
                             </View>
                         )}
@@ -488,7 +544,7 @@ export default function OrdersScreen({ navigation }) {
                                 <View key={idx} style={styles.orderItem}>
                                     <Image source={{ uri: img }} style={styles.orderImage} />
                                     <View style={styles.orderItemInfo}>
-                                        <Text style={styles.orderItemName} numberOfLines={1}>{item.product?.name || 'Product'}</Text>
+                                        <Text style={styles.orderItemName} numberOfLines={1}>{item.product?.name || (t.productLabel || 'Product')}</Text>
                                         {item.variantName ? (
                                             <Text style={{ fontSize: 11, color: colors.primary, fontWeight: '600' }}>{item.variantName}</Text>
                                         ) : null}
@@ -501,7 +557,7 @@ export default function OrdersScreen({ navigation }) {
                                                 ))}
                                             </View>
                                         ) : null}
-                                        <Text style={styles.orderItemQty}>Qty: {item.quantity}</Text>
+                                        <Text style={styles.orderItemQty}>{t.qtyLabel || 'Qty'}: {item.quantity}</Text>
                                     </View>
                                     <Text style={styles.orderItemPrice}>{formatPrice(item.price * item.quantity)}</Text>
                                 </View>
@@ -544,12 +600,12 @@ export default function OrdersScreen({ navigation }) {
                         {order.requestStatus === 'seller_accepted' && (
                             <TouchableOpacity 
                                 style={[styles.trackBtn, { backgroundColor: '#10b981' }]}
-                                onPress={() => handleBuyerConfirm(order._id, true)}
-                            >
-                                <Ionicons name="checkmark-circle" size={18} color="#fff" />
-                                <Text style={styles.trackBtnText}>Confirm & Pay</Text>
-                            </TouchableOpacity>
-                        )}
+                            onPress={() => handleBuyerConfirm(order._id, true)}
+                        >
+                            <Ionicons name="checkmark-circle" size={18} color="#fff" />
+                            <Text style={styles.trackBtnText}>{t.confirmAndPay || 'Confirm & Pay'}</Text>
+                        </TouchableOpacity>
+                    )}
 
                         {order.requestStatus === 'awaiting_buyer_confirm' && (
                             <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
@@ -557,13 +613,13 @@ export default function OrdersScreen({ navigation }) {
                                     style={[styles.trackBtn, { flex: 1, backgroundColor: '#10b981' }]}
                                     onPress={() => handleBuyerConfirm(order._id, true)}
                                 >
-                                    <Text style={styles.trackBtnText}>Accept Changes</Text>
+                                    <Text style={styles.trackBtnText}>{t.acceptChanges || 'Accept Changes'}</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity 
                                     style={[styles.trackBtn, { flex: 1, backgroundColor: '#ef4444' }]}
                                     onPress={() => handleBuyerConfirm(order._id, false)}
                                 >
-                                    <Text style={styles.trackBtnText}>Decline</Text>
+                                    <Text style={styles.trackBtnText}>{t.decline || 'Decline'}</Text>
                                 </TouchableOpacity>
                             </View>
                         )}
@@ -581,7 +637,7 @@ export default function OrdersScreen({ navigation }) {
                                 }}>
                                     <Ionicons name="time" size={18} color="#92400e" />
                                     <Text style={{ color: '#92400e', fontSize: 13, flex: 1 }}>
-                                        New scheduled delivery request
+                                        {t.newScheduledRequest || 'New scheduled delivery request'}
                                     </Text>
                                 </View>
                                 <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -590,21 +646,21 @@ export default function OrdersScreen({ navigation }) {
                                         onPress={() => handleSellerResponse(order._id, 'accept')}
                                     >
                                         <Ionicons name="checkmark" size={18} color="#fff" />
-                                        <Text style={styles.trackBtnText}>Accept</Text>
+                                        <Text style={styles.trackBtnText}>{t.accept || 'Accept'}</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity 
                                         style={[styles.trackBtn, { flex: 1, backgroundColor: '#6b7280' }]}
                                         onPress={() => showSellerResponseModal(order)}
                                     >
                                         <Ionicons name="chatbubble" size={18} color="#fff" />
-                                        <Text style={styles.trackBtnText}>Chat/Changes</Text>
+                                        <Text style={styles.trackBtnText}>{t.chatChanges || 'Chat/Changes'}</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity 
                                         style={[styles.trackBtn, { flex: 1, backgroundColor: '#ef4444' }]}
                                         onPress={() => handleSellerResponse(order._id, 'decline')}
                                     >
                                         <Ionicons name="close" size={18} color="#fff" />
-                                        <Text style={styles.trackBtnText}>Decline</Text>
+                                        <Text style={styles.trackBtnText}>{t.decline || 'Decline'}</Text>
                                     </TouchableOpacity>
                                 </View>
                             </View>
@@ -618,11 +674,11 @@ export default function OrdersScreen({ navigation }) {
                                 marginTop: 12 
                             }}>
                                 <Text style={{ color: '#991b1b', fontWeight: '600' }}>
-                                    Request declined by seller
+                                    {t.requestDeclinedBySeller || 'Request declined by seller'}
                                 </Text>
                                 {order.sellerResponseNotes && (
                                     <Text style={{ color: '#991b1b', fontSize: 12, marginTop: 4 }}>
-                                        Reason: {order.sellerResponseNotes}
+                                        {t.reasonLabel || 'Reason'}: {order.sellerResponseNotes}
                                     </Text>
                                 )}
                             </View>

@@ -18,7 +18,7 @@ export default function DriverRatingModal({ visible, orderId, driverName, onClos
 
     const handleSubmit = async () => {
         if (rating < 1 || rating > 5) {
-            Alert.alert(t.error || 'Error', 'Please select a rating');
+            Alert.alert(t.error || 'Error', t.pleaseSelectRating || 'Please select a rating');
             return;
         }
 
@@ -36,7 +36,7 @@ export default function DriverRatingModal({ visible, orderId, driverName, onClos
             Alert.alert(t.success || 'Success', t.ratingSubmitted || 'Thank you for your rating!');
             onClose();
         } catch (error) {
-            Alert.alert(t.error || 'Error', error.response?.data?.message || 'Failed to submit rating');
+            Alert.alert(t.error || 'Error', error.response?.data?.message || t.failedSubmitRating || 'Failed to submit rating');
         } finally {
             setSubmitting(false);
         }
