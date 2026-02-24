@@ -11,21 +11,22 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { PLACEHOLDER_IMAGE } from '@/utils/constants';
 import { getBackendUrl } from '@/config';
 
 const BACKEND_URL = getBackendUrl();
 
 function LogoCard({ logo, isSelected, onSelect, onDelete, isLoading }) {
   const getLogoUrl = (url) => {
-    if (!url) return PLACEHOLDER_IMAGE;
+    if (!url) return '';
     if (url.startsWith('http')) return url;
     return `${BACKEND_URL}${url}`;
   };
+  const logoUrl = getLogoUrl(logo.url);
 
   const handleDownload = async () => {
+    if (!logoUrl) return;
     try {
-      const response = await fetch(getLogoUrl(logo.url));
+      const response = await fetch(logoUrl);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -65,12 +66,14 @@ function LogoCard({ logo, isSelected, onSelect, onDelete, isLoading }) {
     <Card className={`overflow-hidden transition-all duration-200 ${isSelected ? 'ring-2 ring-primary shadow-lg' : 'hover:shadow-md'}`}>
       <CardContent className="p-0">
         <div className="relative aspect-square bg-muted">
-          <img
-            src={getLogoUrl(logo.url)}
-            alt={`Logo generated from: ${logo.prompt}`}
-            className="h-full w-full object-cover"
-            onError={(e) => { e.target.src = PLACEHOLDER_IMAGE; }}
-          />
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt={`Logo generated from: ${logo.prompt}`}
+              className="h-full w-full object-cover"
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
+          ) : null}
           {isSelected && (
             <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
               <div className="bg-primary text-primary-foreground rounded-full p-2">

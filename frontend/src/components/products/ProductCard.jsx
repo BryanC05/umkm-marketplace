@@ -5,12 +5,11 @@ import { MapPin, Star, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useSavedProductsStore } from "@/store/savedProductsStore";
 import { useAuthStore } from "@/store/authStore";
-import { PLACEHOLDER_IMAGE } from "@/utils/constants";
 import { resolveImageUrl } from "@/utils/imageUrl";
 
 const ProductCard = ({ product }) => {
     const productId = product._id || product.id;
-    const productImage = resolveImageUrl(product.images?.[0] || product.image) || PLACEHOLDER_IMAGE;
+    const productImage = resolveImageUrl(product.images?.[0] || product.image);
     const sellerRating = product.seller?.rating || product.rating || 4.5;
 
     const { isProductSaved, toggleSaveProduct, isLoading } = useSavedProductsStore();
@@ -37,12 +36,14 @@ const ProductCard = ({ product }) => {
         <Link to={`/product/${productId}`}>
             <Card className="group overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1">
                 <div className="relative aspect-square overflow-hidden bg-muted">
-                    <img
-                        src={productImage}
-                        alt={product.name}
-                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                        onError={(e) => { e.target.src = PLACEHOLDER_IMAGE; }}
-                    />
+                    {productImage ? (
+                        <img
+                            src={productImage}
+                            alt={product.name}
+                            className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                    ) : null}
                     {product.isNew && (
                         <Badge className="absolute top-2 left-2 bg-accent text-accent-foreground text-sm px-2 py-1">
                             New

@@ -9,7 +9,6 @@ import { useLanguageStore } from '../../store/languageStore';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../api/api';
 import { getImageUrl, formatPrice, formatDate } from '../../utils/helpers';
-import { PLACEHOLDER_IMAGE } from '../../config';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import DriverRatingModal from '../../components/DriverRatingModal';
 import { OrdersListSkeleton } from '../../components/LoadingSkeleton';
@@ -539,10 +538,14 @@ export default function OrdersScreen({ navigation }) {
 
                         {/* Products */}
                         {order.products?.map((item, idx) => {
-                            const img = item.product?.images?.[0] ? getImageUrl(item.product.images[0]) : PLACEHOLDER_IMAGE;
+                            const img = item.product?.images?.[0] ? getImageUrl(item.product.images[0]) : '';
                             return (
                                 <View key={idx} style={styles.orderItem}>
-                                    <Image source={{ uri: img }} style={styles.orderImage} />
+                                    {img ? (
+                                        <Image source={{ uri: img }} style={styles.orderImage} />
+                                    ) : (
+                                        <View style={styles.orderImage} />
+                                    )}
                                     <View style={styles.orderItemInfo}>
                                         <Text style={styles.orderItemName} numberOfLines={1}>{item.product?.name || (t.productLabel || 'Product')}</Text>
                                         {item.variantName ? (

@@ -12,7 +12,6 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { PLACEHOLDER_IMAGE } from '@/utils/constants';
 import { resolveImageUrl } from '@/utils/imageUrl';
 import ProgressSteps from '@/components/ui/ProgressSteps';
 import DeliveryMapPicker from '@/components/DeliveryMapPicker';
@@ -212,11 +211,14 @@ function Cart() {
                                 <Card key={`${item.product._id}-${item.variant?.name || ''}`}>
                                     <CardContent className="p-4 flex gap-4">
                                         <div className="h-20 w-20 rounded-md overflow-hidden border shrink-0">
-                                            <img
-                                                src={resolveImageUrl(item.product.images?.[0]) || PLACEHOLDER_IMAGE}
-                                                alt={item.product.name}
-                                                className="h-full w-full object-cover"
-                                            />
+                                            {resolveImageUrl(item.product.images?.[0]) ? (
+                                                <img
+                                                    src={resolveImageUrl(item.product.images?.[0])}
+                                                    alt={item.product.name}
+                                                    className="h-full w-full object-cover"
+                                                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                                />
+                                            ) : null}
                                         </div>
                                         <div className="flex-1 flex flex-col justify-between">
                                             <div className="flex justify-between items-start">
@@ -682,11 +684,14 @@ function Cart() {
                                                     return (
                                                         <div key={`${item.product._id}-${item.variant?.name || ''}`} className="flex gap-3 p-3 bg-secondary/30 rounded-lg">
                                                             <div className="h-16 w-16 rounded-md overflow-hidden border shrink-0">
-                                                                <img
-                                                                    src={resolveImageUrl(item.product.images?.[0]) || PLACEHOLDER_IMAGE}
-                                                                    alt={item.product.name}
-                                                                    className="h-full w-full object-cover"
-                                                                />
+                                                                {resolveImageUrl(item.product.images?.[0]) ? (
+                                                                    <img
+                                                                        src={resolveImageUrl(item.product.images?.[0])}
+                                                                        alt={item.product.name}
+                                                                        className="h-full w-full object-cover"
+                                                                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                                                    />
+                                                                ) : null}
                                                             </div>
                                                             <div className="flex-1 flex flex-col justify-between min-w-0">
                                                                 <div className="flex justify-between items-start gap-2">

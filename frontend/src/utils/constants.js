@@ -1,6 +1,3 @@
-// Placeholder image as data URI - no external requests needed
-export const PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"%3E%3Crect fill="%23f3f4f6" width="400" height="400"/%3E%3Ctext fill="%239ca3af" font-family="sans-serif" font-size="24" font-weight="bold" text-anchor="middle" x="200" y="200"%3ENo Image%3C/text%3E%3C/svg%3E';
-
 // Default location coordinates
 export const DEFAULT_LOCATION = {
   Bekasi: { lat: -6.2349, lng: 106.9896 },

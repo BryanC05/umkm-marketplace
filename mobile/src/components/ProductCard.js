@@ -3,7 +3,6 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions } from 'rea
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeStore } from '../store/themeStore';
 import { getImageUrl, formatPrice } from '../utils/helpers';
-import { PLACEHOLDER_IMAGE } from '../config';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
@@ -12,15 +11,19 @@ export default function ProductCard({ product, onPress }) {
     const { colors } = useThemeStore();
     const imageUrl = product.images?.[0]
         ? getImageUrl(product.images[0])
-        : PLACEHOLDER_IMAGE;
+        : '';
 
     return (
         <TouchableOpacity style={[styles.card, { backgroundColor: colors.card }]} onPress={onPress} activeOpacity={0.7}>
-            <Image
-                source={{ uri: imageUrl }}
-                style={[styles.image, { backgroundColor: colors.border }]}
-                resizeMode="cover"
-            />
+            {imageUrl ? (
+                <Image
+                    source={{ uri: imageUrl }}
+                    style={[styles.image, { backgroundColor: colors.border }]}
+                    resizeMode="cover"
+                />
+            ) : (
+                <View style={[styles.image, { backgroundColor: colors.border }]} />
+            )}
             <View style={styles.content}>
                 {product.category && (
                     <Text style={[styles.category, { color: colors.textSecondary }]} numberOfLines={1}>

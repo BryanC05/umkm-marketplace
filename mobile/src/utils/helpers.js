@@ -1,4 +1,4 @@
-import { API_HOST, PLACEHOLDER_IMAGE } from '../config';
+import { API_HOST } from '../config';
 import { EARTH_RADIUS_KM } from './constants';
 
 const hashToLock = (input = '') => {
@@ -36,7 +36,7 @@ const sourceUnsplashToKeywordImage = (url) => {
 };
 
 export const getImageUrl = (url) => {
-    if (!url) return PLACEHOLDER_IMAGE;
+    if (!url) return '';
     if (url.includes('source.unsplash.com')) return sourceUnsplashToKeywordImage(url);
     if (url.startsWith('http')) return url;
     return `${API_HOST}${url}`;

@@ -10,7 +10,6 @@ import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { PLACEHOLDER_IMAGE } from '@/utils/constants';
 import { resolveImageUrl } from '@/utils/imageUrl';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -167,9 +166,9 @@ function ProductDetail() {
     );
   }
 
-  const productImages = product.images?.length > 0
-    ? product.images.map((img) => resolveImageUrl(img) || PLACEHOLDER_IMAGE)
-    : [PLACEHOLDER_IMAGE];
+  const productImages = Array.isArray(product.images)
+    ? product.images.map((img) => resolveImageUrl(img)).filter(Boolean)
+    : [];
   const seller = typeof product.seller === 'object' && product.seller !== null ? product.seller : null;
   const sellerId =
     (typeof product.seller === 'string' ? product.seller : null) ||
@@ -190,12 +189,16 @@ function ProductDetail() {
           {/* Product Images */}
           <div className="space-y-4">
             <div className="aspect-square bg-muted rounded-xl overflow-hidden border">
-              <img
-                src={productImages[selectedImage]}
-                alt={product.name}
-                className="w-full h-full object-cover"
-                onError={(e) => { e.target.src = PLACEHOLDER_IMAGE; }}
-              />
+              {productImages[selectedImage] ? (
+                <img
+                  src={productImages[selectedImage]}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+              ) : (
+                <div className="w-full h-full bg-muted" />
+              )}
             </div>
 
             {productImages.length > 1 && (

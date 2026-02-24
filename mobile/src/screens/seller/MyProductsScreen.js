@@ -4,7 +4,6 @@ import { Ionicons } from '@expo/vector-icons';
 import api from '../../api/api';
 import { useAuthStore } from '../../store/authStore';
 import { getImageUrl, formatPrice } from '../../utils/helpers';
-import { PLACEHOLDER_IMAGE } from '../../config';
 
 export default function MyProductsScreen({ navigation }) {
     const { user } = useAuthStore();

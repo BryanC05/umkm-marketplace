@@ -6,7 +6,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import api from '../../api/api';
 import { getImageUrl, formatPrice } from '../../utils/helpers';
-import { PLACEHOLDER_IMAGE } from '../../config';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { BusinessDetailSkeleton } from '../../components/LoadingSkeleton';
 
@@ -72,10 +71,14 @@ export default function BusinessDetailsScreen() {
                 params: { productId: item._id }
             })}
         >
-            <Image
-                source={{ uri: item.images?.[0] ? getImageUrl(item.images[0]) : PLACEHOLDER_IMAGE }}
-                style={styles.productImage}
-            />
+            {item.images?.[0] ? (
+                <Image
+                    source={{ uri: getImageUrl(item.images[0]) }}
+                    style={styles.productImage}
+                />
+            ) : (
+                <View style={styles.productImage} />
+            )}
             <View style={styles.productInfo}>
                 <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
                 <Text style={styles.productPrice}>{formatPrice(item.price)}</Text>

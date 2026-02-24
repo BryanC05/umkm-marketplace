@@ -8,7 +8,6 @@ import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { useLanguageStore } from '../../store/languageStore';
 import { getImageUrl, formatPrice } from '../../utils/helpers';
-import { PLACEHOLDER_IMAGE } from '../../config';
 import api from '../../api/api';
 
 const PAYMENT_METHODS = [
@@ -226,14 +225,18 @@ export default function CartScreen({ navigation }) {
     };
 
     const renderCartItem = (item) => {
-        const imageUrl = item.product.images?.[0] ? getImageUrl(item.product.images[0]) : PLACEHOLDER_IMAGE;
+        const imageUrl = item.product.images?.[0] ? getImageUrl(item.product.images[0]) : '';
         const unitPrice = item.variant ? item.variant.price : item.product.price;
         const optionAdjust = (item.selectedOptions || []).reduce((s, o) => s + (o.priceAdjust || 0), 0);
         const linePrice = unitPrice + optionAdjust;
 
         return (
             <View style={styles.cartItem}>
-                <Image source={{ uri: imageUrl }} style={styles.itemImage} />
+                {imageUrl ? (
+                    <Image source={{ uri: imageUrl }} style={styles.itemImage} />
+                ) : (
+                    <View style={styles.itemImage} />
+                )}
                 <View style={styles.itemInfo}>
                     <Text style={styles.itemName} numberOfLines={2}>{item.product.name}</Text>
                     {item.variant && (

@@ -11,7 +11,6 @@ import api from '../../api/api';
 import { useCartStore } from '../../store/cartStore';
 import { useAuthStore } from '../../store/authStore';
 import { getImageUrl, formatPrice } from '../../utils/helpers';
-import { PLACEHOLDER_IMAGE } from '../../config';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 const { width } = Dimensions.get('window');
@@ -122,7 +121,7 @@ export default function ProductDetailScreen({ route }) {
     if (loading) return <LoadingSpinner />;
     if (!product) return null;
 
-    const images = product.images?.length ? product.images : [null];
+    const images = Array.isArray(product.images) ? product.images.filter(Boolean) : [];
 
     const styles = {
         container: { flex: 1 },
@@ -202,14 +201,18 @@ export default function ProductDetailScreen({ route }) {
                             setSelectedImage(index);
                         }}
                     >
-                        {images.map((img, i) => (
-                            <Image
-                                key={i}
-                                source={{ uri: img ? getImageUrl(img) : PLACEHOLDER_IMAGE }}
-                                style={styles.image}
-                                resizeMode="cover"
-                            />
-                        ))}
+                        {images.length > 0 ? (
+                            images.map((img, i) => (
+                                <Image
+                                    key={i}
+                                    source={{ uri: getImageUrl(img) }}
+                                    style={styles.image}
+                                    resizeMode="cover"
+                                />
+                            ))
+                        ) : (
+                            <View style={styles.image} />
+                        )}
                     </ScrollView>
                     {images.length > 1 && (
                         <View style={styles.dots}>
