@@ -1,8 +1,43 @@
 import { API_HOST, PLACEHOLDER_IMAGE } from '../config';
 import { EARTH_RADIUS_KM } from './constants';
 
+const hashToLock = (input = '') => {
+    let hash = 0;
+    for (let i = 0; i < input.length; i += 1) {
+        hash = ((hash << 5) - hash) + input.charCodeAt(i);
+        hash |= 0;
+    }
+    return Math.abs(hash % 100000) + 1;
+};
+
+const sanitizeKeywords = (input = '') => {
+    const raw = String(input).toLowerCase().trim();
+    const cleaned = raw.replace(/[^a-z0-9-]+/g, ',').replace(/^,+|,+$/g, '');
+    return cleaned || 'indonesian-food';
+};
+
+const sourceUnsplashToKeywordImage = (url) => {
+    const queryStart = url.indexOf('?');
+    let querySeed = '';
+    if (queryStart >= 0) {
+        const queryRaw = url.slice(queryStart + 1);
+        const firstPart = queryRaw.split('&')[0] || '';
+        querySeed = firstPart.includes('=') ? (firstPart.split('=')[1] || '') : firstPart;
+        try {
+            querySeed = decodeURIComponent(querySeed);
+        } catch {
+            // Keep raw if decoding fails
+        }
+    }
+
+    const keywords = sanitizeKeywords(querySeed);
+    const lock = hashToLock(keywords);
+    return `https://loremflickr.com/640/480/${keywords}?lock=${lock}`;
+};
+
 export const getImageUrl = (url) => {
     if (!url) return PLACEHOLDER_IMAGE;
+    if (url.includes('source.unsplash.com')) return sourceUnsplashToKeywordImage(url);
     if (url.startsWith('http')) return url;
     return `${API_HOST}${url}`;
 };

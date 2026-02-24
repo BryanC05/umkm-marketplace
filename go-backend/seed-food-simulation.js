@@ -13,6 +13,8 @@ const path = require('path');
 
 const DEFAULT_PASSWORD = 'test123';
 const DEFAULT_DB_NAME = 'msme_marketplace';
+const FALLBACK_UNSPLASH_FOOD_IMAGE =
+  'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=640&h=480&fit=crop&auto=format&fm=jpg&q=80';
 
 const SELLERS = [
   {
@@ -23,6 +25,10 @@ const SELLERS = [
     businessType: 'small',
     rating: 4.8,
     totalReviews: 134,
+    isMember: true,
+    membershipStatus: 'active',
+    memberSince: new Date(),
+    memberExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year free
     location: {
       type: 'Point',
       coordinates: [107.0029, -6.2247],
@@ -39,7 +45,7 @@ const SELLERS = [
         stock: 60,
         unit: 'porsi',
         tags: ['nasi-bakar', 'ayam', 'pedas'],
-        image: 'https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=640&h=480&fit=crop',
+        image: 'https://source.unsplash.com/640x480/?nasi-bakar,ayam,indonesian-food',
       },
       {
         name: 'Soto Betawi Kuah Susu',
@@ -48,7 +54,7 @@ const SELLERS = [
         stock: 45,
         unit: 'mangkuk',
         tags: ['soto', 'betawi', 'kuah-gurih'],
-        image: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=640&h=480&fit=crop',
+        image: 'https://source.unsplash.com/640x480/?soto,indonesian-soup,beef',
       },
       {
         name: 'Es Kopi Gula Aren',
@@ -57,7 +63,7 @@ const SELLERS = [
         stock: 120,
         unit: 'cup',
         tags: ['kopi', 'minuman', 'gula-aren'],
-        image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=640&h=480&fit=crop',
+        image: 'https://source.unsplash.com/640x480/?iced-coffee,coffee,milk',
       },
       {
         name: 'Pisang Goreng Cokelat Keju',
@@ -66,7 +72,7 @@ const SELLERS = [
         stock: 70,
         unit: 'box',
         tags: ['cemilan', 'pisang-goreng', 'manis'],
-        image: 'https://images.unsplash.com/photo-1551024601-bec78aea704b?w=640&h=480&fit=crop',
+        image: 'https://source.unsplash.com/640x480/?fried-banana,dessert,snack',
       },
     ],
   },
@@ -78,6 +84,10 @@ const SELLERS = [
     businessType: 'micro',
     rating: 4.6,
     totalReviews: 89,
+    isMember: true,
+    membershipStatus: 'active',
+    memberSince: new Date(),
+    memberExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
     location: {
       type: 'Point',
       coordinates: [107.0008, -6.2232],
@@ -94,7 +104,7 @@ const SELLERS = [
         stock: 80,
         unit: 'porsi',
         tags: ['rice-bowl', 'ayam', 'matah'],
-        image: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=640&h=480&fit=crop',
+        image: 'https://source.unsplash.com/640x480/?chicken-rice-bowl,indonesian-food',
       },
       {
         name: 'Mie Chili Oil Beef',
@@ -103,7 +113,7 @@ const SELLERS = [
         stock: 55,
         unit: 'mangkuk',
         tags: ['mie', 'chili-oil', 'beef'],
-        image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=640&h=480&fit=crop',
+        image: 'https://source.unsplash.com/640x480/?beef-noodles,chili-noodles,noodle-bowl',
       },
       {
         name: 'Croissant Tuna Mayo',
@@ -112,7 +122,7 @@ const SELLERS = [
         stock: 40,
         unit: 'pcs',
         tags: ['pastry', 'croissant', 'tuna'],
-        image: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=640&h=480&fit=crop',
+        image: 'https://source.unsplash.com/640x480/?croissant,tuna-sandwich,pastry',
       },
       {
         name: 'Matcha Latte',
@@ -121,7 +131,7 @@ const SELLERS = [
         stock: 90,
         unit: 'cup',
         tags: ['matcha', 'minuman', 'latte'],
-        image: 'https://images.unsplash.com/photo-1515823064-d6e0c04616a7?w=640&h=480&fit=crop',
+        image: 'https://source.unsplash.com/640x480/?matcha-latte,green-tea,drink',
       },
       {
         name: 'Mie Chili Oil Beef',
@@ -130,7 +140,7 @@ const SELLERS = [
         stock: 55,
         unit: 'mangkuk',
         tags: ['mie', 'chili-oil', 'beef'],
-        image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=640&h=480&fit=crop',
+        image: 'https://source.unsplash.com/640x480/?beef-noodles,chili-noodles,noodle-bowl',
       },
       {
         name: 'Croissant Tuna Mayo',
@@ -139,7 +149,7 @@ const SELLERS = [
         stock: 40,
         unit: 'pcs',
         tags: ['pastry', 'croissant', 'tuna'],
-        image: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=640&h=480&fit=crop',
+        image: 'https://source.unsplash.com/640x480/?croissant,tuna-sandwich,pastry',
       },
       {
         name: 'Matcha Latte',
@@ -148,7 +158,7 @@ const SELLERS = [
         stock: 90,
         unit: 'cup',
         tags: ['matcha', 'minuman', 'latte'],
-        image: 'https://images.unsplash.com/photo-1515823064-d6e0c04616a7?w=640&h=480&fit=crop',
+        image: 'https://source.unsplash.com/640x480/?matcha-latte,green-tea,drink',
       },
     ],
   },
@@ -160,6 +170,10 @@ const SELLERS = [
     businessType: 'small',
     rating: 4.7,
     totalReviews: 112,
+    isMember: true,
+    membershipStatus: 'active',
+    memberSince: new Date(),
+    memberExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
     location: {
       type: 'Point',
       coordinates: [106.9586, -6.1785],
@@ -176,7 +190,7 @@ const SELLERS = [
         stock: 100,
         unit: 'porsi',
         tags: ['nasi-uduk', 'sarapan', 'tradisional'],
-        image: 'https://images.unsplash.com/photo-1617093727343-374698b1b08d?w=640&h=480&fit=crop',
+        image: 'https://source.unsplash.com/640x480/?nasi-uduk,indonesian-rice,traditional-food',
       },
       {
         name: 'Gado-Gado Betawi',
@@ -185,7 +199,7 @@ const SELLERS = [
         stock: 65,
         unit: 'porsi',
         tags: ['gado-gado', 'sayur', 'kacang'],
-        image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=640&h=480&fit=crop',
+        image: 'https://source.unsplash.com/640x480/?gado-gado,salad,peanut-sauce',
       },
       {
         name: 'Bakso Urat Kuah Kaldu',
@@ -194,7 +208,7 @@ const SELLERS = [
         stock: 75,
         unit: 'mangkuk',
         tags: ['bakso', 'sapi', 'hangat'],
-        image: 'https://images.unsplash.com/photo-1599084993091-1cb5c0721cc6?w=640&h=480&fit=crop',
+        image: 'https://source.unsplash.com/640x480/?bakso,meatball-soup,noodle-soup',
       },
       {
         name: 'Es Teh Lemon Madu',
@@ -203,7 +217,7 @@ const SELLERS = [
         stock: 150,
         unit: 'cup',
         tags: ['teh', 'lemon', 'minuman'],
-        image: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=640&h=480&fit=crop',
+        image: 'https://source.unsplash.com/640x480/?lemon-tea,iced-tea,honey-drink',
       },
     ],
   },
@@ -335,6 +349,45 @@ function buildUserDoc(user, hashedPassword, isSeller) {
   };
 }
 
+function normalizeSeedImageUrl(imageUrl) {
+  const raw = typeof imageUrl === 'string' ? imageUrl.trim() : '';
+  if (!raw) return FALLBACK_UNSPLASH_FOOD_IMAGE;
+
+  if (raw.includes('source.unsplash.com')) {
+    const queryStart = raw.indexOf('?');
+    const queryRaw = queryStart >= 0 ? raw.slice(queryStart + 1) : '';
+    const firstPart = (queryRaw.split('&')[0] || '').trim();
+    const keywords = sanitizeKeywords(firstPart);
+    const lock = hashToLock(keywords);
+    return `https://loremflickr.com/640/480/${keywords}?lock=${lock}`;
+  }
+
+  if (raw.includes('images.unsplash.com')) {
+    if (raw.includes('auto=format') || raw.includes('fm=')) {
+      return raw;
+    }
+    const separator = raw.includes('?') ? '&' : '?';
+    return `${raw}${separator}auto=format&fm=jpg&q=80`;
+  }
+
+  return FALLBACK_UNSPLASH_FOOD_IMAGE;
+}
+
+function hashToLock(input = '') {
+  let hash = 0;
+  for (let i = 0; i < input.length; i += 1) {
+    hash = ((hash << 5) - hash) + input.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash % 100000) + 1;
+}
+
+function sanitizeKeywords(input = '') {
+  const raw = String(input).toLowerCase().trim();
+  const cleaned = raw.replace(/[^a-z0-9-]+/g, ',').replace(/^,+|,+$/g, '');
+  return cleaned || 'indonesian-food';
+}
+
 function buildProductDoc(product, sellerId, location) {
   const now = new Date();
   return {
@@ -342,7 +395,7 @@ function buildProductDoc(product, sellerId, location) {
     description: product.description,
     price: product.price,
     category: 'food',
-    images: [product.image],
+    images: [normalizeSeedImageUrl(product.image)],
     seller: sellerId,
     location,
     stock: product.stock,
