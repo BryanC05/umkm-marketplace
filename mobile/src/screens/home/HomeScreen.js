@@ -147,7 +147,7 @@ export default function HomeScreen({ navigation }) {
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.heroSecondary}
-                        onPress={() => navigation.navigate('ProductsTab', { screen: 'NearbySellers' })}
+                        onPress={() => navigation.navigate('HomeTab', { screen: 'NearbySellers' })}
                     >
                         <Ionicons name="location" size={18} color={colors.primary} />
                         <Text style={styles.heroSecondaryText}>{t.nearbySellers}</Text>

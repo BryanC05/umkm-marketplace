@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useCartStore } from '../../store/cartStore';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
+import { particleEvents } from '../../components/BackgroundEffect';
 import { useLanguageStore } from '../../store/languageStore';
 import { getImageUrl, formatPrice } from '../../utils/helpers';
 import api from '../../api/api';
@@ -210,6 +211,9 @@ export default function CartScreen({ navigation }) {
 
             await api.post('/orders', orderData);
             await clearSellerCart(selectedSeller.sellerId);
+            // 🎉 Checkout celebration burst
+            const { width: W, height: H } = require('react-native').Dimensions.get('window');
+            particleEvents.emit('particle-burst', { type: 'checkout', x: W / 2, y: H / 2 });
             setShowCheckoutModal(false);
             setSelectedSeller(null);
             Alert.alert(t.orderPlaced, t.orderSuccess, [

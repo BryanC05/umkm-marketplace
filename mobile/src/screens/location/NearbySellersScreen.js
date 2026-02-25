@@ -12,7 +12,7 @@ import Map from '../../components/Map';
 import api from '../../api/api';
 import { DEFAULT_LOCATION, DEFAULT_RADIUS_METERS } from '../../utils/constants';
 import { haversineDistanceKm } from '../../utils/helpers';
-import { SellerListSkeleton } from '../../components/LoadingSkeleton';
+import { SellerListSkeleton, NearbySellersSkeleton } from '../../components/LoadingSkeleton';
 
 const { width, height } = Dimensions.get('window');
 const MIN_SHEET_HEIGHT = 70; // Just the drag handle (collapsible to show only handle)
@@ -69,7 +69,24 @@ export default function NearbySellersScreen() {
     const mapRef = useRef(null);
     const locationWatchRef = useRef(null);
 
-    // Calculate max sheet height based on content
+    const handleGoBack = useCallback(() => {
+        try {
+            const canGoBack = navigation.canGoBack();
+            if (canGoBack) {
+                navigation.goBack();
+            } else {
+                // Fallback: navigate to Home if can't go back
+                navigation.navigate('HomeTab');
+            }
+        } catch (error) {
+            console.warn('Navigation goBack error:', error);
+            try {
+                navigation.navigate('HomeTab');
+            } catch (e) {
+                console.warn('Fallback navigation failed:', e);
+            }
+        }
+    }, [navigation]);
     const calculatedMaxHeight = useMemo(() => {
         const contentHeight = BASE_SHEET_HEIGHT + (Math.min(sellers.length, 5) * SHEET_ITEM_HEIGHT);
         return Math.min(contentHeight, height * 0.7);
@@ -520,13 +537,13 @@ export default function NearbySellersScreen() {
         return (
             <View style={[styles.container, { backgroundColor: colors.background }]}>
                 <View style={[styles.header, { backgroundColor: colors.card, paddingTop: insets.top + 12 }]}>
-                    <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+                    <TouchableOpacity style={styles.backBtn} onPress={handleGoBack}>
                         <Ionicons name="arrow-back" size={24} color={colors.text} />
                     </TouchableOpacity>
                     <Text style={[styles.headerTitle, { color: colors.text }]}>{t.nearbySellersTitle || 'Nearby Sellers'}</Text>
                     <View style={styles.placeholder} />
                 </View>
-                <SellerListSkeleton count={5} />
+                <NearbySellersSkeleton />
             </View>
         );
     }
@@ -535,7 +552,7 @@ export default function NearbySellersScreen() {
         return (
             <View style={[styles.container, { backgroundColor: colors.background }]}>
                 <View style={[styles.header, { backgroundColor: colors.card, paddingTop: insets.top + 12 }]}>
-                    <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+                    <TouchableOpacity style={styles.backBtn} onPress={handleGoBack}>
                         <Ionicons name="arrow-back" size={24} color={colors.text} />
                     </TouchableOpacity>
                     <Text style={[styles.headerTitle, { color: colors.text }]}>{t.nearbySellersTitle || 'Nearby Sellers'}</Text>
@@ -559,7 +576,7 @@ export default function NearbySellersScreen() {
         <View style={[styles.container, { backgroundColor: colors.background }]}>
             {/* Header */}
             <View style={[styles.header, { backgroundColor: colors.card, paddingTop: insets.top + 12 }]}>
-                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+                <TouchableOpacity style={styles.backBtn} onPress={handleGoBack}>
                     <Ionicons name="arrow-back" size={24} color={colors.text} />
                 </TouchableOpacity>
                 <Text style={[styles.headerTitle, { color: colors.text }]}>{t.nearbySellersTitle || 'Nearby Sellers'}</Text>

@@ -31,6 +31,7 @@ import Notifications from './pages/Notifications';
 import Invoice from './pages/Invoice';
 import ScrollToTop from './components/ScrollToTop';
 import OnboardingTour from './components/ui/OnboardingTour';
+import InteractiveBackground from './components/InteractiveBackground';
 import { useAuthStore } from './store/authStore';
 import { useThemeStore } from './store/themeStore';
 import { useLanguageStore } from './store/languageStore';
@@ -64,6 +65,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
+        <InteractiveBackground />
         <ScrollToTop />
         <OnboardingTour />
         <div className="min-h-screen bg-background text-foreground font-sans antialiased">

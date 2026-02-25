@@ -19,8 +19,12 @@ const ProductCard = ({ product }) => {
     const handleSaveClick = async (e) => {
         e.preventDefault();
         e.stopPropagation();
-        if (!isAuthenticated) {
-            return;
+        if (!isAuthenticated) return;
+        // Only burst hearts when SAVING — not when removing from wishlist
+        if (!isSaved) {
+            window.dispatchEvent(new CustomEvent('particle-burst', {
+                detail: { type: 'save', x: e.clientX, y: e.clientY },
+            }));
         }
         await toggleSaveProduct(productId);
     };
@@ -58,8 +62,8 @@ const ProductCard = ({ product }) => {
                             disabled={isLoading}
                             title="Save product"
                         >
-                            <Heart 
-                                className={`h-5 w-5 transition-colors ${isSaved ? 'fill-red-500 text-red-500' : ''}`} 
+                            <Heart
+                                className={`h-5 w-5 transition-colors ${isSaved ? 'fill-red-500 text-red-500' : ''}`}
                             />
                         </Button>
                     )}

@@ -199,7 +199,7 @@ export default function ProfileScreen({ navigation }) {
         { icon: 'heart-outline', label: 'Saved Products', onPress: () => navigation.navigate('Wishlist'), color: '#ef4444' },
         { icon: 'receipt-outline', label: t.orderHistory, onPress: () => navigation.navigate('Orders'), color: '#3b82f6' },
         // Delivery disabled: { icon: 'bicycle-outline', label: t.driverMode || 'Driver Mode', onPress: handleToggleDriverMode, color: '#10b981', isToggle: true, toggleValue: isDriverMode, isLoading: togglingDriver },
-        { icon: 'location-outline', label: t.nearbySellers, onPress: () => navigation.navigate('NearbySellers'), color: '#ef4444' },
+        { icon: 'location-outline', label: t.nearbySellers, onPress: () => navigation.navigate('HomeTab', { screen: 'NearbySellers' }), color: '#ef4444' },
         { icon: 'color-palette-outline', label: t.logoGenerator, onPress: () => navigation.navigate('LogoGenerator'), color: '#8b5cf6' },
         ...(user?.isSeller ? [{
             icon: 'storefront-outline', label: t.sellerDashboard,

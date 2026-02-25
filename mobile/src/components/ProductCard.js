@@ -1,29 +1,88 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeStore } from '../store/themeStore';
+import { useAuthStore } from '../store/authStore';
 import { getImageUrl, formatPrice } from '../utils/helpers';
+import api from '../api/api';
+import { particleEvents } from './BackgroundEffect';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
 
 export default function ProductCard({ product, onPress }) {
     const { colors } = useThemeStore();
-    const imageUrl = product.images?.[0]
-        ? getImageUrl(product.images[0])
-        : '';
+    const { user, isAuthenticated } = useAuthStore();
+    const imageUrl = product.images?.[0] ? getImageUrl(product.images[0]) : '';
+
+    const productId = product._id || product.id;
+
+    // Initialise from user.savedProducts if available
+    const [isSaved, setIsSaved] = useState(
+        () => user?.savedProducts?.includes(productId) ?? false
+    );
+    const [savingLoading, setSavingLoading] = useState(false);
+
+    const handleSavePress = async (e) => {
+        if (!isAuthenticated) return;
+        // Fire heart burst instantly — only when saving
+        if (!isSaved && e?.nativeEvent) {
+            particleEvents.emit('particle-burst', {
+                type: 'save',
+                x: e.nativeEvent.pageX,
+                y: e.nativeEvent.pageY,
+            });
+        }
+        setSavingLoading(true);
+        try {
+            if (isSaved) {
+                await api.delete(`/users/saved-products/${productId}`);
+                setIsSaved(false);
+            } else {
+                await api.post(`/users/saved-products/${productId}`);
+                setIsSaved(true);
+            }
+        } catch (err) {
+            console.error('Failed to toggle save:', err);
+        } finally {
+            setSavingLoading(false);
+        }
+    };
 
     return (
-        <TouchableOpacity style={[styles.card, { backgroundColor: colors.card }]} onPress={onPress} activeOpacity={0.7}>
-            {imageUrl ? (
-                <Image
-                    source={{ uri: imageUrl }}
-                    style={[styles.image, { backgroundColor: colors.border }]}
-                    resizeMode="cover"
-                />
-            ) : (
-                <View style={[styles.image, { backgroundColor: colors.border }]} />
-            )}
+        <TouchableOpacity
+            style={[styles.card, { backgroundColor: colors.card }]}
+            onPress={onPress}
+            activeOpacity={0.7}
+        >
+            <View style={styles.imageWrapper}>
+                {imageUrl ? (
+                    <Image
+                        source={{ uri: imageUrl }}
+                        style={[styles.image, { backgroundColor: colors.border }]}
+                        resizeMode="cover"
+                    />
+                ) : (
+                    <View style={[styles.image, { backgroundColor: colors.border }]} />
+                )}
+
+                {/* Heart save button overlay */}
+                {isAuthenticated && (
+                    <TouchableOpacity
+                        style={[styles.heartBtn, { backgroundColor: colors.card + 'ee' }]}
+                        onPress={handleSavePress}
+                        disabled={savingLoading}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                        <Ionicons
+                            name={isSaved ? 'heart' : 'heart-outline'}
+                            size={18}
+                            color={isSaved ? '#ef4444' : colors.textSecondary}
+                        />
+                    </TouchableOpacity>
+                )}
+            </View>
+
             <View style={styles.content}>
                 {product.category && (
                     <Text style={[styles.category, { color: colors.textSecondary }]} numberOfLines={1}>
@@ -43,7 +102,9 @@ export default function ProductCard({ product, onPress }) {
                     </View>
                     <View style={styles.ratingRow}>
                         <Ionicons name="star" size={12} color="#f59e0b" />
-                        <Text style={[styles.rating, { color: colors.textSecondary }]}>{(product.rating || 4.5).toFixed(1)}</Text>
+                        <Text style={[styles.rating, { color: colors.textSecondary }]}>
+                            {(product.rating || 4.5).toFixed(1)}
+                        </Text>
                     </View>
                 </View>
             </View>
@@ -63,13 +124,29 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 3,
     },
+    imageWrapper: {
+        position: 'relative',
+    },
     image: {
         width: '100%',
         height: CARD_WIDTH,
     },
-    content: {
-        padding: 10,
+    heartBtn: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.15,
+        shadowRadius: 3,
+        elevation: 3,
     },
+    content: { padding: 10 },
     category: {
         fontSize: 10,
         fontWeight: '500',
@@ -101,17 +178,11 @@ const styles = StyleSheet.create({
         gap: 3,
         flex: 1,
     },
-    location: {
-        fontSize: 11,
-        flex: 1,
-    },
+    location: { fontSize: 11, flex: 1 },
     ratingRow: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 3,
     },
-    rating: {
-        fontSize: 11,
-        fontWeight: '600',
-    },
+    rating: { fontSize: 11, fontWeight: '600' },
 });

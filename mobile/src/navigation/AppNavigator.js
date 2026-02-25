@@ -19,6 +19,7 @@ import { useNotificationStore } from '../store/notificationStore';
 import { useAuthStore } from '../store/authStore';
 import { API_HOST } from '../config';
 import notificationService, { usePushNotifications } from '../services/NotificationService';
+import BackgroundEffect from '../components/BackgroundEffect';
 
 // Screens
 import HomeScreen from '../screens/home/HomeScreen';
@@ -128,11 +129,6 @@ function ProductsStackNavigator() {
             <ProductsStack.Screen
                 name="MapView"
                 component={MapViewScreen}
-                options={{ headerShown: false }}
-            />
-            <ProductsStack.Screen
-                name="NearbySellers"
-                component={NearbySellersScreen}
                 options={{ headerShown: false }}
             />
             <ProductsStack.Screen
@@ -312,6 +308,17 @@ function ProfileStackNavigator() {
                 }}
             />
             <ProfileStack.Screen
+                name="Wishlist"
+                component={WishlistScreen}
+                options={{
+                    title: 'Saved Products',
+                    headerStyle: { backgroundColor: colors.card },
+                    headerTitleStyle: { fontWeight: '700', fontSize: 18, color: colors.text },
+                    headerShadowVisible: false,
+                    headerTintColor: colors.text,
+                }}
+            />
+            <ProfileStack.Screen
                 name="LiveTracking"
                 component={LiveTrackingMap}
                 options={{
@@ -354,11 +361,6 @@ function ProfileStackNavigator() {
             <ProfileStack.Screen
                 name="Notifications"
                 component={NotificationsScreen}
-                options={{ headerShown: false }}
-            />
-            <ProfileStack.Screen
-                name="Wishlist"
-                component={WishlistScreen}
                 options={{ headerShown: false }}
             />
         </ProfileStack.Navigator>
@@ -523,18 +525,29 @@ export default function AppNavigator() {
             <NotificationListener />
             <Tab.Navigator
                 screenOptions={({ route, navigation }) => ({
-                    tabBarOnPress: ({ defaultHandler }) => {
-                        const isFocused = navigation.isFocused();
-                        if (isFocused && route.name === 'ProductsTab') {
-                            navigation.navigate('ProductsTab', { screen: 'Products', params: { reset: true } });
-                        } else if (isFocused && route.name === 'HomeTab') {
-                            navigation.navigate('HomeTab', { screen: 'Home', params: { reset: true } });
-                        } else if (isFocused && route.name === 'CartTab') {
-                            navigation.navigate('CartTab', { screen: 'CartMain', params: { reset: true } });
-                        } else if (isFocused && route.name === 'DeliveryTab') {
-                            navigation.navigate('DeliveryTab', { screen: 'DeliveryHub', params: { reset: true } });
-                        } else if (isFocused && route.name === 'ProfileTab') {
-                            navigation.navigate('ProfileTab', { screen: 'ProfileMain', params: { reset: true } });
+                    tabBarOnPress: ({ defaultHandler, navigation: tabNavigation }) => {
+                        const state = tabNavigation.getState();
+                        const currentRoute = state.routes[state.index];
+                        const currentScreenName = currentRoute?.state?.routes?.[currentRoute?.state?.index]?.name;
+                        const isFocused = tabNavigation.isFocused();
+                        
+                        // If already on Products tab and not on Products screen, reset to Products
+                        if (route.name === 'ProductsTab') {
+                            if (isFocused && currentScreenName !== 'Products') {
+                                tabNavigation.navigate('ProductsTab', { 
+                                    screen: 'Products', 
+                                    params: { reset: true },
+                                    merge: true 
+                                });
+                            } else if (isFocused) {
+                                tabNavigation.navigate('ProductsTab', { screen: 'Products', params: { reset: true } });
+                            } else {
+                                defaultHandler();
+                            }
+                        } else if (isFocused) {
+                            // Handle other tabs similarly
+                            const screenName = route.name.replace('Tab', '');
+                            tabNavigation.navigate(route.name, { screen: screenName, params: { reset: true } });
                         } else {
                             defaultHandler();
                         }
@@ -589,6 +602,8 @@ export default function AppNavigator() {
                 <Tab.Screen name="AddTab" component={AddStackNavigator} options={{ tabBarLabel: t.tabAdd }} />
                 <Tab.Screen name="ProfileTab" component={ProfileStackNavigator} options={{ tabBarLabel: t.tabProfile }} />
             </Tab.Navigator>
+            {/* Global background: floating food icons + particle bursts */}
+            <BackgroundEffect />
         </>
     );
 }

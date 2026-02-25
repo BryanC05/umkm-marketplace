@@ -12,6 +12,7 @@ import { useCartStore } from '../../store/cartStore';
 import { useAuthStore } from '../../store/authStore';
 import { getImageUrl, formatPrice } from '../../utils/helpers';
 import { ProductDetailSkeleton } from '../../components/LoadingSkeleton';
+import { particleEvents } from '../../components/BackgroundEffect';
 import { API_HOST } from '../../config';
 
 const { width } = Dimensions.get('window');
@@ -101,8 +102,16 @@ export default function ProductDetailScreen({ route }) {
 
     const hasUserReview = reviews.some((r) => r.user === user?._id);
 
-    const handleToggleSave = async () => {
+    const handleToggleSave = async (evt) => {
         if (!isAuthenticated) { Alert.alert('Login Required', 'Please login to save products'); return; }
+        // Only burst when SAVING, not unsaving
+        if (!isSaved && evt?.nativeEvent) {
+            particleEvents.emit('particle-burst', {
+                type: 'save',
+                x: evt.nativeEvent.pageX,
+                y: evt.nativeEvent.pageY,
+            });
+        }
         try {
             if (isSaved) {
                 await api.delete(`/users/saved-products/${productId}`);
@@ -180,6 +189,12 @@ export default function ProductDetailScreen({ route }) {
         const variant = selectedVariant ? { name: selectedVariant.name, price: selectedVariant.price } : null;
         const optionsArr = Object.values(selectedOptions).filter(o => o.chosen.length > 0);
         const result = await addToCart(product, quantity, variant, optionsArr);
+        // Fire add-to-cart particle burst from the center of the screen
+        particleEvents.emit('particle-burst', {
+            type: 'add-to-cart',
+            x: Dimensions.get('window').width / 2,
+            y: Dimensions.get('window').height * 0.7,
+        });
         if (result === 'replaced') {
             Alert.alert(t.cartUpdated || 'Cart Updated', t.cartReplacedWithSeller || 'Previous cart items from another seller were replaced');
         } else {

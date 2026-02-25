@@ -387,7 +387,16 @@ function ProductDetail() {
                     </div>
 
                     {/* Add to Cart Button */}
-                    <Button onClick={handleAddToCart} size="lg" className="w-full gap-2">
+                    <Button
+                      onClick={(e) => {
+                        handleAddToCart();
+                        window.dispatchEvent(new CustomEvent('particle-burst', {
+                          detail: { type: 'add-to-cart', x: e.clientX, y: e.clientY },
+                        }));
+                      }}
+                      size="lg"
+                      className="w-full gap-2"
+                    >
                       <ShoppingCart className="h-5 w-5" />
                       {t('productDetail.addToCart')} - Rp{(getUnitPrice() * quantity).toLocaleString('id-ID')}
                     </Button>
@@ -399,7 +408,15 @@ function ProductDetail() {
                           variant="outline"
                           size="lg"
                           className="flex-1 gap-2"
-                          onClick={handleToggleSave}
+                          onClick={async (e) => {
+                            // Only burst when SAVING — not when removing
+                            if (!isSaved) {
+                              window.dispatchEvent(new CustomEvent('particle-burst', {
+                                detail: { type: 'save', x: e.clientX, y: e.clientY },
+                              }));
+                            }
+                            await handleToggleSave();
+                          }}
                           disabled={isSaveLoading}
                         >
                           <Heart className={`h-5 w-5 ${isSaved ? 'fill-red-500 text-red-500' : ''}`} />

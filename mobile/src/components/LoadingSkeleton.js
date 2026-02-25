@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Animated, Dimensions, ScrollView } from 'react-native';
 import { useThemeStore } from '../store/themeStore';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
@@ -409,6 +410,70 @@ export function SellerCardSkeleton() {
             <View style={{ alignItems: 'flex-end', gap: 6 }}>
                 <Skeleton width={50} height={20} borderRadius={10} />
                 <Skeleton width={40} height={16} borderRadius={8} />
+            </View>
+        </View>
+    );
+}
+
+// ===== Nearby Sellers Screen Skeleton =====
+export function NearbySellersSkeleton() {
+    const { colors } = useThemeStore();
+    const insets = useSafeAreaInsets();
+
+    return (
+        <View style={[{
+            flex: 1,
+            backgroundColor: colors.background,
+            paddingTop: insets.top + 60,
+        }]}>
+            <View style={{
+                flex: 1,
+                backgroundColor: colors.background,
+                borderTopLeftRadius: 24,
+                borderTopRightRadius: 24,
+                paddingTop: 16,
+                paddingHorizontal: 12,
+            }}>
+                <View style={{ paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                    <Skeleton width="100%" height={44} borderRadius={12} />
+                    <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+                        <Skeleton width={60} height={28} borderRadius={20} />
+                        <Skeleton width={60} height={28} borderRadius={20} />
+                        <Skeleton width={60} height={28} borderRadius={20} />
+                        <Skeleton width={60} height={28} borderRadius={20} />
+                    </View>
+                </View>
+                {Array.from({ length: 5 }).map((_, i) => (
+                    <View key={i} style={{
+                        flexDirection: 'row',
+                        alignItems: 'flex-start',
+                        backgroundColor: colors.card,
+                        borderRadius: 12,
+                        paddingHorizontal: 12,
+                        paddingVertical: 10,
+                        marginBottom: 10,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        minHeight: 92,
+                    }}>
+                        <Skeleton width={32} height={32} borderRadius={16} />
+                        <View style={{ flex: 1, marginLeft: 12, gap: 6 }}>
+                            <Skeleton width="60%" height={15} borderRadius={4} />
+                            <Skeleton width="40%" height={12} borderRadius={4} />
+                            <Skeleton width="80%" height={11} borderRadius={4} />
+                        </View>
+                        <View style={{ alignItems: 'flex-end', justifyContent: 'space-between', marginLeft: 8, minHeight: 72 }}>
+                            <View style={{ flexDirection: 'row', gap: 6 }}>
+                                <Skeleton width={50} height={20} borderRadius={10} />
+                                <Skeleton width={50} height={20} borderRadius={10} />
+                            </View>
+                            <View style={{ flexDirection: 'row', gap: 6 }}>
+                                <Skeleton width={34} height={34} borderRadius={17} />
+                                <Skeleton width={34} height={34} borderRadius={17} />
+                            </View>
+                        </View>
+                    </View>
+                ))}
             </View>
         </View>
     );

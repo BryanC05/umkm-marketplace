@@ -180,6 +180,12 @@ function Cart() {
             clearSellerCart(checkoutSeller.sellerId);
             // Invalidate orders cache so the Orders page fetches fresh data
             queryClient.invalidateQueries({ queryKey: ['orders'] });
+
+            // Trigger particle burst effect passing the mouse event coordinates
+            window.dispatchEvent(new CustomEvent('trigger-cart-burst', {
+                detail: { x: e.clientX, y: e.clientY }
+            }));
+
             alert('Order placed successfully!');
             setCheckoutSeller(null);
             setDeliveryLocation(null);
