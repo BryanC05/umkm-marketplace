@@ -122,6 +122,7 @@ func main() {
 		productImages.Use(middleware.AuthRequired(cfg.JWTSecret))
 		{
 			productImages.POST("/process", productImageHandler.ProcessImage)
+			productImages.POST("/preview-enhance", productImageHandler.PreviewEnhance)
 			productImages.DELETE("/cleanup", productImageHandler.Cleanup)
 		}
 

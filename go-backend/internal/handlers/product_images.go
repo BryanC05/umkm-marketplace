@@ -14,24 +14,23 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"msme-marketplace/internal/config"
 	"msme-marketplace/internal/database"
 	"msme-marketplace/internal/models"
 	"msme-marketplace/internal/services"
+
+	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ProductImageHandler struct {
 	Config *config.Config
-	Claid  *services.ClaidService
 }
 
 func NewProductImageHandler(cfg *config.Config) *ProductImageHandler {
 	return &ProductImageHandler{
 		Config: cfg,
-		Claid:  services.NewClaidService(cfg),
 	}
 }
 
@@ -88,31 +87,20 @@ func (h *ProductImageHandler) ProcessImage(c *gin.Context) {
 	}
 
 	if shouldEnhance {
-		switch {
-		case user.ImageEnhancementCount.Count >= h.Config.ProductEnhanceLimit:
+		if user.ImageEnhancementCount.Count >= h.Config.ProductEnhanceLimit {
 			warning = &gin.H{
 				"code":    "quota_exceeded",
 				"message": "Enhancement quota reached; original image uploaded",
 			}
 			log.Printf("[product-images] request=%s user=%s fallback=quota_exceeded used=%d limit=%d", requestID, userID, user.ImageEnhancementCount.Count, h.Config.ProductEnhanceLimit)
-		case !h.Claid.IsConfigured():
-			warning = &gin.H{
-				"code":    "enhancement_unavailable",
-				"message": "Enhancement unavailable; original image uploaded",
-			}
-			log.Printf("[product-images] request=%s user=%s fallback=claid_unconfigured", requestID, userID)
-		default:
-			enhancedBytes, enhancedType, enhanceErr := h.Claid.EnhanceImage(c.Request.Context(), fileBytes, fileHeader.Filename, detectedMime)
+		} else {
+			enhancedBytes, enhancedType, enhanceErr := services.EnhanceImageLocal(fileBytes, detectedMime)
 			if enhanceErr != nil {
-				code := "enhancement_failed"
-				if claidErr, ok := enhanceErr.(*services.ClaidError); ok && claidErr.Code != "" {
-					code = claidErr.Code
-				}
 				warning = &gin.H{
-					"code":    code,
+					"code":    "enhancement_failed",
 					"message": "Enhancement failed; original image uploaded",
 				}
-				log.Printf("[product-images] request=%s user=%s fallback=%s err=%v", requestID, userID, code, enhanceErr)
+				log.Printf("[product-images] request=%s user=%s fallback=enhancement_failed err=%v", requestID, userID, enhanceErr)
 			} else {
 				fileBytes = enhancedBytes
 				detectedMime = enhancedType
@@ -197,6 +185,46 @@ func (h *ProductImageHandler) Cleanup(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"deleted": deleted,
+	})
+}
+
+// PreviewEnhance accepts an image and returns a base64-encoded enhanced preview.
+// This lets the user see the enhanced result before submitting the product form.
+func (h *ProductImageHandler) PreviewEnhance(c *gin.Context) {
+	fileHeader, err := c.FormFile("image")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Image file is required"})
+		return
+	}
+
+	maxBytes := int64(h.Config.ProductImageMaxSize) * 1024 * 1024
+	if maxBytes <= 0 {
+		maxBytes = 5 * 1024 * 1024
+	}
+	if fileHeader.Size > maxBytes {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Image exceeds maximum allowed size",
+			"limitMB": h.Config.ProductImageMaxSize,
+		})
+		return
+	}
+
+	fileBytes, detectedMime, err := readAndValidateImage(fileHeader)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	dataURL, err := services.EnhanceImageToBase64(fileBytes, detectedMime)
+	if err != nil {
+		log.Printf("[product-images] preview-enhance failed: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to enhance image"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":     true,
+		"enhancedUrl": dataURL,
 	})
 }
 

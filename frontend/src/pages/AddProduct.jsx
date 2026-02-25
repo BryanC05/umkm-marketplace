@@ -274,7 +274,9 @@ function AddProduct() {
         id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
         file,
         preview: URL.createObjectURL(file),
+        originalPreview: URL.createObjectURL(file),
         enhance: false,
+        enhancing: false,
         uploadedUrl: null,
         uploadState: 'pending',
         warning: null,
@@ -301,12 +303,57 @@ function AddProduct() {
     });
   };
 
-  const toggleEnhance = (id) => {
+  const toggleEnhance = async (id) => {
+    const item = imageItems.find((i) => i.id === id);
+    if (!item) return;
+
+    const newEnhance = !item.enhance;
+
+    if (!newEnhance) {
+      // Turning off enhance — revert to original preview
+      setImageItems((prev) =>
+        prev.map((i) =>
+          i.id === id ? { ...i, enhance: false, preview: i.originalPreview } : i
+        )
+      );
+      return;
+    }
+
+    // Turning on enhance — call preview endpoint
     setImageItems((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, enhance: !item.enhance } : item
+      prev.map((i) =>
+        i.id === id ? { ...i, enhance: true, enhancing: true } : i
       )
     );
+
+    try {
+      const formPayload = new FormData();
+      formPayload.append('image', item.file);
+      const response = await api.post('/product-images/preview-enhance', formPayload, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      if (response.data?.success && response.data?.enhancedUrl) {
+        setImageItems((prev) =>
+          prev.map((i) =>
+            i.id === id
+              ? { ...i, enhancing: false, preview: response.data.enhancedUrl }
+              : i
+          )
+        );
+      } else {
+        throw new Error('Invalid response');
+      }
+    } catch (err) {
+      console.error('Enhancement preview failed:', err);
+      setImageItems((prev) =>
+        prev.map((i) =>
+          i.id === id
+            ? { ...i, enhance: false, enhancing: false, error: 'Enhancement failed' }
+            : i
+        )
+      );
+    }
   };
 
   const addTag = (e) => {
@@ -769,16 +816,26 @@ function AddProduct() {
                 <div className="image-preview-grid grid grid-cols-2 md:grid-cols-4 gap-4">
                   {imageItems.map((item, index) => (
                     <div key={item.id} className="image-preview image-preview-enhance relative w-32 h-44 border rounded-lg overflow-hidden group">
-                      <img src={item.preview} alt={`Preview ${index + 1}`} className="image-preview-media w-full h-28 object-cover" />
+                      <div className="relative w-full h-28">
+                        <img src={item.preview} alt={`Preview ${index + 1}`} className="image-preview-media w-full h-28 object-cover" />
+                        {item.enhancing && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                            <div className="animate-spin h-6 w-6 border-2 border-white border-t-transparent rounded-full" />
+                          </div>
+                        )}
+                        {item.enhance && !item.enhancing && (
+                          <span className="absolute top-1 left-1 bg-purple-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">ENHANCED</span>
+                        )}
+                      </div>
                       <div className="p-2 border-t text-[11px] space-y-1">
                         <button
                           type="button"
-                          className={`inline-flex w-full items-center justify-center gap-1 px-2 py-1 rounded border ${item.enhance ? 'bg-primary/10 border-primary text-primary' : 'border-muted-foreground/30 text-muted-foreground'}`}
+                          className={`inline-flex w-full items-center justify-center gap-1 px-2 py-1 rounded border transition-colors ${item.enhance ? 'bg-purple-100 border-purple-400 text-purple-700 dark:bg-purple-900/40 dark:border-purple-600 dark:text-purple-300' : 'border-muted-foreground/30 text-muted-foreground'}`}
                           onClick={() => toggleEnhance(item.id)}
-                          disabled={addMutation.isPending}
+                          disabled={addMutation.isPending || item.enhancing}
                         >
                           <Sparkles size={12} />
-                          {item.enhance ? 'Enhance ON' : 'Enhance OFF'}
+                          {item.enhancing ? 'Enhancing...' : item.enhance ? 'Enhanced ✓' : 'Enhance'}
                         </button>
                         {item.uploadState === 'uploading' && <p className="text-blue-600">Uploading...</p>}
                         {item.uploadState === 'done' && <p className="text-green-600">Ready</p>}
