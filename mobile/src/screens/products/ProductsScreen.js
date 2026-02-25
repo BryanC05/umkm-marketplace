@@ -5,15 +5,17 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeStore } from '../../store/themeStore';
+import { useLanguageStore } from '../../store/languageStore';
 import api from '../../api/api';
 import ProductCard from '../../components/ProductCard';
 import { ProductsListSkeleton } from '../../components/LoadingSkeleton';
-import { CATEGORIES, SORT_OPTIONS } from '../../config';
+import { CATEGORIES_EN, CATEGORIES_ID, SORT_OPTIONS_EN, SORT_OPTIONS_ID } from '../../config';
 
 const { width } = Dimensions.get('window');
 
 export default function ProductsScreen({ navigation, route }) {
     const { colors, isDarkMode } = useThemeStore();
+    const { t, language } = useLanguageStore();
     const initialCategory = route?.params?.category || 'all';
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -25,6 +27,10 @@ export default function ProductsScreen({ navigation, route }) {
     const [showSort, setShowSort] = useState(false);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+
+    // Get categories and sort options based on language
+    const categories = language === 'id' ? CATEGORIES_ID : CATEGORIES_EN;
+    const sortOptions = language === 'id' ? SORT_OPTIONS_ID : SORT_OPTIONS_EN;
 
     const fetchProducts = useCallback(async (pageNum = 1, append = false) => {
         try {
@@ -87,7 +93,7 @@ export default function ProductsScreen({ navigation, route }) {
                     <Ionicons name="search" size={18} color="#9ca3af" />
                     <TextInput
                         style={styles.searchInput}
-                        placeholder="Search products..."
+                        placeholder={t.searchProducts || 'Search products...'}
                         placeholderTextColor="#9ca3af"
                         value={search}
                         onChangeText={setSearch}
@@ -107,7 +113,7 @@ export default function ProductsScreen({ navigation, route }) {
             {/* Sort dropdown */}
             {showSort && (
                 <View style={styles.sortDropdown}>
-                    {SORT_OPTIONS.map((opt) => (
+                    {sortOptions.map((opt) => (
                         <TouchableOpacity
                             key={opt.id}
                             style={[styles.sortOption, sortBy === opt.id && styles.sortOptionActive]}
@@ -124,7 +130,7 @@ export default function ProductsScreen({ navigation, route }) {
 
             {/* Category chips */}
             <FlatList
-                data={CATEGORIES}
+                data={categories}
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 keyExtractor={(item) => item.id}
@@ -146,8 +152,8 @@ export default function ProductsScreen({ navigation, route }) {
     const renderEmpty = () => (
         <View style={styles.empty}>
             <Ionicons name="cube-outline" size={48} color="#d1d5db" />
-            <Text style={styles.emptyTitle}>No products found</Text>
-            <Text style={styles.emptyText}>Try adjusting your filters</Text>
+            <Text style={styles.emptyTitle}>{t.noProductsFound || 'No products found'}</Text>
+            <Text style={styles.emptyText}>{t.tryAdjustingFilters || 'Try adjusting your filters'}</Text>
         </View>
     );
 

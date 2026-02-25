@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>UMKM Marketplace - Kuesioner Sellers & Buyers</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        h1 { color: #1a73e8; }
+        h2 { color: #333; border-bottom: 2px solid #1a73e8; padding-bottom: 10px; }
+        .section { background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0; }
+        .question { margin: 20px 0; padding: 15px; background: #fff; border-left: 4px solid #1a73e8; border-radius: 5px; }
+        .question-number { font-weight: bold; color: #1a73e8; }
+        .question-text { font-size: 16px; margin-top: 5px; }
+        .type { font-size: 12px; color: #666; background: #e8f0fe; padding: 2px 8px; border-radius: 4px; display: inline-block; margin-top: 5px; }
+        .options { margin-top: 10px; padding-left: 20px; }
+        .options li { margin: 5px 0; color: #555; }
+        .note { background: #fff3cd; padding: 10px; border-radius: 5px; margin: 10px 0; font-size: 14px; }
+        .seller-section { border: 2px solid #34a853; }
+        .buyer-section { border: 2px solid #ea4335; }
+    </style>
+</head>
+<body>
+
+<h1>📋 Kuesioner UMKM Marketplace</h1>
+<p>Kuesioner ini untuk Interview Seller dan Buyer. Dibuat mudah dipahami dan dalam Bahasa Indonesia.</p>
+
+<!-- ============================================ -->
+<!-- SELLER QUESTIONNAIRE -->
+<!-- ============================================ -->
+<div class="section seller-section">
+    <h2>🥗 KUESIONER UNTUK SELLER (Pedagang Makanan/Minuman)</h2>
+
+    <div class="question">
+        <span class="question-number">1.</span>
+        <span class="question-text">Nama Anda?</span>
+        <span class="type">Jawaban Singkat</span>
+    </div>
+
+    <div class="question">
+        <span class="question-number">2.</span>
+        <span class="question-text">Berapa lama bisnis ini sudah berjalan?</span>
+        <span class="type">Pilihan Ganda</span>
+        <div class="options">
+            <li>Kurang dari 6 bulan</li>
+            <li>6 bulan - 1 tahun</li>
+            <li>1 - 3 tahun</li>
+            <li>Lebih dari 3 tahun</li>
+        </div>
+    </div>
+
+    <div class="question">
+        <span class="question-number">3.</span>
+        <span class="question-text">Di mana tempat jualan Anda utama?</span>
+        <span class="type">Pilihan Ganda</span>
+        <div class="options">
+            <li>Toko/Warung</li>
+            <li>Pasar Tradisional</li>
+            <li>Online saja (WhatsApp/Instagram/TikTok)</li>
+            <li>Online + Toko</li>
+            <li>Lainnya: __________</li>
+        </div>
+    </div>
+
+    <div class="question">
+        <span class="question-number">4.</span>
+        <span class="question-text">Berapa rata-rata pesanan yang Anda terima per hari?</span>
+        <span class="type">Pilihan Ganda</span>
+        <div class="options">
+            <li>Kurang dari 10 pesanan</li>
+            <li>10 - 30 pesanan</li>
+            <li>30 - 50 pesanan</li>
+            <li>Lebih dari 50 pesanan</li>
+        </div>
+    </div>
+
+    <div class="question">
+        <span class="question-number">5.</span>
+        <span class="question-text">Berapa rata-rata pendapatan bersih per bulan?</span>
+        <span class="type">Pilihan Ganda</span>
+        <div class="options">
+            <li>Kurang dari Rp 1.000.000</li>
+            <li>Rp 1.000.000 - Rp 3.000.000</li>
+            <li>Rp 3.000.000 - Rp 5.000.000</li>
+            <li>Rp 5.000.000 - Rp 10.000.000</li>
+            <li>Lebih dari Rp 10.000.000</li>
+        </div>
+    </div>
+
+    <div class="question">
+        <span class="question-number">6.</span>
+        <span class="question-text">Apa tantangan terbesar dalam menjalankan bisnis sekarang?</span>
+        <span class="type">Jawaban Singkat</span>
+    </div>
+
+    <div class="question">
+        <span class="question-number">7.</span>
+        <span class="question-text">Bagaimana cara mendapat pelanggan baru saat ini?</span>
+        <span class="type">Jawaban Singkat</span>
+    </div>
+
+    <div class="question">
+        <span class="question-number">8.</span>
+        <span class="question-text">Sekarang ini Anda menjual lewat apa saja?</span>
+        <span class="type">Pilihan Ganda (Bisa Pilih Lebih dari Satu)</span>
+        <div class="options">
+            <li>WhatsApp</li>
+            <li>Instagram</li>
+            <li>TikTok</li>
+            <li>Tokopedia/Shopee</li>
+            <li>Gojek/Grab (Delivery)</li>
+            <li>Datang langsung ke tempat/Toko</li>
+            <li>Lainnya: __________</li>
+        </div>
+    </div>
+
+    <div class="question">
+        <span class="question-number">9.</span>
+        <span class="question-text">Apa yang kurang dari aplikasi/platform yang Anda gunakan sekarang?</span>
+        <span class="type">Jawaban Singkat</span>
+    </div>
+
+    <div class="question">
+        <span class="question-number">10.</span>
+        <span class="question-text">Bagaimana cara pembayaran dari pelanggan Anda?</span>
+        <span class="type">Pilihan Ganda (Bisa Pilih Lebih dari Satu)</span>
+        <div class="options">
+            <li>Tunai/Cash</li>
+            <li>Transfer Bank (BCA, BRI, dll)</li>
+            <li>QRIS</li>
+            <li>E-Wallet (GoPay, OVO, DANA)</li>
+        </div>
+    </div>
+
+    <div class="question">
+        <span class="question-number">11.</span>
+        <span class="question-text">Apakah Anda menggunakan media sosial untuk bisnis?</span>
+        <span class="type">Pilihan Ganda</span>
+        <div class="options">
+            <li>Ya, aktif</li>
+            <li>Ya, tapi jarang</li>
+            <li>Tidak</li>
+        </div>
+    </div>
+
+    <div class="question">
+        <span class="question-number">12.</span>
+        <span class="question-text">Apakah Anda bersedia membayar Rp 10.000 per bulan untuk fitur tambahan (listing produk unlimited, muncul di urutan atas)?</span>
+        <span class="type">Pilihan Ganda</span>
+        <div class="options">
+            <li>Sangat bersedia</li>
+            <li>Mungkin bersedia</li>
+            <li>Kurang bersedia</li>
+            <li>Tidak bersedia</li>
+            <li>Tergantung harga</li>
+        </div>
+    </div>
+
+    <div class="question">
+        <span class="question-number">13.</span>
+        <span class="question-text">Jika tidak bersedia Rp 10.000/bulan, berapa yang bersedia Anda bayarkan?</span>
+        <span class="type">Pilihan Ganda</span>
+        <div class="options">
+            <li>Gratis saja</li>
+            <li>Rp 5.000/bulan</li>
+            <li>Rp 3.000/bulan</li>
+            <li>Tidak mau bayar</li>
+            <li>Preferensi: Bayar per transaksi saja</li>
+        </div>
+    </div>
+
+    <div class="question">
+        <span class="question-number">14.</span>
+        <span class="question-text">Fitur apa yang paling penting untuk bisnis Anda?</span>
+        <span class="type">Pilihan Ganda (Pilih 3)</span>
+        <div class="options">
+            <li>Muncul di pencarian atas</li>
+            <li>Bisa chat dengan pelanggan</li>
+            <li>Banyak orang melihat</li>
+            <li>Mudah input produk</li>
+            <li>Laporan penjualan</li>
+            <li>Badge "Terverifikasi"</li>
+            <li>Lainnya: __________</li>
+        </div>
+    </div>
+
+    <div class="question">
+        <span class="question-number">15.</span>
+        <span class="question-text">Apakah Anda menyediakan opsi pengambilan sendiri (pickup) di tempat?</span>
+        <span class="type">Pilihan Ganda</span>
+        <div class="options">
+            <li>Ya, sudah ada</li>
+            <li>Belum, tapi mau coba</li>
+            <li>Tidak tertarik</li>
+        </div>
+    </div>
+
+    <div class="question">
+        <span class="question-number">16.</span>
+        <span class="question-text">Apakah Anda menggunakan layanan delivery seperti Gojek/Grab?</span>
+        <span class="type">Pilihan Ganda</span>
+        <div class="options">
+            <li>Ya, sering</li>
+            <li>Ya, tapi jarang</li>
+            <li>Tidak, ongkos terlalu mahal</li>
+            <li>Tidak, pelanggan mengambil sendiri</li>
+        </div>
+    </div>
+
+    <div class="question">
+        <span class="question-number">17.</span>
+        <span class="question-text">Apakah Anda tertarik jika pelanggan mengambil sendiri di tempat (bisa hemat ongkos delivery)?</span>
+        <span class="type">Pilihan Ganda</span>
+        <div class="options">
+            <li>Sangat tertarik</li>
+            <li>Cukup tertarik</li>
+            <li>Tidak tertarik</li>
+        </div>
+    </div>
+
+    <div class="question">
+        <span class="question-number">18.</span>
+        <span class="question-text">Apa yang membuat Rp 10.000/bulan worth it untuk Anda?</span>
+        <span class="type">Jawaban Singkat</span>
+    </div>
+
+    <div class="question">
+        <span class="question-number">19.</span>
+        <span class="question-number">20.</span>
+        <span class="question-text">Apakah Anda punya pertanyaan atau masukan untuk aplikasi ini?</span>
+        <span class="type">Jawaban Panjang</span>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- BUYER QUESTIONNAIRE -->
+<!-- ============================================ -->
+<div class="section buyer-section">
+    <h2>🛒 KUESIONER UNTUK BUYER (Pembeli)</h2>
+
+    <div class="question">
+        <span class="question-number">1.</span>
+        <span class="question-text">Berapa kali dalam seminggu Anda memesan makanan/minuman online?</span>
+        <span class="type">Pilihan Ganda</span>
+        <div class="options">
+            <li>1-2 kali</li>
+            <li>3-5 kali</li>
+            <li>6-10 kali</li>
+            <li>Lebih dari 10 kali</li>
+            <li>Tidak pernah/Langka</li>
+        </div>
+    </div>
+
+    <div class="question">
+        <span class="question-number">2.</span>
+        <span class="question-text">Biasanya memesan lewat apa?</span>
+        <span class="type">Pilihan Ganda (Bisa Pilih Lebih dari Satu)</span>
+        <div class="options">
+            <li>Gojek</li>
+            <li>Grab</li>
+            <li>Shopee Food</li>
+            <li>Tokopedia/Shopee</li>
+            <li>WhatsApp langsung ke seller</li>
+            <li>Datang langsung ke toko</li>
+        </div>
+    </div>
+
+    <div class="question">
+        <span class="question-number">3.</span>
+        <span class="question-text">Jenis makanan/minuman apa yang sering dipesan?</span>
+        <span class="type">Jawaban Singkat</span>
+    </div>
+
+    <div class="question">
+        <span class="question-number">4.</span>
+        <span class="question-text">Mana yang lebih sering Anda pilih?</span>
+        <span class="type">Pilihan Ganda</span>
+        <div class="options">
+            <li>Delivery (diantar ke rumah/kantor)</li>
+            <li>Pickup (ambil sendiri di tempat)</li>
+            <li>Depends/Tergantung</li>
+        </div>
+    </div>
+
+    <div class="question">
+        <span class="question-number">5.</span>
+        <span class="question-text">Apa yang paling bikin kesal saat pesan makanan online?</span>
+        <span class="type">Pilihan Ganda (Pilih 1)</span>
+        <div class="options">
+            <li>Makanan tiba dingin/telat</li>
+            <li>Salah pesan/pesanan tidak sesuai</li>
+            <li>Ongkos delivery mahal</li>
+            <li>Sulit kontak seller</li>
+            <li>Tidak ada review/rating jelas</li>
+        </div>
+    </div>
+
+    <div class="question">
+        <span class="question-number">6.</span>
+        <span class="question-text">Apakah Anda pernah pengalaman buruk dengan delivery (telat, makanan dingin, salah order)?</span>
+        <span class="type">Pilihan Ganda</span>
+        <div class="options">
+            <li>Ya, sering</li>
+            <li>Ya, kadang-kadang</li>
+            <li>Jarang</li>
+            <li>Tidak pernah</li>
+        </div>
+    </div>
+
+    <div class="question">
+        <span class="question-number">7.</span>
+        <span class="question-text">Apakah Anda tertarik dengan opsi pickup (ambil sendiri) untuk hemat ongkos delivery?</span>
+        <span class="type">Pilihan Ganda</span>
+        <div class="options">
+            <li>Sangat tertarik</li>
+            <li>Cukup tertarik</li>
+            <li>Tidak tertarik (pilih delivery)</li>
+        </div>
+    </div>
+
+    <div class="question">
+        <span class="question-number">8.</span>
+        <span class="question-text">Berapa maksimal ongkos delivery yang bersedia Anda bayarkan?</span>
+        <span class="type">Pilihan Ganda</span>
+        <div class="options">
+            <li>Gratis</li>
+            <li>Rp 0 - Rp 5.000</li>
+            <li>Rp 5.000 - Rp 10.000</li>
+            <li>Rp 10.000 - Rp 15.000</li>
+            <li>Tidak masalah, yang penting dapat makanan</li>
+        </div>
+    </div>
+
+    <div class="question">
+        <span class="question-number">9.</span>
+        <span class="question-text">Apa yang paling penting saat memilih seller?</span>
+        <span class="type">Pilihan Ganda (Pilih 3)</span>
+        <div class="options">
+            <li>Harga murah</li>
+            <li>Rating/Ulasan tinggi</li>
+            <li>Jarak dekat</li>
+            <li>Makanan favorit/yg sering dipesan</li>
+            <li>Rekomendasi teman/keluarga</li>
+            <li>Promo/Diskon</li>
+        </div>
+    </div>
+
+    <div class="question">
+        <span class="question-number">10.</span>
+        <span class="question-text">Apakah Anda melihat rating/ulasan dulu sebelum pesan?</span>
+        <span class="type">Pilihan Ganda</span>
+        <div class="options">
+            <li>Selalu</li>
+            <li>Kadang-kadang</li>
+            <li>Tidak pernah</li>
+        </div>
+    </div>
+
+    <div class="question">
+        <span class="question-number">11.</span>
+        <span class="question-text">Apa yang membuat Anda mau coba seller baru?</span>
+        <span class="type">Pilihan Ganda (Pilih 1)</span>
+        <div class="options">
+            <li>Ada promo/diskon</li>
+            <li>Rekomendasi teman</li>
+            <li>Rating bagus</li>
+            <li>Lihat foto produk menarik</li>
+            <li>Tidak ada, tetap sama seller lama</li>
+        </div>
+    </div>
+
+    <div class="question">
+        <span class="question-number">12.</span>
+        <span class="question-text">Apakah Anda tertarik dapat promo/diskon dari seller lokal?</span>
+        <span class="type">Pilihan Ganda</span>
+        <div class="options">
+            <li>Sangat tertarik</li>
+            <li>Cukup tertarik</li>
+            <li>Tidak tertarik</li>
+        </div>
+    </div>
+
+    <div class="question">
+        <span class="question-number">13.</span>
+        <span class="question-text">Aplikasi apa yang sering Anda gunakan untuk nemu seller makanan baru?</span>
+        <span class="type">Jawaban Singkat</span>
+    </div>
+
+    <div class="question">
+        <span class="question-number">14.</span>
+        <span class="question-text">Apakah Anda akan menggunakan aplikasi khusus untuk nemu makanan/warung lokal sekitar?</span>
+        <span class="type">Pilihan Ganda</span>
+        <div class="options">
+            <li>Spasti akan coba</li>
+            <li>Mungkin akan coba</li>
+            <li>Tidak akan coba</li>
+            <li>Tergantung fiturnya</li>
+        </div>
+    </div>
+
+    <div class="question">
+        <span class="question-number">15.</span>
+        <span class="question-text">Fitur apa yang membuat Anda tertarik sama aplikasi ini?</span>
+        <span class="type">Pilihan Ganda (Bisa Pilih Lebih dari Satu)</span>
+        <div class="options">
+            <li>Ada diskon/promo</li>
+            <li>Bisa dapat point/loyalty</li>
+            <li>Jadwal pickup mudah</li>
+            <li>Lihat review dari teman</li>
+            <li>Cari berdasarkan makanan yang mau dimakan</li>
+            <li>Lihat jarak terdekat</li>
+        </div>
+    </div>
+
+    <div class="question">
+        <span class="question-number">16.</span>
+        <span class="question-text">Apakah Anda bersedia membayar Rp 5.000 - Rp 10.000 per bulan untuk dapat promo/exclusive deal dari seller lokal?</span>
+        <span class="type">Pilihan Ganda</span>
+        <div class="options">
+            <li>Sangat bersedia</li>
+            <li>Mungkin bersedia</li>
+            <li>Tidak bersedia</li>
+            <li>Tergantung besar diskonnya</li>
+        </div>
+    </div>
+
+    <div class="question">
+        <span class="question-number">17.</span>
+        <span class="question-text">Mana yang lebih Anda sukai?</span>
+        <span class="type">Pilihan Ganda</span>
+        <div class="options">
+            <li>Bayar Rp 10.000/bulan (membership)</li>
+            <li>Bayar per transaksi saja (tanpa langganan)</li>
+            <li>Gratis saja, tidak mau bayar</li>
+        </div>
+    </div>
+
+    <div class="question">
+        <span class="question-number">18.</span>
+        <span class="question-text">Apakah ada yang perlu diperbaiki dari aplikasi ini menurut Anda?</span>
+        <span class="type">Jawaban Panjang</span>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- GOOGLE FORM IMPORT TEMPLATE -->
+<!-- ============================================ -->
+<div class="section">
+    <h2>📝 Cara Import ke Google Forms</h2>
+    <ol>
+        <li>Buka <strong>forms.google.com</strong></li>
+        <li>Klik <strong>+ Buat Formulir Baru</strong></li>
+        <li>Masukkan judul dan deskripsi</li>
+        <li>Copy pertanyaan dari kuesioner di atas satu per satu</li>
+        <li>Pilih tipe pertanyaan yang sesuai:
+            <ul>
+                <li>Jawaban Singkat = "Teks pendek"</li>
+                <li>Jawaban Panjang = "Paragraf"</li>
+                <li>Pilihan Ganda = "Pilihan ganda" atau "Kotak centang" (untuk pilihan lebih dari satu)</li>
+            </ul>
+        </li>
+        <li>Atur sesuai kebutuhan (wajib diisi atau tidak)</li>
+        <li>Klik "Kirim" dan pilih cara distribute (link/email)</li>
+    </ol>
+    
+    <div class="note">
+        <strong>💡 Tips:</strong> Untuk pertanyaan "Pilihan Ganda (Bisa Pilih Lebih dari Satu)", gunakan tipe "Kotak centang" di Google Forms.
+    </div>
+</div>
+
+</body>
+</html>

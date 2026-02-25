@@ -6,8 +6,8 @@ import id from '../i18n/id';
 const translations = { en, id };
 
 export const useLanguageStore = create((set, get) => ({
-    language: 'en',
-    t: en,
+    language: 'id',
+    t: id,
 
     initLanguage: async () => {
         try {

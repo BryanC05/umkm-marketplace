@@ -6,15 +6,16 @@ import (
 	"log"
 	"net/http"
 
+	"msme-marketplace/internal/database"
+	"msme-marketplace/internal/models"
+	"sync"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/websocket"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"msme-marketplace/internal/database"
-	"msme-marketplace/internal/models"
-	"sync"
-	"time"
 )
 
 var upgrader = websocket.Upgrader{
@@ -67,6 +68,8 @@ func (h *Hub) Run() {
 			h.mutex.Lock()
 			h.clients[client] = true
 			h.mutex.Unlock()
+			// Auto-join personal notification room
+			h.JoinRoom(client, "user-"+client.userID)
 			log.Printf("Client connected: %s", client.userName)
 
 		case client := <-h.unregister:
@@ -473,4 +476,23 @@ func Init() {
 
 func GetHub() *Hub {
 	return hub
+}
+
+// SendToUser sends a raw message to all clients in a user's personal room
+func (h *Hub) SendToUser(userID string, data []byte) {
+	roomID := "user-" + userID
+	h.mutex.RLock()
+	roomClients := h.rooms[roomID]
+	h.mutex.RUnlock()
+
+	for client := range roomClients {
+		select {
+		case client.send <- data:
+		default:
+			h.mutex.Lock()
+			delete(h.clients, client)
+			close(client.send)
+			h.mutex.Unlock()
+		}
+	}
 }

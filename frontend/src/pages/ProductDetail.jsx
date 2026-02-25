@@ -1,6 +1,6 @@
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { MapPin, Store, Phone, Star, ArrowLeft, ShoppingCart, MessageCircle, Shield, Package, Heart } from 'lucide-react';
+import { MapPin, Store, Phone, Star, ArrowLeft, ShoppingCart, MessageCircle, Shield, Package, Heart, Share2, Flag } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useCartStore, useAuthStore } from '../store/authStore';
 import { useSavedProductsStore } from '../store/savedProductsStore';
@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { resolveImageUrl } from '@/utils/imageUrl';
 import { Skeleton } from '@/components/ui/skeleton';
+import ReviewSection from '../components/ReviewSection';
 
 function ProductDetail() {
   const { id } = useParams();
@@ -133,7 +134,7 @@ function ProductDetail() {
                 ))}
               </div>
             </div>
-            
+
             {/* Details Skeleton */}
             <div className="space-y-4">
               <Skeleton className="h-8 w-3/4" />
@@ -306,8 +307,8 @@ function ProductDetail() {
                           type="button"
                           onClick={() => { setSelectedVariant(v); setQuantity(1); }}
                           className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${selectedVariant?.name === v.name
-                              ? 'bg-primary text-primary-foreground border-primary'
-                              : 'bg-muted/50 hover:bg-muted border-border'
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'bg-muted/50 hover:bg-muted border-border'
                             } ${v.stock <= 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
                           disabled={v.stock <= 0}
                         >
@@ -335,8 +336,8 @@ function ProductDetail() {
                             type="button"
                             onClick={() => handleOptionSelect(group.name, opt.name, opt.priceAdjust || 0, group.multiple)}
                             className={`px-3 py-1.5 rounded-lg border text-sm transition-colors ${isSelected
-                                ? 'bg-primary text-primary-foreground border-primary'
-                                : 'bg-muted/50 hover:bg-muted border-border'
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'bg-muted/50 hover:bg-muted border-border'
                               }`}
                           >
                             {opt.name}
@@ -393,16 +394,35 @@ function ProductDetail() {
 
                     {/* Save Product Button */}
                     {user && (
-                      <Button
-                        variant="outline"
-                        size="lg"
-                        className="w-full gap-2"
-                        onClick={handleToggleSave}
-                        disabled={isSaveLoading}
-                      >
-                        <Heart className={`h-5 w-5 ${isSaved ? 'fill-red-500 text-red-500' : ''}`} />
-                        {isSaved ? t('productDetail.saved') : t('productDetail.saveProduct')}
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="lg"
+                          className="flex-1 gap-2"
+                          onClick={handleToggleSave}
+                          disabled={isSaveLoading}
+                        >
+                          <Heart className={`h-5 w-5 ${isSaved ? 'fill-red-500 text-red-500' : ''}`} />
+                          {isSaved ? t('productDetail.saved') : t('productDetail.saveProduct')}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="lg"
+                          className="gap-2"
+                          onClick={() => {
+                            const url = window.location.href;
+                            const text = `Check out ${product.name} on UMKM Marketplace!`;
+                            if (navigator.share) {
+                              navigator.share({ title: product.name, text, url });
+                            } else {
+                              navigator.clipboard.writeText(`${text} ${url}`);
+                              alert('Link copied to clipboard!');
+                            }
+                          }}
+                        >
+                          <Share2 className="h-5 w-5" />
+                        </Button>
+                      </div>
                     )}
                   </div>
                 )}
@@ -426,6 +446,30 @@ function ProductDetail() {
                       {t('productDetail.chatWithSeller')}
                     </Button>
                   )}
+
+                  {user && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full gap-2 text-muted-foreground"
+                      onClick={async () => {
+                        const reason = prompt('Why are you reporting this product?');
+                        if (!reason) return;
+                        try {
+                          const { getApiUrl } = await import('../config');
+                          await fetch(`${getApiUrl()}/reports/`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+                            body: JSON.stringify({ targetType: 'product', targetId: product._id, reason }),
+                          });
+                          alert('Report submitted. Thank you!');
+                        } catch (e) { alert('Failed to submit report'); }
+                      }}
+                    >
+                      <Flag className="h-4 w-4" />
+                      Report Product
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -443,6 +487,9 @@ function ProductDetail() {
                 </div>
               </div>
             )}
+
+            {/* Reviews Section */}
+            <ReviewSection productId={id} />
           </div>
         </div>
       </div>

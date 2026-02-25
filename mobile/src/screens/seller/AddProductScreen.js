@@ -6,11 +6,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import api from '../../api/api';
-import { CATEGORIES } from '../../config';
+import { CATEGORIES_EN, CATEGORIES_ID } from '../../config';
 import { useThemeStore } from '../../store/themeStore';
+import { useLanguageStore } from '../../store/languageStore';
 import LocationPicker from '../../components/location/LocationPicker';
 
-const UNITS = [
+const UNITS_EN = [
     { id: 'pieces', name: 'Pieces' },
     { id: 'kg', name: 'Kg' },
     { id: 'grams', name: 'Grams' },
@@ -20,10 +21,24 @@ const UNITS = [
     { id: 'dozen', name: 'Dozen' },
 ];
 
+const UNITS_ID = [
+    { id: 'pieces', name: 'Pcs' },
+    { id: 'kg', name: 'Kg' },
+    { id: 'grams', name: 'Gram' },
+    { id: 'liters', name: 'Liter' },
+    { id: 'meters', name: 'Meter' },
+    { id: 'pairs', name: 'Pasang' },
+    { id: 'dozen', name: 'Lusin' },
+];
+
 const MAX_IMAGES = 4;
 
 export default function AddProductScreen({ navigation }) {
     const { colors, isDarkMode } = useThemeStore();
+    const { t, language } = useLanguageStore();
+    
+    const categories = language === 'id' ? CATEGORIES_ID : CATEGORIES_EN;
+    const units = language === 'id' ? UNITS_ID : UNITS_EN;
     const [form, setForm] = useState({
         name: '',
         description: '',
@@ -197,10 +212,10 @@ export default function AddProductScreen({ navigation }) {
 
                     {/* ===== BASIC INFO SECTION ===== */}
                     <View style={[styles.section, themedStyles.card]}>
-                        <Text style={[styles.sectionTitle, themedStyles.label]}>Basic Information</Text>
+                        <Text style={[styles.sectionTitle, themedStyles.label]}>{t.addProduct || 'Basic Information'}</Text>
 
                         <View style={styles.inputGroup}>
-                            <Text style={[styles.label, themedStyles.label]}>Product Name *</Text>
+                            <Text style={[styles.label, themedStyles.label]}>{t.productName || 'Product Name'} *</Text>
                             <TextInput
                                 style={[styles.input, themedStyles.input]}
                                 placeholder="e.g. Nasi Goreng Spesial"
@@ -211,10 +226,10 @@ export default function AddProductScreen({ navigation }) {
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={[styles.label, themedStyles.label]}>Description</Text>
+                            <Text style={[styles.label, themedStyles.label]}>{t.description || 'Description'}</Text>
                             <TextInput
                                 style={[styles.input, styles.textArea, themedStyles.input]}
-                                placeholder="Describe your product..."
+                                placeholder={t.productDescription || 'Describe your product...'}
                                 placeholderTextColor={colors.textSecondary}
                                 multiline
                                 numberOfLines={4}
@@ -224,9 +239,9 @@ export default function AddProductScreen({ navigation }) {
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={[styles.label, themedStyles.label]}>Category</Text>
+                            <Text style={[styles.label, themedStyles.label]}>{t.category || 'Category'}</Text>
                             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                                {CATEGORIES.filter(c => c.id !== 'all').map(cat => (
+                                {categories.filter(c => c.id !== 'all').map(cat => (
                                     <TouchableOpacity
                                         key={cat.id}
                                         style={[
@@ -281,9 +296,9 @@ export default function AddProductScreen({ navigation }) {
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={[styles.label, themedStyles.label]}>Unit</Text>
+                            <Text style={[styles.label, themedStyles.label]}>{t.unit || 'Unit'}</Text>
                             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                                {UNITS.map(u => (
+                                {units.map(u => (
                                     <TouchableOpacity
                                         key={u.id}
                                         style={[
@@ -331,7 +346,7 @@ export default function AddProductScreen({ navigation }) {
                                     <View key={idx} style={{ flexDirection: 'row', gap: 8, marginBottom: 8, alignItems: 'center' }}>
                                         <TextInput
                                             style={[styles.input, themedStyles.input, { flex: 2 }]}
-                                            placeholder="Name"
+                                            placeholder={t.name || 'Name'}
                                             placeholderTextColor={colors.textSecondary}
                                             value={v.name}
                                             onChangeText={t => {
@@ -340,7 +355,7 @@ export default function AddProductScreen({ navigation }) {
                                         />
                                         <TextInput
                                             style={[styles.input, themedStyles.input, { flex: 1 }]}
-                                            placeholder="Price"
+                                            placeholder={t.price || 'Price'}
                                             placeholderTextColor={colors.textSecondary}
                                             keyboardType="numeric"
                                             value={v.price}
@@ -350,7 +365,7 @@ export default function AddProductScreen({ navigation }) {
                                         />
                                         <TextInput
                                             style={[styles.input, themedStyles.input, { flex: 1 }]}
-                                            placeholder="Stock"
+                                            placeholder={t.stock || 'Stock'}
                                             placeholderTextColor={colors.textSecondary}
                                             keyboardType="numeric"
                                             value={v.stock}
@@ -386,7 +401,7 @@ export default function AddProductScreen({ navigation }) {
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                                     <TextInput
                                         style={[styles.input, themedStyles.input, { flex: 1 }]}
-                                        placeholder="Group name (e.g. Ice Level)"
+                                        placeholder={t.groupName || 'Group name (e.g. Ice Level)'}
                                         placeholderTextColor={colors.textSecondary}
                                         value={group.name}
                                         onChangeText={t => {
@@ -417,7 +432,7 @@ export default function AddProductScreen({ navigation }) {
                                     <View key={oi} style={{ flexDirection: 'row', gap: 8, marginBottom: 6, alignItems: 'center' }}>
                                         <TextInput
                                             style={[styles.input, themedStyles.input, { flex: 2 }]}
-                                            placeholder="Option name"
+                                            placeholder={t.optionName || 'Option name'}
                                             placeholderTextColor={colors.textSecondary}
                                             value={opt.name}
                                             onChangeText={t => {

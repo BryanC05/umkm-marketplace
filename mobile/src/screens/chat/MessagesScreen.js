@@ -8,7 +8,7 @@ import { useAuthStore } from '../../store/authStore';
 import { formatRelativeTime } from '../../utils/helpers';
 import { useLanguageStore } from '../../store/languageStore';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { ChatSkeleton } from '../../components/LoadingSkeleton';
+import { MessagesScreenSkeleton } from '../../components/LoadingSkeleton';
 
 export default function MessagesScreen({ navigation }) {
     const [rooms, setRooms] = useState([]);
@@ -41,13 +41,7 @@ export default function MessagesScreen({ navigation }) {
         return user.id === room.buyer?._id ? room.seller : room.buyer;
     };
 
-    if (loading) return (
-        <View style={{ flex: 1, backgroundColor: '#f8fafc', paddingTop: 50 }}>
-            <ChatSkeleton />
-            <ChatSkeleton />
-            <ChatSkeleton />
-        </View>
-    );
+    if (loading) return <MessagesScreenSkeleton />;
 
     const renderRoom = ({ item: room }) => {
         const other = getOtherParticipant(room);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     View, Text, ScrollView, Image, TouchableOpacity, StyleSheet,
-    Dimensions, Alert, ActivityIndicator,
+    Dimensions, Alert, ActivityIndicator, TextInput, Share,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -11,7 +11,8 @@ import api from '../../api/api';
 import { useCartStore } from '../../store/cartStore';
 import { useAuthStore } from '../../store/authStore';
 import { getImageUrl, formatPrice } from '../../utils/helpers';
-import LoadingSpinner from '../../components/LoadingSpinner';
+import { ProductDetailSkeleton } from '../../components/LoadingSkeleton';
+import { API_HOST } from '../../config';
 
 const { width } = Dimensions.get('window');
 
@@ -28,6 +29,16 @@ export default function ProductDetailScreen({ route }) {
     const [selectedOptions, setSelectedOptions] = useState({});
     const addToCart = useCartStore((s) => s.addToCart);
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+    const user = useAuthStore((s) => s.user);
+    const token = useAuthStore((s) => s.token);
+
+    // Reviews state
+    const [reviews, setReviews] = useState([]);
+    const [reviewsLoading, setReviewsLoading] = useState(false);
+    const [newRating, setNewRating] = useState(0);
+    const [newComment, setNewComment] = useState('');
+    const [submittingReview, setSubmittingReview] = useState(false);
+    const [isSaved, setIsSaved] = useState(false);
 
     useEffect(() => {
         const fetchProduct = async () => {
@@ -44,6 +55,75 @@ export default function ProductDetailScreen({ route }) {
         };
         fetchProduct();
     }, [productId, navigation, t.error, t.failedLoadProduct]);
+
+    // Check if product is saved
+    useEffect(() => {
+        if (user?.savedProducts?.includes(productId)) setIsSaved(true);
+    }, [user, productId]);
+
+    // Fetch reviews
+    const fetchReviews = async () => {
+        setReviewsLoading(true);
+        try {
+            const res = await api.get(`/products/${productId}/reviews`);
+            setReviews(res.data || []);
+        } catch (e) { /* ignore */ }
+        setReviewsLoading(false);
+    };
+
+    useEffect(() => { fetchReviews(); }, [productId]);
+
+    const handleSubmitReview = async () => {
+        if (!newRating) { Alert.alert('Error', 'Please select a rating'); return; }
+        setSubmittingReview(true);
+        try {
+            await api.post('/reviews/', { productId, rating: newRating, comment: newComment });
+            setNewRating(0);
+            setNewComment('');
+            fetchReviews();
+        } catch (err) {
+            Alert.alert('Error', err.response?.data?.error || 'Failed to submit review');
+        }
+        setSubmittingReview(false);
+    };
+
+    const handleDeleteReview = (reviewId) => {
+        Alert.alert('Delete Review', 'Are you sure?', [
+            { text: 'Cancel' },
+            {
+                text: 'Delete', style: 'destructive', onPress: async () => {
+                    try { await api.delete(`/reviews/${reviewId}`); fetchReviews(); }
+                    catch (e) { Alert.alert('Error', 'Failed to delete'); }
+                }
+            },
+        ]);
+    };
+
+    const hasUserReview = reviews.some((r) => r.user === user?._id);
+
+    const handleToggleSave = async () => {
+        if (!isAuthenticated) { Alert.alert('Login Required', 'Please login to save products'); return; }
+        try {
+            if (isSaved) {
+                await api.delete(`/users/saved-products/${productId}`);
+                setIsSaved(false);
+            } else {
+                await api.post(`/users/saved-products/${productId}`);
+                setIsSaved(true);
+            }
+        } catch (e) {
+            console.error('Failed to toggle save:', e);
+        }
+    };
+
+    const handleShare = async () => {
+        try {
+            await Share.share({
+                message: `Check out ${product?.name} on UMKM Marketplace! ${formatPrice(product?.price)}`,
+                title: product?.name,
+            });
+        } catch (e) { /* user cancelled */ }
+    };
 
     const getUnitPrice = () => {
         if (!product) return 0;
@@ -118,7 +198,7 @@ export default function ProductDetailScreen({ route }) {
         });
     };
 
-    if (loading) return <LoadingSpinner />;
+    if (loading) return <ProductDetailSkeleton />;
     if (!product) return null;
 
     const images = Array.isArray(product.images) ? product.images.filter(Boolean) : [];
@@ -224,6 +304,14 @@ export default function ProductDetailScreen({ route }) {
                     <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
                         <Ionicons name="arrow-back" size={22} color="#111827" />
                     </TouchableOpacity>
+                    <View style={{ position: 'absolute', top: 50, right: 16, flexDirection: 'row', gap: 8 }}>
+                        <TouchableOpacity style={styles.backBtn} onPress={handleToggleSave}>
+                            <Ionicons name={isSaved ? 'heart' : 'heart-outline'} size={20} color={isSaved ? '#ef4444' : '#111827'} />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.backBtn} onPress={handleShare}>
+                            <Ionicons name="share-outline" size={20} color="#111827" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Product Info */}
@@ -249,6 +337,12 @@ export default function ProductDetailScreen({ route }) {
                             <Text style={styles.sellerName}>
                                 {product.seller?.businessName || product.seller?.name}
                             </Text>
+                            {product.seller?.isVerified && (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#d1fae5', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginTop: 2 }}>
+                                    <Ionicons name="shield-checkmark" size={10} color="#16a34a" />
+                                    <Text style={{ fontSize: 10, color: '#16a34a', fontWeight: '600' }}>Verified</Text>
+                                </View>
+                            )}
                             <View style={styles.sellerMeta}>
                                 <Ionicons name="location-outline" size={12} color="#9ca3af" />
                                 <Text style={styles.sellerLocation}>
@@ -369,6 +463,93 @@ export default function ProductDetailScreen({ route }) {
                             </View>
                         </View>
                     )}
+
+                    {/* Reviews Section */}
+                    <View style={{ marginTop: 8, paddingTop: 20, borderTopWidth: 1, borderTopColor: colors.border }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                            <Ionicons name="star" size={18} color="#f59e0b" />
+                            <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>Reviews ({reviews.length})</Text>
+                            {reviews.length > 0 && (
+                                <Text style={{ fontSize: 14, fontWeight: '700', color: '#f59e0b' }}>
+                                    {(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)}
+                                </Text>
+                            )}
+                        </View>
+
+                        {/* Write Review */}
+                        {isAuthenticated && !hasUserReview && (
+                            <View style={{ padding: 14, borderWidth: 1, borderColor: colors.border, borderRadius: 12, marginBottom: 16 }}>
+                                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.text, marginBottom: 8 }}>Rate this product:</Text>
+                                <View style={{ flexDirection: 'row', gap: 4, marginBottom: 10 }}>
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <TouchableOpacity key={star} onPress={() => setNewRating(star)}>
+                                            <Ionicons
+                                                name={star <= newRating ? 'star' : 'star-outline'}
+                                                size={28}
+                                                color={star <= newRating ? '#f59e0b' : '#d1d5db'}
+                                            />
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                                <TextInput
+                                    style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 10, fontSize: 14, color: colors.text, minHeight: 60, textAlignVertical: 'top', marginBottom: 10 }}
+                                    placeholder="Share your experience..."
+                                    placeholderTextColor={colors.textSecondary}
+                                    value={newComment}
+                                    onChangeText={setNewComment}
+                                    multiline
+                                />
+                                <TouchableOpacity
+                                    onPress={handleSubmitReview}
+                                    disabled={!newRating || submittingReview}
+                                    style={{ backgroundColor: colors.primary, paddingVertical: 10, borderRadius: 10, alignItems: 'center', opacity: (!newRating || submittingReview) ? 0.5 : 1 }}
+                                >
+                                    <Text style={{ color: '#fff', fontWeight: '600', fontSize: 14 }}>
+                                        {submittingReview ? 'Submitting...' : 'Submit Review'}
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+
+                        {/* Review List */}
+                        {reviewsLoading ? (
+                            <ActivityIndicator color={colors.primary} style={{ padding: 20 }} />
+                        ) : reviews.length === 0 ? (
+                            <View style={{ alignItems: 'center', padding: 24 - 0 }}>
+                                <Ionicons name="star-outline" size={32} color={colors.textSecondary} style={{ opacity: 0.3 }} />
+                                <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 8 }}>No reviews yet</Text>
+                            </View>
+                        ) : (
+                            reviews.map((review) => (
+                                <View key={review._id} style={{ padding: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 10, marginBottom: 8 }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 8 }}>
+                                        <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' }}>
+                                            <Ionicons name="person" size={14} color="#fff" />
+                                        </View>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={{ fontSize: 13, fontWeight: '600', color: colors.text }}>{review.userName}</Text>
+                                            <Text style={{ fontSize: 11, color: colors.textSecondary }}>
+                                                {new Date(review.createdAt).toLocaleDateString()}
+                                            </Text>
+                                        </View>
+                                        <View style={{ flexDirection: 'row', gap: 1 }}>
+                                            {[1, 2, 3, 4, 5].map((s) => (
+                                                <Ionicons key={s} name={s <= review.rating ? 'star' : 'star-outline'} size={12} color='#f59e0b' />
+                                            ))}
+                                        </View>
+                                        {user?._id === review.user && (
+                                            <TouchableOpacity onPress={() => handleDeleteReview(review._id)}>
+                                                <Ionicons name="trash-outline" size={16} color="#ef4444" />
+                                            </TouchableOpacity>
+                                        )}
+                                    </View>
+                                    {review.comment ? (
+                                        <Text style={{ fontSize: 13, color: colors.text, lineHeight: 19 }}>{review.comment}</Text>
+                                    ) : null}
+                                </View>
+                            ))
+                        )}
+                    </View>
                 </View>
             </ScrollView>
 

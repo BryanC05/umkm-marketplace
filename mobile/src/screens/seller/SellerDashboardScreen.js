@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl, Alert, Modal, Image, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import api from '../../api/api';
 import { useAuthStore } from '../../store/authStore';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -13,6 +14,28 @@ export default function SellerDashboardScreen({ navigation }) {
     const [stats, setStats] = useState({ products: 0, orders: 0, revenue: 0, pending: 0 });
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    
+    // Membership state
+    const [membership, setMembership] = useState(null);
+    const [membershipLoading, setMembershipLoading] = useState(true);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [paymentImage, setPaymentImage] = useState(null);
+    const [uploading, setUploading] = useState(false);
+
+    const fetchMembership = useCallback(async () => {
+        try {
+            const res = await api.get('/users/membership/status');
+            setMembership(res.data);
+        } catch (error) {
+            console.error('Failed to fetch membership:', error);
+        } finally {
+            setMembershipLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchMembership();
+    }, [fetchMembership]);
 
     const fetchStats = useCallback(async () => {
         try {
@@ -54,8 +77,50 @@ export default function SellerDashboardScreen({ navigation }) {
 
     const onRefresh = async () => {
         setRefreshing(true);
-        await fetchStats();
+        await Promise.all([fetchStats(), fetchMembership()]);
         setRefreshing(false);
+    };
+
+    const pickImage = async () => {
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            quality: 0.8,
+        });
+
+        if (!result.canceled) {
+            setPaymentImage(result.assets[0]);
+        }
+    };
+
+    const submitPayment = async () => {
+        if (!paymentImage) {
+            Alert.alert('Error', 'Please select a payment proof image');
+            return;
+        }
+
+        setUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append('paymentProof', {
+                uri: paymentImage.uri,
+                name: 'payment.jpg',
+                type: 'image/jpeg',
+            });
+
+            await api.post('/users/membership/payment', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+
+            Alert.alert('Success', 'Payment submitted! Please wait for admin approval.');
+            setShowPaymentModal(false);
+            setPaymentImage(null);
+            fetchMembership();
+        } catch (error) {
+            Alert.alert('Error', error.response?.data?.error || 'Failed to submit payment');
+        } finally {
+            setUploading(false);
+        }
     };
 
     if (loading) return <LoadingSpinner />;
@@ -69,6 +134,101 @@ export default function SellerDashboardScreen({ navigation }) {
                 <Text style={styles.title}>{t.sellerDashboard}</Text>
                 <Text style={styles.subtitle}>{user.businessName || user.name}</Text>
             </View>
+
+            {/* Membership Card */}
+            <View style={styles.membershipCard}>
+                <View style={styles.membershipHeader}>
+                    <View style={styles.membershipTitleRow}>
+                        <Ionicons 
+                            name={membership?.isMember ? "star" : "star-outline"} 
+                            size={24} 
+                            color={membership?.isMember ? "#f59e0b" : "#9ca3af"} 
+                        />
+                        <Text style={styles.membershipTitle}>
+                            {membership?.isMember ? 'Premium Member' : 'Upgrade to Premium'}
+                        </Text>
+                    </View>
+                    {membership?.isMember ? (
+                        <View style={styles.activeBadge}>
+                            <Text style={styles.activeBadgeText}>Active</Text>
+                        </View>
+                    ) : membership?.membershipStatus === 'pending' ? (
+                        <View style={styles.pendingBadge}>
+                            <Text style={styles.pendingBadgeText}>Pending</Text>
+                        </View>
+                    ) : null}
+                </View>
+
+                {membership?.isMember ? (
+                    <View style={styles.membershipInfo}>
+                        <Text style={styles.membershipText}>
+                            Active until {new Date(membership.memberExpiry).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        </Text>
+                        <Text style={styles.membershipSubtext}>
+                            ✓ Unlimited product listings
+                        </Text>
+                    </View>
+                ) : (
+                    <View style={styles.membershipInfo}>
+                        <Text style={styles.membershipText}>
+                            Rp 10.000/month
+                        </Text>
+                        <Text style={styles.membershipBenefits}>
+                            ✓ Unlimited listings{'\n'}
+                            ✓ Priority search results{'\n'}
+                            ✓ Verified badge
+                        </Text>
+                        <TouchableOpacity 
+                            style={styles.upgradeBtn}
+                            onPress={() => setShowPaymentModal(true)}
+                        >
+                            <Text style={styles.upgradeBtnText}>Pay Now</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+            </View>
+
+            {/* Payment Modal */}
+            <Modal visible={showPaymentModal} animationType="slide" transparent>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Submit Payment</Text>
+                            <TouchableOpacity onPress={() => setShowPaymentModal(false)}>
+                                <Ionicons name="close" size={24} color="#6b7280" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.paymentInfo}>
+                            <Text style={styles.paymentLabel}>Transfer to:</Text>
+                            <Text style={styles.paymentValue}>Bank BCA 1234567890</Text>
+                            <Text style={styles.paymentLabel}>a/n MSME Marketplace</Text>
+                            <Text style={styles.paymentAmount}>Amount: Rp 10.000</Text>
+                        </View>
+
+                        <TouchableOpacity style={styles.imagePickerBtn} onPress={pickImage}>
+                            {paymentImage ? (
+                                <Image source={{ uri: paymentImage.uri }} style={styles.previewImage} />
+                            ) : (
+                                <View style={styles.imagePickerPlaceholder}>
+                                    <Ionicons name="camera" size={32} color="#9ca3af" />
+                                    <Text style={styles.imagePickerText}>Select Payment Proof</Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
+
+                        <TouchableOpacity 
+                            style={[styles.submitBtn, uploading && styles.submitBtnDisabled]}
+                            onPress={submitPayment}
+                            disabled={uploading}
+                        >
+                            <Text style={styles.submitBtnText}>
+                                {uploading ? 'Submitting...' : 'Submit Payment'}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
 
             <View style={styles.statsGrid}>
                 <View style={styles.statCard}>
@@ -166,4 +326,165 @@ const styles = StyleSheet.create({
     actionIcon: { width: 48, height: 48, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
     actionTitle: { fontSize: 16, fontWeight: '600', color: '#111827' },
     actionDesc: { fontSize: 13, color: '#6b7280' },
+    
+    // Membership styles
+    membershipCard: {
+        margin: 16,
+        marginTop: 0,
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: '#e5e7eb',
+    },
+    membershipHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    membershipTitleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    membershipTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#111827',
+    },
+    activeBadge: {
+        backgroundColor: '#dcfce7',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+    },
+    activeBadgeText: {
+        color: '#16a34a',
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    pendingBadge: {
+        backgroundColor: '#fef3c7',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+    },
+    pendingBadgeText: {
+        color: '#d97706',
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    membershipInfo: {},
+    membershipText: {
+        fontSize: 14,
+        color: '#6b7280',
+        marginBottom: 4,
+    },
+    membershipSubtext: {
+        fontSize: 13,
+        color: '#16a34a',
+        marginTop: 4,
+    },
+    membershipBenefits: {
+        fontSize: 13,
+        color: '#6b7280',
+        lineHeight: 20,
+        marginTop: 8,
+    },
+    upgradeBtn: {
+        backgroundColor: '#3b82f6',
+        paddingVertical: 12,
+        borderRadius: 10,
+        alignItems: 'center',
+        marginTop: 12,
+    },
+    upgradeBtnText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    
+    // Modal styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    modalContent: {
+        backgroundColor: '#fff',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        padding: 20,
+        maxHeight: '80%',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#111827',
+    },
+    paymentInfo: {
+        backgroundColor: '#fef3c7',
+        padding: 16,
+        borderRadius: 12,
+        marginBottom: 16,
+    },
+    paymentLabel: {
+        fontSize: 12,
+        color: '#92400e',
+    },
+    paymentValue: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#111827',
+        marginVertical: 4,
+    },
+    paymentAmount: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#111827',
+        marginTop: 8,
+    },
+    imagePickerBtn: {
+        borderWidth: 2,
+        borderStyle: 'dashed',
+        borderColor: '#d1d5db',
+        borderRadius: 12,
+        overflow: 'hidden',
+        marginBottom: 16,
+    },
+    imagePickerPlaceholder: {
+        padding: 40,
+        alignItems: 'center',
+    },
+    imagePickerText: {
+        marginTop: 8,
+        color: '#6b7280',
+        fontSize: 14,
+    },
+    previewImage: {
+        width: '100%',
+        height: 200,
+        resizeMode: 'cover',
+    },
+    submitBtn: {
+        backgroundColor: '#3b82f6',
+        paddingVertical: 14,
+        borderRadius: 10,
+        alignItems: 'center',
+    },
+    submitBtnDisabled: {
+        backgroundColor: '#9ca3af',
+    },
+    submitBtnText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
 });

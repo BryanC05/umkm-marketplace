@@ -2,7 +2,12 @@ package handlers
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -467,4 +472,314 @@ func (h *UserHandler) CheckSavedProduct(c *gin.Context) {
 	}
 
 	c.JSON(200, gin.H{"isSaved": isSaved})
+}
+
+const MembershipFee = 10000 // Rp 10,000 per month
+
+// SubmitMembershipPayment allows sellers to submit payment proof
+func (h *UserHandler) SubmitMembershipPayment(c *gin.Context) {
+	userID := c.GetString("userID")
+	objID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	// Check if user is a seller
+	collection := database.GetDB().Collection("users")
+	var user models.User
+	err = collection.FindOne(context.Background(), bson.M{"_id": objID}).Decode(&user)
+	if err != nil {
+		c.JSON(404, gin.H{"error": "User not found"})
+		return
+	}
+
+	if !user.IsSeller {
+		c.JSON(403, gin.H{"error": "Only sellers can submit membership payment"})
+		return
+	}
+
+	// Parse multipart form
+	err = c.Request.ParseMultipartForm(10 << 20) // 10MB max
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Failed to parse form data"})
+		return
+	}
+
+	file, header, err := c.Request.FormFile("paymentProof")
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Payment proof is required"})
+		return
+	}
+	defer file.Close()
+
+	// Save file locally
+	uploadDir := "./uploads/membership/" + userID
+	if err := os.MkdirAll(uploadDir, 0755); err != nil {
+		c.JSON(500, gin.H{"error": "Failed to create upload directory"})
+		return
+	}
+
+	// Generate unique filename
+	ext := filepath.Ext(header.Filename)
+	filename := fmt.Sprintf("payment_%d%s", time.Now().Unix(), ext)
+	filepath := uploadDir + "/" + filename
+
+	out, err := os.Create(filepath)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "Failed to save file"})
+		return
+	}
+	defer out.Close()
+
+	if _, err := io.Copy(out, file); err != nil {
+		c.JSON(500, gin.H{"error": "Failed to save file"})
+		return
+	}
+
+	// URL to serve the file
+	url := fmt.Sprintf("/uploads/membership/%s/%s", userID, filename)
+
+	// Update user with payment info
+	now := time.Now()
+	update := bson.M{
+		"$set": bson.M{
+			"paymentProof":       url,
+			"paymentSubmittedAt": now,
+			"membershipStatus":   "pending",
+			"updatedAt":          now,
+		},
+	}
+
+	_, err = collection.UpdateOne(context.Background(), bson.M{"_id": objID}, update)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "Failed to update membership status"})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"message":      "Payment submitted successfully. Please wait for admin approval.",
+		"paymentProof": url,
+		"amount":       MembershipFee,
+		"submittedAt":  now,
+		"status":       "pending",
+	})
+}
+
+// GetMembershipStatus returns the current user's membership status
+func (h *UserHandler) GetMembershipStatus(c *gin.Context) {
+	userID := c.GetString("userID")
+	objID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	collection := database.GetDB().Collection("users")
+	var user models.User
+	err = collection.FindOne(context.Background(), bson.M{"_id": objID}).Decode(&user)
+	if err != nil {
+		c.JSON(404, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Check if membership has expired
+	if user.IsMember && user.MemberExpiry != nil && time.Now().After(*user.MemberExpiry) {
+		// Auto-expire membership
+		collection.UpdateOne(context.Background(), bson.M{"_id": objID}, bson.M{
+			"$set": bson.M{
+				"isMember":         false,
+				"membershipStatus": "expired",
+				"updatedAt":        time.Now(),
+			},
+		})
+		user.IsMember = false
+		user.MembershipStatus = "expired"
+	}
+
+	c.JSON(200, gin.H{
+		"isMember":         user.IsMember,
+		"membershipStatus": user.MembershipStatus,
+		"memberSince":      user.MemberSince,
+		"memberExpiry":     user.MemberExpiry,
+		"paymentProof":     user.PaymentProof,
+		"monthlyFee":       MembershipFee,
+		"isSeller":         user.IsSeller,
+	})
+}
+
+// GetPendingMemberships returns all pending membership requests (for admin)
+func (h *UserHandler) GetPendingMemberships(c *gin.Context) {
+	collection := database.GetDB().Collection("users")
+
+	cur, err := collection.Find(context.Background(), bson.M{
+		"isSeller":         true,
+		"membershipStatus": "pending",
+	})
+	if err != nil {
+		c.JSON(500, gin.H{"error": "Failed to fetch pending memberships"})
+		return
+	}
+	defer cur.Close(context.Background())
+
+	var users []models.User
+	if err := cur.All(context.Background(), &users); err != nil {
+		c.JSON(500, gin.H{"error": "Failed to decode users"})
+		return
+	}
+
+	// Return minimal info
+	type PendingMember struct {
+		ID                 primitive.ObjectID `json:"_id"`
+		Name               string             `json:"name"`
+		Email              string             `json:"email"`
+		BusinessName       *string            `json:"businessName"`
+		PaymentProof       *string            `json:"paymentProof"`
+		PaymentSubmittedAt *time.Time         `json:"paymentSubmittedAt"`
+		CreatedAt          time.Time          `json:"createdAt"`
+	}
+
+	pending := make([]PendingMember, 0)
+	for _, u := range users {
+		pending = append(pending, PendingMember{
+			ID:                 u.ID,
+			Name:               u.Name,
+			Email:              u.Email,
+			BusinessName:       u.BusinessName,
+			PaymentProof:       u.PaymentProof,
+			PaymentSubmittedAt: u.PaymentSubmittedAt,
+			CreatedAt:          u.CreatedAt,
+		})
+	}
+
+	c.JSON(200, pending)
+}
+
+// ApproveMembership approves a seller's membership (for admin)
+func (h *UserHandler) ApproveMembership(c *gin.Context) {
+	memberID := c.Param("memberId")
+	objID, err := primitive.ObjectIDFromHex(memberID)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Invalid member ID"})
+		return
+	}
+
+	collection := database.GetDB().Collection("users")
+
+	now := time.Now()
+	expiry := now.AddDate(0, 1, 0) // 1 month from now
+
+	update := bson.M{
+		"$set": bson.M{
+			"isMember":           true,
+			"membershipStatus":   "active",
+			"memberSince":        now,
+			"memberExpiry":       expiry,
+			"paymentProof":       nil, // Clear after approval
+			"paymentSubmittedAt": nil,
+			"updatedAt":          now,
+		},
+	}
+
+	result, err := collection.UpdateOne(context.Background(), bson.M{"_id": objID}, update)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "Failed to approve membership"})
+		return
+	}
+
+	if result.MatchedCount == 0 {
+		c.JSON(404, gin.H{"error": "User not found"})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"message":      "Membership approved successfully",
+		"memberSince":  now,
+		"memberExpiry": expiry,
+	})
+}
+
+// RejectMembership rejects a seller's membership (for admin)
+func (h *UserHandler) RejectMembership(c *gin.Context) {
+	memberID := c.Param("memberId")
+	objID, err := primitive.ObjectIDFromHex(memberID)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Invalid member ID"})
+		return
+	}
+
+	collection := database.GetDB().Collection("users")
+
+	now := time.Now()
+	update := bson.M{
+		"$set": bson.M{
+			"membershipStatus":   "rejected",
+			"paymentProof":       nil,
+			"paymentSubmittedAt": nil,
+			"updatedAt":          now,
+		},
+	}
+
+	result, err := collection.UpdateOne(context.Background(), bson.M{"_id": objID}, update)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "Failed to reject membership"})
+		return
+	}
+
+	if result.MatchedCount == 0 {
+		c.JSON(404, gin.H{"error": "User not found"})
+		return
+	}
+
+	c.JSON(200, gin.H{"message": "Membership rejected"})
+}
+
+// ExtendMembership extends a seller's membership by 1 month (for admin)
+func (h *UserHandler) ExtendMembership(c *gin.Context) {
+	memberID := c.Param("memberId")
+	objID, err := primitive.ObjectIDFromHex(memberID)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Invalid member ID"})
+		return
+	}
+
+	collection := database.GetDB().Collection("users")
+	var user models.User
+	err = collection.FindOne(context.Background(), bson.M{"_id": objID}).Decode(&user)
+	if err != nil {
+		c.JSON(404, gin.H{"error": "User not found"})
+		return
+	}
+
+	now := time.Now()
+	var newExpiry time.Time
+	if user.IsMember && user.MemberExpiry != nil && user.MemberExpiry.After(now) {
+		// Extend from current expiry
+		newExpiry = user.MemberExpiry.AddDate(0, 1, 0)
+	} else {
+		// Start new membership from now
+		newExpiry = now.AddDate(0, 1, 0)
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"isMember":         true,
+			"membershipStatus": "active",
+			"memberSince":      now,
+			"memberExpiry":     newExpiry,
+			"updatedAt":        now,
+		},
+	}
+
+	_, err = collection.UpdateOne(context.Background(), bson.M{"_id": objID}, update)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "Failed to extend membership"})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"message":      "Membership extended successfully",
+		"memberSince":  now,
+		"memberExpiry": newExpiry,
+	})
 }

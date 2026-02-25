@@ -5,13 +5,14 @@ import (
 	"log"
 	"os"
 
-	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"msme-marketplace/internal/config"
 	"msme-marketplace/internal/database"
 	"msme-marketplace/internal/handlers"
 	"msme-marketplace/internal/middleware"
 	"msme-marketplace/internal/websocket"
+
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -58,6 +59,11 @@ func main() {
 	navigationHandler := handlers.NewNavigationHandler()
 	webhookHandler := handlers.NewWebhookHandler()
 	productImageHandler := handlers.NewProductImageHandler(cfg)
+	notificationHandler := handlers.NewNotificationHandler()
+	reviewHandler := handlers.NewReviewHandler()
+	promoHandler := handlers.NewPromoHandler()
+	analyticsHandler := handlers.NewAnalyticsHandler()
+	reportHandler := handlers.NewReportHandler()
 
 	api := r.Group("/api")
 	{
@@ -77,6 +83,20 @@ func main() {
 			users.POST("/saved-products/:productId", userHandler.SaveProduct)
 			users.DELETE("/saved-products/:productId", userHandler.UnsaveProduct)
 			users.GET("/saved-products/check/:productId", userHandler.CheckSavedProduct)
+
+			// Membership routes
+			users.GET("/membership/status", userHandler.GetMembershipStatus)
+			users.POST("/membership/payment", userHandler.SubmitMembershipPayment)
+		}
+
+		// Admin routes for membership management
+		admin := api.Group("/admin")
+		admin.Use(middleware.AuthRequired(cfg.JWTSecret))
+		{
+			admin.GET("/membership/pending", userHandler.GetPendingMemberships)
+			admin.POST("/membership/approve/:memberId", userHandler.ApproveMembership)
+			admin.POST("/membership/reject/:memberId", userHandler.RejectMembership)
+			admin.POST("/membership/extend/:memberId", userHandler.ExtendMembership)
 		}
 
 		api.GET("/users/sellers/count", userHandler.GetSellersCount)
@@ -200,6 +220,60 @@ func main() {
 			logo.PUT("/select/:logoId", logoHandler.SelectLogo)
 			logo.DELETE("/:logoId", logoHandler.DeleteLogo)
 			logo.POST("/upload", logoHandler.UploadCustomLogo)
+		}
+
+		notifications := api.Group("/notifications")
+		notifications.Use(middleware.AuthRequired(cfg.JWTSecret))
+		{
+			notifications.GET("/", notificationHandler.GetNotifications)
+			notifications.GET("/unread-count", notificationHandler.GetUnreadCount)
+			notifications.PUT("/:id/read", notificationHandler.MarkAsRead)
+			notifications.PUT("/read-all", notificationHandler.MarkAllRead)
+			notifications.POST("/test", notificationHandler.SendTestNotification)
+		}
+
+		// Reviews - public read, authenticated write
+		api.GET("/products/:productId/reviews", reviewHandler.GetProductReviews)
+		reviews := api.Group("/reviews")
+		reviews.Use(middleware.AuthRequired(cfg.JWTSecret))
+		{
+			reviews.POST("/", reviewHandler.CreateReview)
+			reviews.GET("/mine", reviewHandler.GetMyReviews)
+			reviews.DELETE("/:id", reviewHandler.DeleteReview)
+		}
+
+		// Promos
+		promos := api.Group("/promos")
+		promos.Use(middleware.AuthRequired(cfg.JWTSecret))
+		{
+			promos.POST("/", promoHandler.CreatePromo)
+			promos.GET("/", promoHandler.GetMyPromos)
+			promos.POST("/validate", promoHandler.ValidatePromo)
+			promos.DELETE("/:id", promoHandler.DeletePromo)
+		}
+
+		// Analytics
+		analytics := api.Group("/analytics")
+		analytics.Use(middleware.AuthRequired(cfg.JWTSecret))
+		{
+			analytics.GET("/sales", analyticsHandler.GetSalesAnalytics)
+			analytics.GET("/recommended", analyticsHandler.GetRecommended)
+		}
+
+		// Reports & Disputes
+		reports := api.Group("/reports")
+		reports.Use(middleware.AuthRequired(cfg.JWTSecret))
+		{
+			reports.POST("/", reportHandler.CreateReport)
+			reports.GET("/", reportHandler.GetReports)
+		}
+
+		disputes := api.Group("/disputes")
+		disputes.Use(middleware.AuthRequired(cfg.JWTSecret))
+		{
+			disputes.POST("/", reportHandler.CreateDispute)
+			disputes.GET("/", reportHandler.GetMyDisputes)
+			disputes.PUT("/:id/resolve", reportHandler.ResolveDispute)
 		}
 	}
 

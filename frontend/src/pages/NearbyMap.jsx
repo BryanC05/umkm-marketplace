@@ -35,11 +35,16 @@ function NearbyMap() {
   const navigationMarkerRef = useRef(null);
   const watchIdRef = useRef(null);
   const liveLocationWatchIdRef = useRef(null);
+  const hasAutoCenteredRef = useRef(false);
+  const locationSourceRef = useRef('gps');
+  const hasAutoProfileFallbackRef = useRef(false);
+  const hasFittedMarkersRef = useRef(false);
   const navigate = useNavigate();
   const { t } = useTranslation();
 
   const applyCurrentLocation = (location, source = 'gps') => {
     if (!location) return;
+    locationSourceRef.current = source;
     setUserLocation(location);
     setIsUsingDefaultLocation(source === 'default');
     setIsUsingProfileLocation(source === 'profile');
@@ -162,13 +167,18 @@ function NearbyMap() {
 
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) return;
+    hasAutoProfileFallbackRef.current = true;
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setGeolocationError(null);
-        applyCurrentLocation({
+        const latestLocation = {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
-        }, 'gps');
+        };
+        setGeolocationError(null);
+        applyCurrentLocation(latestLocation, 'gps');
+        if (mapRef.current) {
+          mapRef.current.setView([latestLocation.lat, latestLocation.lng], mapRef.current.getZoom());
+        }
       },
       (error) => {
         console.warn('Could not refresh GPS location:', error);
@@ -180,10 +190,14 @@ function NearbyMap() {
 
   const handleUseProfileLocation = () => {
     if (!profileLocation) return;
+    hasAutoProfileFallbackRef.current = true;
     applyCurrentLocation(profileLocation, 'profile');
+    if (mapRef.current) {
+      mapRef.current.setView([profileLocation.lat, profileLocation.lng], mapRef.current.getZoom());
+    }
   };
 
-  // Initialize map
+  // Initialize map (once, after first location is available)
   useEffect(() => {
     if (!userLocation || !mapContainerRef.current || mapRef.current) return;
 
@@ -250,6 +264,8 @@ function NearbyMap() {
           .addTo(map)
           .bindPopup(t('nearby.youAreHere') || 'You are here');
 
+        hasAutoCenteredRef.current = true;
+
       } catch (err) {
         if (isActive) {
           console.error('Map init error:', err);
@@ -264,22 +280,34 @@ function NearbyMap() {
     return () => {
       isActive = false;
       clearTimeout(timer);
+    };
+  }, [userLocation]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Cleanup map only on unmount (avoid remounting map on every location update).
+  useEffect(() => {
+    return () => {
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
-        userMarkerRef.current = null;
-        markersLayerRef.current = null;
-        radiusCircleRef.current = null;
-        setMapReady(false);
       }
+      userMarkerRef.current = null;
+      markersLayerRef.current = null;
+      radiusCircleRef.current = null;
+      routeLineRef.current = null;
+      navigationMarkerRef.current = null;
+      setMapReady(false);
+      hasAutoCenteredRef.current = false;
     };
-  }, [userLocation]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // Keep user marker and radius circle synced with latest location.
   useEffect(() => {
     if (!mapRef.current || !userLocation) return;
     const latLng = [userLocation.lat, userLocation.lng];
-    mapRef.current.setView(latLng, mapRef.current.getZoom());
+    if (!hasAutoCenteredRef.current) {
+      mapRef.current.setView(latLng, mapRef.current.getZoom());
+      hasAutoCenteredRef.current = true;
+    }
     if (radiusCircleRef.current) {
       radiusCircleRef.current.setLatLng(latLng);
     }
@@ -296,6 +324,9 @@ function NearbyMap() {
 
     liveLocationWatchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
+        if (locationSourceRef.current !== 'gps') {
+          return;
+        }
         const latestLocation = {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
@@ -394,6 +425,9 @@ function NearbyMap() {
     if (!userLocation || !profileLocation || sellersLoading || sellersError) {
       return;
     }
+    if (hasAutoProfileFallbackRef.current) {
+      return;
+    }
     if (isUsingProfileLocation || isUsingDefaultLocation) {
       return;
     }
@@ -403,6 +437,7 @@ function NearbyMap() {
 
     const distanceKm = haversineDistanceKm(userLocation, profileLocation);
     if (distanceKm >= 2) {
+      hasAutoProfileFallbackRef.current = true;
       applyCurrentLocation(profileLocation, 'profile');
     }
   }, [
@@ -453,6 +488,7 @@ function NearbyMap() {
         markersLayerRef.current.clearLayers();
 
         if (filteredSellers.length === 0) {
+          hasFittedMarkersRef.current = false;
           return;
         }
 
@@ -507,12 +543,13 @@ function NearbyMap() {
         });
 
         // Fit map to show all markers if we have any
-        if (markersLayerRef.current.getLayers().length > 0) {
+        if (!hasFittedMarkersRef.current && markersLayerRef.current.getLayers().length > 0) {
           const group = new L.featureGroup([
             L.marker([userLocation.lat, userLocation.lng]),
             ...markersLayerRef.current.getLayers()
           ]);
           mapRef.current.fitBounds(group.getBounds().pad(0.1));
+          hasFittedMarkersRef.current = true;
         }
       } catch (err) {
         console.error('Error adding seller markers:', err);
@@ -520,7 +557,7 @@ function NearbyMap() {
     };
 
     addMarkers();
-  }, [filteredSellers, userLocation, mapReady]);
+  }, [filteredSellers, mapReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle navigation when seller is selected
   useEffect(() => {
@@ -834,11 +871,11 @@ function NearbyMap() {
           )}
           
           {isNavigating && navigationRoute && (
-            <div className="absolute top-4 left-4 right-4 md:left-auto md:right-4 md:w-80 bg-white rounded-lg shadow-lg p-4 z-[1000]">
+            <div className="absolute top-4 left-4 right-4 md:left-auto md:right-4 md:w-80 bg-card text-card-foreground border border-border rounded-lg shadow-lg p-4 z-[1000]">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <div className="bg-green-100 p-2 rounded-full">
-                    <Navigation className="h-5 w-5 text-green-600" />
+                  <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-full">
+                    <Navigation className="h-5 w-5 text-green-600 dark:text-green-400" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-sm">Navigating to</h3>
@@ -847,21 +884,21 @@ function NearbyMap() {
                 </div>
                 <button 
                   onClick={stopNavigation}
-                  className="p-1 hover:bg-gray-100 rounded-full"
+                  className="p-1 hover:bg-muted rounded-full"
                 >
-                  <X className="h-5 w-5 text-gray-500" />
+                  <X className="h-5 w-5 text-muted-foreground" />
                 </button>
               </div>
               
               <div className="flex items-center gap-4 mb-3">
                 <div className="flex items-center gap-1">
-                  <Route className="h-4 w-4 text-gray-500" />
+                  <Route className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium">
                     {(navigationRoute.distanceMeters / 1000).toFixed(1)} km
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Clock className="h-4 w-4 text-gray-500" />
+                  <Clock className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium">
                     ~{Math.round(navigationRoute.durationSeconds / 60)} min
                   </span>
@@ -869,7 +906,7 @@ function NearbyMap() {
               </div>
               
               {currentPosition && selectedSeller && (
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   📍 Distance remaining: {haversineDistanceKm(currentPosition, { 
                     lat: selectedSeller.location.coordinates[1], 
                     lng: selectedSeller.location.coordinates[0] 

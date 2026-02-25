@@ -53,7 +53,7 @@
     },
     "checkout": {
         "step1": "Keranjang",
-        "step2": "Pengiriman",
+        "step2": "Pengambilan",
         "step3": "Pembayaran",
         "step4": "Konfirmasi",
         "reviewCart": "Periksa Keranjang Anda",

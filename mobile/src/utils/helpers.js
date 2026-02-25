@@ -37,6 +37,20 @@ const sourceUnsplashToKeywordImage = (url) => {
 
 export const getImageUrl = (url) => {
     if (!url) return '';
+    const blockedExternalHosts = [
+        'source.unsplash.com',
+        'images.unsplash.com',
+        'loremflickr.com',
+        'picsum.photos',
+    ];
+    try {
+        const parsed = new URL(url);
+        if (blockedExternalHosts.some((host) => parsed.hostname === host || parsed.hostname.endsWith(`.${host}`))) {
+            return '';
+        }
+    } catch {
+        // Not an absolute URL, continue below.
+    }
     if (url.includes('source.unsplash.com')) return sourceUnsplashToKeywordImage(url);
     if (url.startsWith('http')) return url;
     return `${API_HOST}${url}`;

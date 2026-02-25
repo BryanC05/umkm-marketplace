@@ -8,7 +8,7 @@ import { useThemeStore } from '../../store/themeStore';
 import { useLanguageStore } from '../../store/languageStore';
 import api from '../../api/api';
 import ForumPostCard from '../../components/ForumPostCard';
-import LoadingSpinner from '../../components/LoadingSpinner';
+import { ForumScreenSkeleton } from '../../components/LoadingSkeleton';
 
 export default function ForumScreen({ navigation }) {
     const { colors } = useThemeStore();
@@ -61,7 +61,7 @@ export default function ForumScreen({ navigation }) {
         }
     };
 
-    if (loading) return <LoadingSpinner />;
+    if (loading) return <ForumScreenSkeleton />;
 
     const styles = {
         container: { flex: 1, backgroundColor: colors.background },

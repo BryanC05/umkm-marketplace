@@ -27,8 +27,17 @@ type User struct {
 	GeneratedLogos        []GeneratedLogo       `bson:"generatedLogos" json:"generatedLogos"`
 	BusinessLogo          *string               `bson:"businessLogo" json:"businessLogo"`
 	HasCustomLogo         bool                  `bson:"hasCustomLogo" json:"hasCustomLogo"`
-	CreatedAt             time.Time             `bson:"createdAt" json:"createdAt"`
-	UpdatedAt             time.Time             `bson:"updatedAt" json:"updatedAt"`
+
+	// Membership fields
+	IsMember           bool       `bson:"isMember" json:"isMember"`
+	MemberSince        *time.Time `bson:"memberSince" json:"memberSince"`
+	MemberExpiry       *time.Time `bson:"memberExpiry" json:"memberExpiry"`
+	MembershipStatus   string     `bson:"membershipStatus" json:"membershipStatus"` // "active", "expired", "pending", "none"
+	PaymentProof       *string    `bson:"paymentProof" json:"paymentProof"`
+	PaymentSubmittedAt *time.Time `bson:"paymentSubmittedAt" json:"paymentSubmittedAt"`
+
+	CreatedAt time.Time `bson:"createdAt" json:"createdAt"`
+	UpdatedAt time.Time `bson:"updatedAt" json:"updatedAt"`
 }
 
 type Location struct {

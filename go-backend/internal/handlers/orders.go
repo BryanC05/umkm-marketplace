@@ -2,14 +2,16 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"time"
+
+	"msme-marketplace/internal/database"
+	"msme-marketplace/internal/models"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"msme-marketplace/internal/database"
-	"msme-marketplace/internal/models"
 )
 
 type OrderHandler struct{}
@@ -33,6 +35,24 @@ func calculateDistance(lat1, lng1, lat2, lng2 float64) float64 {
 	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
 
 	return R * c
+}
+
+// formatCurrency formats a float as Indonesian Rupiah string
+func formatCurrency(amount float64) string {
+	whole := int64(amount)
+	s := fmt.Sprintf("%d", whole)
+	// Add thousand separators
+	if len(s) <= 3 {
+		return s
+	}
+	var result []byte
+	for i, c := range s {
+		if i > 0 && (len(s)-i)%3 == 0 {
+			result = append(result, '.')
+		}
+		result = append(result, byte(c))
+	}
+	return string(result)
 }
 
 func (h *OrderHandler) CreateOrder(c *gin.Context) {
@@ -313,6 +333,16 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 
 	order.ID = result.InsertedID.(primitive.ObjectID)
 
+	// Notify seller about the new order
+	usersCollection := database.GetDB().Collection("users")
+	var buyer models.User
+	usersCollection.FindOne(context.Background(), bson.M{"_id": userObjID}).Decode(&buyer)
+
+	go CreateAndSend(sellerID, "new_order", "New Order Received",
+		fmt.Sprintf("New order from %s - Rp %s", buyer.Name, formatCurrency(totalAmount)),
+		map[string]interface{}{"orderId": order.ID.Hex()},
+	)
+
 	c.JSON(201, order)
 }
 
@@ -507,6 +537,20 @@ func (h *OrderHandler) UpdateOrderStatus(c *gin.Context) {
 
 	var updatedOrder models.Order
 	ordersCollection.FindOne(context.Background(), bson.M{"_id": orderObjID}).Decode(&updatedOrder)
+
+	// Notify buyer about order status change
+	statusLabels := map[string]string{
+		"confirmed": "Confirmed", "preparing": "Being Prepared",
+		"ready": "Ready", "delivered": "Delivered", "cancelled": "Cancelled",
+	}
+	label := statusLabels[req.Status]
+	if label == "" {
+		label = req.Status
+	}
+	go CreateAndSend(order.Buyer, "order_status", "Order Update",
+		fmt.Sprintf("Your order is now: %s", label),
+		map[string]interface{}{"orderId": orderID, "status": req.Status},
+	)
 
 	c.JSON(200, updatedOrder)
 }

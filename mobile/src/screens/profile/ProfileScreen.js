@@ -9,6 +9,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { useLanguageStore } from '../../store/languageStore';
 import { useDriverStore } from '../../store/driverStore';
+import { useNotificationStore } from '../../store/notificationStore';
 import { useTheme } from '../../theme/ThemeContext';
 import { getImageUrl } from '../../utils/helpers';
 import api from '../../api/api';
@@ -18,6 +19,7 @@ export default function ProfileScreen({ navigation }) {
     const { isDarkMode, toggleTheme, initTheme } = useThemeStore();
     const { t, language, toggleLanguage, initLanguage } = useLanguageStore();
     const { isDriverMode, stats, initDriverMode, toggleDriverMode } = useDriverStore();
+    const unreadNotifCount = useNotificationStore((s) => s.unreadCount);
     const { colors } = useTheme();
     const [editing, setEditing] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -193,8 +195,10 @@ export default function ProfileScreen({ navigation }) {
 
     const menuItems = [
         { icon: 'chatbubbles-outline', label: t.messages, onPress: () => navigation.navigate('Messages'), color: '#0ea5e9' },
+        { icon: 'notifications-outline', label: 'Notifications', onPress: () => navigation.navigate('Notifications'), color: '#f43f5e', badge: unreadNotifCount > 0 ? (unreadNotifCount > 9 ? '9+' : String(unreadNotifCount)) : null },
+        { icon: 'heart-outline', label: 'Saved Products', onPress: () => navigation.navigate('Wishlist'), color: '#ef4444' },
         { icon: 'receipt-outline', label: t.orderHistory, onPress: () => navigation.navigate('Orders'), color: '#3b82f6' },
-        { icon: 'bicycle-outline', label: t.driverMode || 'Driver Mode', onPress: handleToggleDriverMode, color: '#10b981', isToggle: true, toggleValue: isDriverMode, isLoading: togglingDriver },
+        // Delivery disabled: { icon: 'bicycle-outline', label: t.driverMode || 'Driver Mode', onPress: handleToggleDriverMode, color: '#10b981', isToggle: true, toggleValue: isDriverMode, isLoading: togglingDriver },
         { icon: 'location-outline', label: t.nearbySellers, onPress: () => navigation.navigate('NearbySellers'), color: '#ef4444' },
         { icon: 'color-palette-outline', label: t.logoGenerator, onPress: () => navigation.navigate('LogoGenerator'), color: '#8b5cf6' },
         ...(user?.isSeller ? [{
@@ -305,7 +309,7 @@ export default function ProfileScreen({ navigation }) {
             </View>
 
             {isDriverMode && (
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={[styles.menuSection, { marginTop: 16 }]}
                     onPress={() => navigation.getParent()?.navigate('DeliveryTab')}
                     activeOpacity={0.7}
@@ -358,7 +362,14 @@ export default function ProfileScreen({ navigation }) {
                                 thumbColor="#fff"
                             />
                         ) : (
-                            <Ionicons name="chevron-forward" size={18} color="#d1d5db" />
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                {item.badge && (
+                                    <View style={{ backgroundColor: item.color, borderRadius: 10, minWidth: 20, height: 20, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 6, marginRight: 8 }}>
+                                        <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>{item.badge}</Text>
+                                    </View>
+                                )}
+                                <Ionicons name="chevron-forward" size={18} color="#d1d5db" />
+                            </View>
                         )}
                     </TouchableOpacity>
                 ))}

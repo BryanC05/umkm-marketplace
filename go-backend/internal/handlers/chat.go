@@ -2,14 +2,16 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"time"
+
+	"msme-marketplace/internal/database"
+	"msme-marketplace/internal/models"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"msme-marketplace/internal/database"
-	"msme-marketplace/internal/models"
 )
 
 type ChatHandler struct{}
@@ -444,6 +446,25 @@ func (h *ChatHandler) SendMessage(c *gin.Context) {
 		update["unreadCount.seller"] = chatRoom.UnreadCount.Seller + 1
 	}
 	chatRoomsCollection.UpdateOne(context.Background(), bson.M{"_id": roomObjID}, bson.M{"$set": update})
+
+	// Notify the other participant
+	usersCollection := database.GetDB().Collection("users")
+	var sender models.User
+	usersCollection.FindOne(context.Background(), bson.M{"_id": userObjID}).Decode(&sender)
+
+	recipientID := chatRoom.Buyer
+	if chatRoom.Buyer == userObjID {
+		recipientID = chatRoom.Seller
+	}
+
+	preview := req.Content
+	if len(preview) > 50 {
+		preview = preview[:50] + "..."
+	}
+	go CreateAndSend(recipientID, "new_message", "New Message",
+		fmt.Sprintf("%s: %s", sender.Name, preview),
+		map[string]interface{}{"chatRoomId": roomID},
+	)
 
 	c.JSON(201, message)
 }

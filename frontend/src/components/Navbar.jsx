@@ -3,8 +3,10 @@ import { useAuthStore, useCartStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import { useLanguageStore } from '../store/languageStore';
 import { useTranslation } from '../hooks/useTranslation';
+import { useNotifications } from '../hooks/useNotifications';
 import { getBackendUrl } from '../config';
 import { MapPin, ShoppingBag, Store, User, LogOut, Sun, Moon, Globe, MessageCircle } from 'lucide-react';
+import NotificationBell from './NotificationBell';
 import './Navbar.css';
 
 function Navbar() {
@@ -15,6 +17,9 @@ function Navbar() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const cartItemCount = getTotalItems();
+
+  // Initialize real-time notification WebSocket
+  useNotifications();
 
   const handleLogout = () => {
     logout();
@@ -75,6 +80,7 @@ function Navbar() {
               <MessageCircle size={18} />
               Messages
             </Link>
+            <NotificationBell />
             <Link to="/profile" className="nav-link">
               <User size={18} />
               {user.name}

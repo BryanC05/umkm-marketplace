@@ -29,12 +29,12 @@ export default function CartScreen({ navigation }) {
     const [showCheckoutModal, setShowCheckoutModal] = useState(false);
     const [selectedSeller, setSelectedSeller] = useState(null);
     const [selectedPayment, setSelectedPayment] = useState('cash');
-    const [deliveryType, setDeliveryType] = useState('delivery');
+    const [deliveryType, setDeliveryType] = useState('pickup'); // Delivery disabled
     const [preorderTime, setPreorderTime] = useState('');
     const [notes, setNotes] = useState('');
     const [processing, setProcessing] = useState(false);
     const [expandedSellers, setExpandedSellers] = useState({});
-    
+
     // Scheduled delivery states
     const [enableScheduledDelivery, setEnableScheduledDelivery] = useState(false);
     const [scheduledDate, setScheduledDate] = useState('');
@@ -168,7 +168,7 @@ export default function CartScreen({ navigation }) {
     const startCheckout = (seller) => {
         setSelectedSeller(seller);
         setSelectedPayment('cash');
-        setDeliveryType('delivery');
+        setDeliveryType('pickup'); // Delivery disabled
         setPreorderTime('');
         setNotes('');
         setShowCheckoutModal(true);
@@ -178,7 +178,7 @@ export default function CartScreen({ navigation }) {
 
     const processOrder = async () => {
         if (!selectedSeller) return;
-        
+
         setProcessing(true);
         try {
             const orderProducts = selectedSeller.items.map((item) => ({
@@ -296,10 +296,10 @@ export default function CartScreen({ navigation }) {
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                         <Text style={styles.sellerTotal}>{formatPrice(sellerTotal)}</Text>
-                        <Ionicons 
-                            name={isExpanded ? "chevron-up" : "chevron-down"} 
-                            size={20} 
-                            color={colors.text} 
+                        <Ionicons
+                            name={isExpanded ? "chevron-up" : "chevron-down"}
+                            size={20}
+                            color={colors.text}
                         />
                     </View>
                 </TouchableOpacity>
@@ -350,10 +350,10 @@ export default function CartScreen({ navigation }) {
             />
 
             {/* Checkout Modal */}
-            <Modal 
-                visible={showCheckoutModal} 
-                animationType="slide" 
-                transparent 
+            <Modal
+                visible={showCheckoutModal}
+                animationType="slide"
+                transparent
                 onRequestClose={() => setShowCheckoutModal(false)}
             >
                 <View style={styles.modalOverlay}>
@@ -375,51 +375,46 @@ export default function CartScreen({ navigation }) {
                             </View>
                         )}
 
-                        {/* Delivery Type Selection */}
+                        {/* Pickup confirmation */}
                         <View style={styles.section}>
-                            <Text style={styles.sectionLabel}>Delivery Options</Text>
-                            {DELIVERY_TYPES.map((type) => (
-                                <TouchableOpacity
-                                    key={type.id}
-                                    style={[
-                                        styles.optionCard,
-                                        deliveryType === type.id ? styles.optionSelected : styles.optionUnselected
-                                    ]}
-                                    onPress={() => setDeliveryType(type.id)}
-                                >
-                                    <View style={styles.optionIcon}>
-                                        <Ionicons name={type.icon} size={22} color={colors.primary} />
-                                    </View>
-                                    <View style={styles.optionInfo}>
-                                        <Text style={styles.optionName}>{type.name}</Text>
-                                        <Text style={styles.optionDesc}>{type.description}</Text>
-                                    </View>
-                                    {deliveryType === type.id && (
-                                        <View style={styles.checkIcon}>
-                                            <Ionicons name="checkmark" size={16} color="#fff" />
-                                        </View>
-                                    )}
-                                </TouchableOpacity>
-                            ))}
-                            
-                            {deliveryType === 'pickup' && (
-                                <View style={[styles.infoBox, { backgroundColor: '#dbeafe' }]}>
-                                    <Ionicons name="information-circle" size={20} color="#2563eb" />
-                                    <Text style={[styles.infoText, { color: '#1e40af' }]}>
-                                        You will pick up your order at the store. No delivery fee!
+                            <Text style={styles.sectionLabel}>Pickup Details</Text>
+                            <View style={{
+                                backgroundColor: '#ecfdf5',
+                                borderWidth: 1.5,
+                                borderColor: '#a7f3d0',
+                                borderRadius: 14,
+                                padding: 16,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 14,
+                            }}>
+                                <View style={{
+                                    width: 44, height: 44, borderRadius: 22,
+                                    backgroundColor: '#d1fae5',
+                                    justifyContent: 'center', alignItems: 'center',
+                                }}>
+                                    <Ionicons name="storefront" size={22} color="#059669" />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={{ fontSize: 15, fontWeight: '700', color: '#065f46' }}>
+                                        Pickup at {selectedSeller?.sellerName}
+                                    </Text>
+                                    <Text style={{ fontSize: 12, color: '#047857', marginTop: 2 }}>
+                                        Collect your order from the store — no extra fees!
                                     </Text>
                                 </View>
-                            )}
+                                <Ionicons name="checkmark-circle" size={24} color="#10b981" />
+                            </View>
                         </View>
 
                         {/* Preorder Time */}
                         <View style={styles.section}>
                             <Text style={styles.sectionLabel}>
-                                {deliveryType === 'pickup' ? 'When do you want to pick up?' : 'When should we deliver?'}
+                                Pickup Time
                             </Text>
-                            
-                            {/* Scheduled Delivery Toggle */}
-                            <TouchableOpacity 
+
+                            {/* Schedule for later toggle */}
+                            <TouchableOpacity
                                 style={[styles.optionCard, { marginBottom: 12 }]}
                                 onPress={() => setEnableScheduledDelivery(!enableScheduledDelivery)}
                             >
@@ -428,33 +423,33 @@ export default function CartScreen({ navigation }) {
                                 </View>
                                 <View style={styles.optionInfo}>
                                     <Text style={[styles.optionName, { color: enableScheduledDelivery ? '#10b981' : colors.text }]}>
-                                        Schedule for later
+                                        Schedule for another day
                                     </Text>
                                     <Text style={styles.optionDesc}>
-                                        Set specific date & time for delivery
+                                        Pick up on a specific date & time
                                     </Text>
                                 </View>
                                 <View style={[
-                                    styles.checkIcon, 
+                                    styles.checkIcon,
                                     { backgroundColor: enableScheduledDelivery ? '#10b981' : colors.border }
                                 ]}>
                                     <Ionicons name="checkmark" size={16} color="#fff" />
                                 </View>
                             </TouchableOpacity>
-                            
+
                             {enableScheduledDelivery && (
                                 <View style={{ gap: 12 }}>
                                     {/* Date Selection */}
                                     <View style={styles.inputContainer}>
-                                        <Text style={styles.inputLabel}>Delivery Date</Text>
-                                        <TouchableOpacity 
+                                        <Text style={styles.inputLabel}>Pickup Date</Text>
+                                        <TouchableOpacity
                                             style={styles.timeInput}
                                             onPress={() => {
                                                 // Generate next 30 days
                                                 const today = new Date();
                                                 const maxDate = new Date();
                                                 maxDate.setDate(today.getDate() + 30);
-                                                
+
                                                 // For simplicity, set a default date (tomorrow)
                                                 const tomorrow = new Date();
                                                 tomorrow.setDate(tomorrow.getDate() + 1);
@@ -471,11 +466,11 @@ export default function CartScreen({ navigation }) {
                                             Maximum 30 days ahead
                                         </Text>
                                     </View>
-                                    
+
                                     {/* Time Selection */}
                                     <View style={styles.inputContainer}>
-                                        <Text style={styles.inputLabel}>Delivery Time</Text>
-                                        <TouchableOpacity 
+                                        <Text style={styles.inputLabel}>Pickup Time</Text>
+                                        <TouchableOpacity
                                             style={styles.timeInput}
                                             onPress={() => {
                                                 // Default to 19:00
@@ -488,11 +483,11 @@ export default function CartScreen({ navigation }) {
                                             <Ionicons name="time-outline" size={20} color={colors.textSecondary} />
                                         </TouchableOpacity>
                                     </View>
-                                    
+
                                     {/* Scheduled Delivery Notes */}
                                     <View style={styles.inputContainer}>
-                                        <Text style={styles.inputLabel}>Delivery Notes (optional)</Text>
-                                        <TouchableOpacity 
+                                        <Text style={styles.inputLabel}>Pickup Notes (optional)</Text>
+                                        <TouchableOpacity
                                             style={styles.noteInput}
                                             onPress={() => {
                                                 // In real app, show text input
@@ -503,19 +498,19 @@ export default function CartScreen({ navigation }) {
                                             </Text>
                                         </TouchableOpacity>
                                     </View>
-                                    
+
                                     <View style={[styles.infoBox, { backgroundColor: '#dbeafe' }]}>
                                         <Ionicons name="information-circle" size={20} color="#2563eb" />
                                         <Text style={[styles.infoText, { color: '#1e40af' }]}>
-                                            Seller needs to approve your request before payment
+                                            The seller will confirm your scheduled pickup before preparation
                                         </Text>
                                     </View>
                                 </View>
                             )}
-                            
+
                             {!enableScheduledDelivery && (
                                 <View style={styles.timeInput}>
-                                    <TouchableOpacity 
+                                    <TouchableOpacity
                                         style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
                                         onPress={() => {
                                             setPreorderTime('14:00');
@@ -534,7 +529,7 @@ export default function CartScreen({ navigation }) {
                         <View style={styles.section}>
                             <Text style={styles.sectionLabel}>Note for Seller (optional)</Text>
                             <View style={styles.inputContainer}>
-                                <TouchableOpacity 
+                                <TouchableOpacity
                                     style={styles.noteInput}
                                     onPress={() => {
                                         // In real app, show text input modal
@@ -586,13 +581,13 @@ export default function CartScreen({ navigation }) {
                                     <Text style={styles.summaryValue}>{formatPrice(getSellerTotal(selectedSeller.sellerId))}</Text>
                                 </View>
                                 <View style={styles.summaryRow}>
-                                    <Text style={styles.summaryLabel}>Delivery Fee</Text>
-                                    <Text style={styles.summaryValue}>{deliveryType === 'pickup' ? 'Free' : 'Rp 15.000'}</Text>
+                                    <Text style={styles.summaryLabel}>Store Pickup</Text>
+                                    <Text style={[styles.summaryValue, { color: '#10b981' }]}>✓ Free</Text>
                                 </View>
                                 <View style={[styles.summaryRow, styles.summaryTotal]}>
                                     <Text style={styles.summaryLabel}>{t.total}</Text>
                                     <Text style={styles.summaryValue}>
-                                        {formatPrice(getSellerTotal(selectedSeller.sellerId) + (deliveryType === 'pickup' ? 0 : 15000))}
+                                        {formatPrice(getSellerTotal(selectedSeller.sellerId))}
                                     </Text>
                                 </View>
                             </View>
@@ -605,10 +600,10 @@ export default function CartScreen({ navigation }) {
                             disabled={processing}
                         >
                             <Text style={styles.payBtnText}>
-                                {processing 
-                                    ? 'Processing...' 
-                                    : enableScheduledDelivery 
-                                        ? 'Send Request' 
+                                {processing
+                                    ? 'Processing...'
+                                    : enableScheduledDelivery
+                                        ? 'Send Request'
                                         : 'Place Order'
                                 }
                             </Text>

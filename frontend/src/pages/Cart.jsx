@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, ArrowRight, ArrowLeft, ShoppingBag, MapPin, Plus, Minus, CreditCard, Check, Store, ChevronDown, ChevronUp, Truck, Clock, Navigation, AlertCircle } from 'lucide-react';
 import { useCartStore, useAuthStore } from '../store/authStore';
@@ -18,6 +19,7 @@ import DeliveryMapPicker from '@/components/DeliveryMapPicker';
 
 function Cart() {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const { items, updateQuantity, removeFromCart, clearSellerCart, getTotalPrice, getItemsBySeller, getSellerTotal } = useCartStore();
     const { user, isAuthenticated } = useAuthStore();
     const { t } = useTranslation();
@@ -34,7 +36,7 @@ function Cart() {
     });
     const [notes, setNotes] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('cash');
-    const [deliveryType, setDeliveryType] = useState('delivery');
+    const [deliveryType, setDeliveryType] = useState('pickup'); // Delivery disabled
     const [preorderTime, setPreorderTime] = useState('');
     const [preorderDate, setPreorderDate] = useState('');
     const [loading, setLoading] = useState(false);
@@ -42,7 +44,7 @@ function Cart() {
     const [distanceError, setDistanceError] = useState(null);
 
     const subtotal = checkoutSeller ? getSellerTotal(checkoutSeller.sellerId) : 0;
-    const deliveryFee = deliveryType === 'delivery' ? 15000 : 0;
+    const deliveryFee = 0; // Delivery disabled — pickup only
     const total = subtotal + deliveryFee;
 
     // Get seller location from first product
@@ -176,6 +178,8 @@ function Cart() {
 
             await api.post('/orders', orderData);
             clearSellerCart(checkoutSeller.sellerId);
+            // Invalidate orders cache so the Orders page fetches fresh data
+            queryClient.invalidateQueries({ queryKey: ['orders'] });
             alert('Order placed successfully!');
             setCheckoutSeller(null);
             setDeliveryLocation(null);
@@ -273,114 +277,63 @@ function Cart() {
                 return (
                     <div className="space-y-6">
                         <h2 className="text-xl font-semibold flex items-center gap-2">
-                            <Truck className="h-6 w-6" />
-                            Delivery Options
+                            <Store className="h-6 w-6" />
+                            Pickup Details
                         </h2>
 
-                        <div className="space-y-4">
-                            <Label className="text-base font-semibold">How do you want to receive your order?</Label>
-                            <div className="grid gap-3">
-                                {deliveryTypes.map((type) => (
-                                    <div
-                                        key={type.id}
-                                        onClick={() => handleDeliveryTypeChange(type.id)}
-                                        className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                                            deliveryType === type.id
-                                                ? 'border-primary bg-primary/5'
-                                                : 'border-border hover:border-primary/50'
-                                        }`}
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <span className="text-2xl">{type.icon}</span>
-                                            <div className="flex-1">
-                                                <p className="font-semibold text-base">{type.label}</p>
-                                                <p className="text-sm text-muted-foreground">{type.desc}</p>
-                                            </div>
-                                            {deliveryType === type.id && (
-                                                <Check className="h-6 w-6 text-primary" />
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
+                        {/* Pickup confirmation card */}
+                        <div className="p-5 bg-gradient-to-br from-emerald-50 to-green-50 border border-emerald-200 rounded-xl">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                                    <Store className="h-6 w-6 text-emerald-600" />
+                                </div>
+                                <div>
+                                    <p className="font-semibold text-emerald-900 text-base">Pickup at {checkoutSeller?.sellerName}</p>
+                                    <p className="text-sm text-emerald-700 mt-0.5">
+                                        Pick up your order directly from the store — no extra fees!
+                                    </p>
+                                </div>
+                                <Check className="h-6 w-6 text-emerald-500 shrink-0 ml-auto" />
                             </div>
                         </div>
 
                         {distanceError && (
                             <Alert variant="destructive">
-                                <Navigation className="h-4 w-4" />
+                                <AlertCircle className="h-4 w-4" />
                                 <AlertDescription>{distanceError}</AlertDescription>
                             </Alert>
                         )}
 
-                        {deliveryType === 'pickup' && (
-                            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                <div className="flex items-start gap-3">
-                                    <Store className="h-5 w-5 text-blue-600 mt-0.5" />
-                                    <div>
-                                        <p className="font-medium text-blue-900">Pickup at Store</p>
-                                        <p className="text-sm text-blue-700">
-                                            You will pick up your order at the seller's store. No delivery fee applied.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
                         <Separator />
 
-                        {deliveryType === 'delivery' && (
-                            <div className="space-y-4">
-                                <div>
-                                    <Label className="text-base font-semibold flex items-center gap-2 mb-3">
-                                        <MapPin className="h-5 w-5" />
-                                        Select Delivery Location
-                                    </Label>
-                                    <p className="text-sm text-muted-foreground mb-4">
-                                        Click on the map to select your delivery address. The location must be within 5km of the store.
-                                    </p>
-                                    
-                                    <DeliveryMapPicker
-                                        sellerLocation={getSellerLocation()}
-                                        onLocationSelect={handleLocationSelect}
-                                        maxDistance={5}
-                                        initialLocation={deliveryLocation}
-                                    />
-                                </div>
-
-                                <Separator />
-                            </div>
-                        )}
-
+                        {/* Pickup time */}
                         <div className="space-y-4">
                             <div>
                                 <Label className="text-base font-semibold flex items-center gap-2 mb-3">
                                     <Clock className="h-5 w-5" />
-                                    {deliveryType === 'pickup' ? 'When do you want to pick up?' : 'When should we deliver?'}
+                                    Pickup Time
                                 </Label>
                                 <Input
                                     type="time"
                                     value={preorderTime}
                                     onChange={(e) => setPreorderTime(e.target.value)}
                                     className="h-12 text-base"
+                                    placeholder="Select a pickup time"
                                 />
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    {deliveryType === 'pickup' 
-                                        ? 'Tell the seller when you plan to pick up your order'
-                                        : 'Tell the driver when to deliver your order'
-                                    }
+                                <p className="text-xs text-muted-foreground mt-1.5">
+                                    Let the seller know when you'll arrive to collect your order
                                 </p>
                             </div>
 
-                            {/* Preorder Date - Optional for advance orders */}
-                            <div className="border rounded-lg p-4 bg-secondary/30">
-                                <div className="flex items-center gap-2 mb-3">
+                            {/* Schedule for future date */}
+                            <div className="border rounded-xl p-4 bg-secondary/20">
+                                <div className="flex items-center gap-3 mb-3">
                                     <input
                                         type="checkbox"
                                         id="enablePreorder"
                                         checked={!!preorderDate}
                                         onChange={(e) => {
                                             if (e.target.checked) {
-                                                // Set default to tomorrow
                                                 const tomorrow = new Date();
                                                 tomorrow.setDate(tomorrow.getDate() + 1);
                                                 setPreorderDate(tomorrow.toISOString().split('T')[0]);
@@ -388,16 +341,16 @@ function Cart() {
                                                 setPreorderDate('');
                                             }
                                         }}
-                                        className="w-4 h-4"
+                                        className="w-4 h-4 rounded accent-primary"
                                     />
                                     <Label htmlFor="enablePreorder" className="text-base font-semibold cursor-pointer">
-                                        Preorder for a future date
+                                        Schedule pickup for another day
                                     </Label>
                                 </div>
                                 {preorderDate && (
-                                    <div className="space-y-3">
+                                    <div className="space-y-3 pl-7">
                                         <div>
-                                            <Label className="text-sm">Select Date</Label>
+                                            <Label className="text-sm">Pickup Date</Label>
                                             <Input
                                                 type="date"
                                                 value={preorderDate}
@@ -407,21 +360,22 @@ function Cart() {
                                                 className="h-10"
                                             />
                                             <p className="text-xs text-muted-foreground mt-1">
-                                                Order will be prepared for this date. Maximum 30 days in advance.
+                                                Up to 30 days in advance
                                             </p>
                                         </div>
                                         <Alert>
                                             <AlertCircle className="h-4 w-4" />
                                             <AlertDescription className="text-sm">
-                                                Seller needs to approve your preorder request before payment.
+                                                The seller will confirm your scheduled pickup before preparation.
                                             </AlertDescription>
                                         </Alert>
                                     </div>
                                 )}
                             </div>
 
+                            {/* Notes */}
                             <div>
-                                <Label className="text-base font-semibold mb-2 block">Note for seller (optional)</Label>
+                                <Label className="text-base font-semibold mb-2 block">Special instructions (optional)</Label>
                                 <Textarea
                                     placeholder="Any special requests? e.g., extra spicy, no onions, etc."
                                     value={notes}
@@ -445,11 +399,10 @@ function Cart() {
                                 <div
                                     key={method.id}
                                     onClick={() => setPaymentMethod(method.id)}
-                                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                                        paymentMethod === method.id
-                                            ? 'border-primary bg-primary/5'
-                                            : 'border-border hover:border-primary/50'
-                                    }`}
+                                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${paymentMethod === method.id
+                                        ? 'border-primary bg-primary/5'
+                                        : 'border-border hover:border-primary/50'
+                                        }`}
                                 >
                                     <div className="flex items-center gap-4">
                                         <span className="text-2xl">{method.icon}</span>
@@ -475,51 +428,39 @@ function Cart() {
                             {t('checkout.confirmOrder')}
                         </h2>
                         <Card>
-                            <CardContent className="p-4 space-y-4">
-                                <div>
-                                    <p className="text-sm text-muted-foreground mb-1">Store</p>
-                                    <p className="font-medium">{checkoutSeller.sellerName}</p>
-                                </div>
-                                <Separator />
-                                <div>
-                                    <p className="text-sm text-muted-foreground mb-1">Delivery Type</p>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xl">
-                                            {deliveryType === 'pickup' ? '🏪' : '🚗'}
-                                        </span>
-                                        <p className="font-medium">
-                                            {deliveryType === 'pickup' ? 'Pickup at Store' : 'Delivery by Driver'}
-                                        </p>
+                            <CardContent className="p-5 space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                                        <Store className="h-5 w-5 text-emerald-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Pickup from</p>
+                                        <p className="font-semibold">{checkoutSeller.sellerName}</p>
                                     </div>
                                 </div>
 
                                 {preorderTime && (
                                     <>
                                         <Separator />
-                                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                                            <p className="text-sm text-amber-800 font-medium flex items-center gap-2">
-                                                <Clock className="h-4 w-4" />
-                                                {deliveryType === 'pickup' ? 'Pickup at' : 'Delivery at'}: {preorderTime}
-                                            </p>
+                                        <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                                            <Clock className="h-5 w-5 text-amber-600 shrink-0" />
+                                            <div>
+                                                <p className="text-sm font-semibold text-amber-900">
+                                                    Pickup at {preorderTime}
+                                                </p>
+                                                {preorderDate && (
+                                                    <p className="text-xs text-amber-700 mt-0.5">
+                                                        Scheduled for {new Date(preorderDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                                    </p>
+                                                )}
+                                            </div>
                                         </div>
                                     </>
                                 )}
 
-                                {deliveryType === 'delivery' && deliveryLocation && (
-                                    <>
-                                        <Separator />
-                                        <div>
-                                            <p className="text-sm text-muted-foreground mb-1">Delivery Address</p>
-                                            <p className="font-medium">{deliveryLocation.address}</p>
-                                            <p className="text-xs text-muted-foreground mt-1">
-                                                Coordinates: {deliveryLocation.lat.toFixed(4)}, {deliveryLocation.lng.toFixed(4)}
-                                            </p>
-                                        </div>
-                                    </>
-                                )}
                                 <Separator />
                                 <div>
-                                    <p className="text-sm text-muted-foreground mb-1">Payment Method</p>
+                                    <p className="text-xs text-muted-foreground mb-1">Payment</p>
                                     <p className="font-medium">
                                         {paymentMethods.find(m => m.id === paymentMethod)?.label}
                                     </p>
@@ -528,7 +469,7 @@ function Cart() {
                                     <>
                                         <Separator />
                                         <div>
-                                            <p className="text-sm text-muted-foreground mb-1">Notes</p>
+                                            <p className="text-xs text-muted-foreground mb-1">Special Instructions</p>
                                             <p className="text-sm">{notes}</p>
                                         </div>
                                     </>
@@ -543,10 +484,8 @@ function Cart() {
                                         <span>Rp {subtotal.toLocaleString('id-ID')}</span>
                                     </div>
                                     <div className="flex justify-between text-base">
-                                        <span className="text-muted-foreground">
-                                            {deliveryType === 'pickup' ? 'Pickup (Free)' : t('cart.deliveryFee')}
-                                        </span>
-                                        <span>Rp {deliveryFee.toLocaleString('id-ID')}</span>
+                                        <span className="text-muted-foreground">Store Pickup</span>
+                                        <span className="text-emerald-600 font-medium">✓ Free</span>
                                     </div>
                                     <Separator />
                                     <div className="flex justify-between font-bold text-xl pt-2">
@@ -579,9 +518,9 @@ function Cart() {
                         </div>
                         <div className="flex gap-4 mt-8">
                             {currentStep > 1 && (
-                                <Button 
-                                    variant="outline" 
-                                    size="lg" 
+                                <Button
+                                    variant="outline"
+                                    size="lg"
                                     className="flex-1 gap-2 h-12"
                                     onClick={prevStep}
                                 >
@@ -590,8 +529,8 @@ function Cart() {
                                 </Button>
                             )}
                             {currentStep < 4 ? (
-                                <Button 
-                                    size="lg" 
+                                <Button
+                                    size="lg"
                                     className="flex-1 gap-2 h-12"
                                     onClick={nextStep}
                                 >
@@ -599,8 +538,8 @@ function Cart() {
                                     <ArrowRight className="h-5 w-5" />
                                 </Button>
                             ) : (
-                                <Button 
-                                    size="lg" 
+                                <Button
+                                    size="lg"
                                     className="flex-1 gap-2 h-12"
                                     onClick={handleCheckout}
                                     disabled={loading}
@@ -645,11 +584,11 @@ function Cart() {
                             const isExpanded = expandedSellers[group.sellerId] !== false;
                             const sellerTotal = getSellerTotal(group.sellerId);
                             const hasStoreName = group.sellerName !== group.sellerRealName && group.sellerRealName !== 'Unknown';
-                            
+
                             return (
                                 <Card key={group.sellerId}>
                                     <CardHeader className="pb-3">
-                                        <div 
+                                        <div
                                             className="flex items-center justify-between cursor-pointer"
                                             onClick={() => toggleSeller(group.sellerId)}
                                         >
@@ -671,7 +610,7 @@ function Cart() {
                                             </div>
                                         </div>
                                     </CardHeader>
-                                    
+
                                     {isExpanded && (
                                         <CardContent className="pt-0">
                                             <Separator className="mb-4" />
@@ -680,7 +619,7 @@ function Cart() {
                                                     const unitPrice = item.variant ? item.variant.price : item.product.price;
                                                     const optionAdjust = (item.selectedOptions || []).reduce((sum, o) => sum + (o.priceAdjust || 0), 0);
                                                     const linePrice = unitPrice + optionAdjust;
-                                                    
+
                                                     return (
                                                         <div key={`${item.product._id}-${item.variant?.name || ''}`} className="flex gap-3 p-3 bg-secondary/30 rounded-lg">
                                                             <div className="h-16 w-16 rounded-md overflow-hidden border shrink-0">
@@ -739,8 +678,8 @@ function Cart() {
                                                     );
                                                 })}
                                             </div>
-                                            <Button 
-                                                className="w-full h-11 gap-2" 
+                                            <Button
+                                                className="w-full h-11 gap-2"
                                                 onClick={() => startCheckout(group)}
                                             >
                                                 <ShoppingBag className="h-5 w-5" />

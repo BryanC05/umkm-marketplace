@@ -1,0 +1,147 @@
+.analytics-section {
+    margin-bottom: 32px;
+    padding: 20px;
+    border: 1px solid var(--color-border, #e5e7eb);
+    border-radius: 14px;
+    background: var(--color-card, #fff);
+}
+
+.analytics-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+.analytics-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.analytics-stat {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    border-radius: 10px;
+    background: var(--color-surface, #f9fafb);
+}
+
+.analytics-stat .stat-value {
+    display: block;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.analytics-stat .stat-label {
+    display: block;
+    font-size: 11px;
+    color: var(--color-text-secondary, #6b7280);
+}
+
+.stat-icon-green {
+    color: #16a34a;
+}
+
+.stat-icon-blue {
+    color: #3b82f6;
+}
+
+.stat-icon-orange {
+    color: #f59e0b;
+}
+
+.analytics-chart {
+    margin-bottom: 20px;
+}
+
+.chart-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.chart-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    height: 120px;
+}
+
+.chart-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+}
+
+.chart-bar-wrapper {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+}
+
+.chart-bar {
+    width: 100%;
+    min-height: 4px;
+    border-radius: 4px 4px 0 0;
+    background: linear-gradient(to top, #3b82f6, #60a5fa);
+    transition: height 0.3s;
+}
+
+.chart-label {
+    font-size: 10px;
+    color: var(--color-text-secondary, #9ca3af);
+    margin-top: 4px;
+}
+
+.top-products {
+    margin-top: 16px;
+}
+
+.top-product-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--color-border, #f3f4f6);
+    font-size: 13px;
+}
+
+.top-rank {
+    font-weight: 700;
+    width: 28px;
+    color: var(--color-primary, #3b82f6);
+}
+
+.top-name {
+    flex: 1;
+    font-weight: 500;
+}
+
+.top-sold {
+    color: var(--color-text-secondary, #6b7280);
+    font-size: 12px;
+}
+
+.top-revenue {
+    font-weight: 600;
+}
+
+.analytics-loading {
+    text-align: center;
+    padding: 24px;
+    color: var(--color-text-secondary, #9ca3af);
+}
+
+@media (max-width: 640px) {
+    .analytics-stats {
+        grid-template-columns: 1fr;
+    }
+}

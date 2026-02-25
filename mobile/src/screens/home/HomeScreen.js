@@ -11,33 +11,25 @@ import api from '../../api/api';
 import ProductCard from '../../components/ProductCard';
 import ForumPostCard from '../../components/ForumPostCard';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { ProductsListSkeleton, SellerCardSkeleton } from '../../components/LoadingSkeleton';
-import { CATEGORIES } from '../../config';
+import { HomeScreenSkeleton } from '../../components/LoadingSkeleton';
+import { CATEGORIES_EN, CATEGORIES_ID } from '../../config';
 
 const { width } = Dimensions.get('window');
 
-// Category name translations
-const catTranslations = {
-    'Food': 'catFood',
-    'Fashion': 'catFashion',
-    'Electronics': 'catElectronics',
-    'Health': 'catHealth',
-    'Home': 'catHome',
-    'Beauty': 'catBeauty',
-    'Sports': 'catSports',
-    'Other': 'catOther',
-};
-
 export default function HomeScreen({ navigation }) {
-    const insets = useSafeAreaInsets();
     const { colors, isDarkMode } = useThemeStore();
-    const { t } = useLanguageStore();
+    const { t, language } = useLanguageStore();
+    const insets = useSafeAreaInsets();
     const [refreshing, setRefreshing] = useState(false);
+    const [stats, setStats] = useState({ sellers: 0, products: 0 });
+    const [categoryCounts, setCategoryCounts] = useState({});
     const [featuredProducts, setFeaturedProducts] = useState([]);
     const [forumPosts, setForumPosts] = useState([]);
-    const [categoryCounts, setCategoryCounts] = useState({});
-    const [stats, setStats] = useState({ sellers: 0, products: 0 });
     const [loading, setLoading] = useState(true);
+
+    // Get categories based on language
+    const allCategories = language === 'id' ? CATEGORIES_ID : CATEGORIES_EN;
+    const categories = allCategories.filter((c) => c.id !== 'all');
 
     const fetchData = useCallback(async () => {
         try {
@@ -125,16 +117,8 @@ export default function HomeScreen({ navigation }) {
     };
 
     if (loading) {
-        return (
-            <View style={[styles.container, { backgroundColor: colors.background }]}>
-                <View style={{ padding: 16 }}>
-                    <ProductsListSkeleton count={6} />
-                </View>
-            </View>
-        );
+        return <HomeScreenSkeleton />;
     }
-
-    const categories = CATEGORIES.filter((c) => c.id !== 'all');
 
     const statsData = [
         { key: 'sellers', icon: 'people', label: t.seller, value: stats.sellers },
@@ -190,16 +174,16 @@ export default function HomeScreen({ navigation }) {
                         {categories
                             .filter((cat) => (categoryCounts[cat.id] || 0) > 0)
                             .map((cat) => (
-                            <TouchableOpacity
-                                key={cat.id}
-                                style={styles.catCard}
-                                onPress={() => navigation.navigate('ProductsTab', { screen: 'Products', params: { category: cat.id } })}
-                            >
-                                <Text style={styles.catIcon}>{cat.icon}</Text>
-                                <Text style={styles.catName}>{t[catTranslations[cat.name]] || cat.name}</Text>
-                                <Text style={styles.catCount}>{categoryCounts[cat.id]}</Text>
-                            </TouchableOpacity>
-                        ))}
+                                <TouchableOpacity
+                                    key={cat.id}
+                                    style={styles.catCard}
+                                    onPress={() => navigation.navigate('ProductsTab', { screen: 'Products', params: { category: cat.id } })}
+                                >
+                                    <Text style={styles.catIcon}>{cat.icon}</Text>
+                                    <Text style={styles.catName}>{cat.name}</Text>
+                                    <Text style={styles.catCount}>{categoryCounts[cat.id]}</Text>
+                                </TouchableOpacity>
+                            ))}
                     </ScrollView>
                 </View>
             )}

@@ -1,13 +1,18 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Edit2, Trash2, Package, TrendingUp, DollarSign, ShoppingBag, Save, X, AlertTriangle, Map, BarChart3 } from 'lucide-react';
+import { Plus, Edit2, Trash2, Package, TrendingUp, DollarSign, ShoppingBag, Save, X, AlertTriangle, Map, BarChart3, Crown, CreditCard, CheckCircle, Clock } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../hooks/useTranslation';
 import api from '../utils/api';
 import Layout from '@/components/layout/Layout';
 import { resolveImageUrl } from '@/utils/imageUrl';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import './SellerDashboard.css';
+import AnalyticsSection from '@/components/AnalyticsSection';
+import PromoManager from '@/components/PromoManager';
 
 function SellerDashboard() {
   const { user } = useAuthStore();
@@ -40,6 +45,48 @@ function SellerDashboard() {
     },
     enabled: !!sellerId,
   });
+
+  // Membership query
+  const { data: membership, isLoading: membershipLoading, refetch: refetchMembership } = useQuery({
+    queryKey: ['membership'],
+    queryFn: async () => {
+      const response = await api.get('/users/membership/status');
+      return response.data;
+    },
+  });
+
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [paymentFile, setPaymentFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+
+  const uploadPaymentMutation = useMutation({
+    mutationFn: async (formData) => {
+      const response = await api.post('/users/membership/payment', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      setShowPaymentDialog(false);
+      setPaymentFile(null);
+      refetchMembership();
+      alert('Payment submitted! Please wait for admin approval.');
+    },
+    onError: (error) => {
+      alert(`Failed to upload: ${error.response?.data?.error || error.message}`);
+    },
+  });
+
+  const handlePaymentSubmit = (e) => {
+    e.preventDefault();
+    if (!paymentFile) {
+      alert('Please select a payment proof image');
+      return;
+    }
+    const formData = new FormData();
+    formData.append('paymentProof', paymentFile);
+    uploadPaymentMutation.mutate(formData);
+  };
 
   const deleteMutation = useMutation({
     mutationFn: async (productId) => {
@@ -174,6 +221,115 @@ function SellerDashboard() {
           </div>
         </div>
 
+        {/* Membership Section */}
+        <div className="mb-8">
+          <Card className={membership?.isMember ? "border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20" : "border-red-300 bg-red-50 dark:bg-red-900/20"}>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {membership?.isMember ? (
+                    <Crown className="h-6 w-6 text-yellow-500" />
+                  ) : (
+                    <Crown className="h-6 w-6 text-gray-400" />
+                  )}
+                  <CardTitle className="text-lg">
+                    {membership?.isMember ? 'Premium Member' : 'Upgrade to Premium'}
+                  </CardTitle>
+                </div>
+                {membership?.isMember && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm font-medium">
+                    <CheckCircle className="h-4 w-4" />
+                    Active
+                  </span>
+                )}
+                {!membership?.isMember && membership?.membershipStatus === 'pending' && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-sm font-medium">
+                    <Clock className="h-4 w-4" />
+                    Pending Approval
+                  </span>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {membership?.isMember ? (
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Your membership is active until{' '}
+                      <span className="font-medium text-foreground">
+                        {new Date(membership.memberExpiry).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </span>
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Member since {new Date(membership.memberSince).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </p>
+                  </div>
+                  <div className="text-sm text-yellow-600 dark:text-yellow-400">
+                    ✓ Unlimited product listings
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Upgrade to premium for <span className="font-bold text-lg">Rp 10.000/month</span> to unlock:
+                  </p>
+                  <ul className="text-sm space-y-1 mb-4">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      Unlimited product listings
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      Priority in search results
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      Verified seller badge
+                    </li>
+                  </ul>
+                  <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+                    <DialogTrigger asChild>
+                      <Button className="gap-2">
+                        <CreditCard className="h-4 w-4" />
+                        Pay Rp 10.000
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Submit Payment Proof</DialogTitle>
+                      </DialogHeader>
+                      <form onSubmit={handlePaymentSubmit} className="space-y-4">
+                        <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
+                          <p className="text-sm font-medium mb-2">Transfer to:</p>
+                          <p className="text-lg font-bold">Bank BCA</p>
+                          <p className="text-lg">1234567890</p>
+                          <p className="text-sm text-muted-foreground">a/n MSME Marketplace</p>
+                          <p className="mt-2 font-bold">Amount: Rp 10.000</p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">
+                            Upload Payment Proof
+                          </label>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => setPaymentFile(e.target.files[0])}
+                            className="w-full border rounded-md p-2"
+                            required
+                          />
+                        </div>
+                        <Button type="submit" className="w-full" disabled={uploading}>
+                          {uploading ? 'Submitting...' : 'Submit Payment Proof'}
+                        </Button>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
         <div className="stats-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="stat-card p-6 border rounded-lg bg-card shadow-sm">
             <div className="stat-icon products mb-2 text-primary">
@@ -212,6 +368,10 @@ function SellerDashboard() {
             </div>
           </div>
         </div>
+
+        {/* Analytics & Promos */}
+        <AnalyticsSection />
+        <PromoManager />
 
         <div className="dashboard-section mb-8">
           <h2 className="text-xl font-semibold mb-4">{t('seller.myProducts')}</h2>
