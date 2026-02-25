@@ -11,7 +11,7 @@ import { useDriverStore } from '../store/driverStore';
 import { useNotificationStore } from '../store/notificationStore';
 import { useAuthStore } from '../store/authStore';
 import { API_HOST } from '../config';
-import notificationService from '../services/NotificationService';
+import notificationService, { usePushNotifications } from '../services/NotificationService';
 
 // Screens
 import HomeScreen from '../screens/home/HomeScreen';
@@ -398,6 +398,9 @@ function NotificationListener() {
     const { addNotification, fetchUnreadCount } = useNotificationStore();
     const wsRef = useRef(null);
     const reconnectRef = useRef(null);
+
+    // Request permissions and setup listeners for push/local notifications
+    usePushNotifications();
 
     useEffect(() => {
         if (!isAuthenticated || !token) return;
