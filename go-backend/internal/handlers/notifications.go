@@ -25,8 +25,8 @@ func NewNotificationHandler() *NotificationHandler {
 
 // GetNotifications returns the user's notifications (newest first, max 50)
 func (h *NotificationHandler) GetNotifications(c *gin.Context) {
-	userID, _ := c.Get("userId")
-	userObjID, err := primitive.ObjectIDFromHex(userID.(string))
+	userID := c.GetString("userID")
+	userObjID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
@@ -59,8 +59,8 @@ func (h *NotificationHandler) GetNotifications(c *gin.Context) {
 
 // GetUnreadCount returns the number of unread notifications
 func (h *NotificationHandler) GetUnreadCount(c *gin.Context) {
-	userID, _ := c.Get("userId")
-	userObjID, err := primitive.ObjectIDFromHex(userID.(string))
+	userID := c.GetString("userID")
+	userObjID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
@@ -81,8 +81,8 @@ func (h *NotificationHandler) GetUnreadCount(c *gin.Context) {
 
 // MarkAsRead marks a single notification as read
 func (h *NotificationHandler) MarkAsRead(c *gin.Context) {
-	userID, _ := c.Get("userId")
-	userObjID, err := primitive.ObjectIDFromHex(userID.(string))
+	userID := c.GetString("userID")
+	userObjID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
@@ -115,8 +115,8 @@ func (h *NotificationHandler) MarkAsRead(c *gin.Context) {
 
 // MarkAllRead marks all of the user's notifications as read
 func (h *NotificationHandler) MarkAllRead(c *gin.Context) {
-	userID, _ := c.Get("userId")
-	userObjID, err := primitive.ObjectIDFromHex(userID.(string))
+	userID := c.GetString("userID")
+	userObjID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
@@ -138,8 +138,8 @@ func (h *NotificationHandler) MarkAllRead(c *gin.Context) {
 
 // SendTestNotification sends a test notification to the current user (for testing)
 func (h *NotificationHandler) SendTestNotification(c *gin.Context) {
-	userID, _ := c.Get("userId")
-	userObjID, err := primitive.ObjectIDFromHex(userID.(string))
+	userID := c.GetString("userID")
+	userObjID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
