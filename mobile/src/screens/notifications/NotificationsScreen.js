@@ -255,6 +255,7 @@ const makeStyles = (colors) => StyleSheet.create({
     },
     filterContent: {
         paddingHorizontal: 16,
+        alignItems: 'center',
     },
     filterTab: {
         paddingHorizontal: 16,
