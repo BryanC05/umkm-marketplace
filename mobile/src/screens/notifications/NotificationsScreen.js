@@ -154,24 +154,26 @@ export default function NotificationsScreen({ navigation }) {
             </View>
 
             {/* Filter tabs */}
-            <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.filterContainer}
-                contentContainerStyle={styles.filterContent}
-            >
-                {FILTERS.map((f) => (
-                    <TouchableOpacity
-                        key={f.key}
-                        style={[styles.filterTab, activeFilter === f.key && styles.filterActive]}
-                        onPress={() => setActiveFilter(f.key)}
-                    >
-                        <Text style={[styles.filterText, activeFilter === f.key && styles.filterTextActive]}>
-                            {f.label}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
-            </ScrollView>
+            <View style={styles.filterWrapper}>
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.filterContainer}
+                    contentContainerStyle={styles.filterContent}
+                >
+                    {FILTERS.map((f) => (
+                        <TouchableOpacity
+                            key={f.key}
+                            style={[styles.filterTab, activeFilter === f.key && styles.filterActive]}
+                            onPress={() => setActiveFilter(f.key)}
+                        >
+                            <Text style={[styles.filterText, activeFilter === f.key && styles.filterTextActive]}>
+                                {f.label}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+            </View>
 
             {/* Test button - TEMPORARY */}
             <TouchableOpacity
@@ -246,11 +248,14 @@ const makeStyles = (colors) => StyleSheet.create({
         fontWeight: '600',
         color: colors.primary,
     },
-    filterContainer: {
+    filterWrapper: {
         backgroundColor: colors.card,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
         paddingVertical: 12,
+    },
+    filterContainer: {
+        flexGrow: 0,
     },
     filterContent: {
         paddingHorizontal: 16,
