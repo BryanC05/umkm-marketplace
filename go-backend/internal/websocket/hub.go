@@ -32,6 +32,7 @@ type Hub struct {
 	broadcast  chan *Message
 	register   chan *Client
 	unregister chan *Client
+	jwtSecret  string
 	mutex      sync.RWMutex
 }
 
@@ -51,13 +52,14 @@ type Message struct {
 	Sender interface{} `json:"sender,omitempty"`
 }
 
-func NewHub() *Hub {
+func NewHub(jwtSecret string) *Hub {
 	return &Hub{
 		clients:    make(map[*Client]bool),
 		rooms:      make(map[string]map[*Client]bool),
 		broadcast:  make(chan *Message, 256),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
+		jwtSecret:  jwtSecret,
 	}
 }
 
@@ -156,7 +158,7 @@ func (h *Hub) HandleWebSocket(c *gin.Context) {
 
 	claims := &jwt.MapClaims{}
 	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte("your-secret-key"), nil
+		return []byte(h.jwtSecret), nil
 	})
 
 	if err != nil || claims == nil {
@@ -469,8 +471,8 @@ func (c *Client) handleJoinOrderTracking(msg Message) {
 
 var hub *Hub
 
-func Init() {
-	hub = NewHub()
+func Init(jwtSecret string) {
+	hub = NewHub(jwtSecret)
 	go hub.Run()
 }
 

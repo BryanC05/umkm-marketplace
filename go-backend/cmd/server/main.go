@@ -43,7 +43,7 @@ func main() {
 		})
 	})
 
-	websocket.Init()
+	websocket.Init(cfg.JWTSecret)
 
 	r.GET("/ws", websocket.GetHub().HandleWebSocket)
 
