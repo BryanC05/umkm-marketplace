@@ -61,7 +61,7 @@ func (h *AIHandler) GenerateDescription(c *gin.Context) {
 	prompt += " Keep it concise, engaging, and format it nicely with emojis."
 
 	groqReq := GroqRequest{
-		Model: "llama3-8b-8192", // Fast and free tier model on Groq
+		Model: "llama-3.1-8b-instant", // Fast and free tier model on Groq
 		Messages: []GroqMessage{
 			{
 				Role:    "system",
