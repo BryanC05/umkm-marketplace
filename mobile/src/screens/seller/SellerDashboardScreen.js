@@ -7,10 +7,12 @@ import { useAuthStore } from '../../store/authStore';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { formatPrice } from '../../utils/helpers';
 import { useLanguageStore } from '../../store/languageStore';
+import { useThemeStore } from '../../store/themeStore';
 
 export default function SellerDashboardScreen({ navigation }) {
     const { user } = useAuthStore();
     const { t } = useLanguageStore();
+    const { colors, isDarkMode } = useThemeStore();
     const [stats, setStats] = useState({ products: 0, orders: 0, revenue: 0, pending: 0 });
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -128,7 +130,7 @@ export default function SellerDashboardScreen({ navigation }) {
     return (
         <ScrollView
             style={styles.container}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3b82f6" />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         >
             <View style={styles.header}>
                 <Text style={styles.title}>{t.sellerDashboard}</Text>
@@ -232,14 +234,14 @@ export default function SellerDashboardScreen({ navigation }) {
 
             <View style={styles.statsGrid}>
                 <View style={styles.statCard}>
-                    <View style={[styles.iconBg, { backgroundColor: '#eff6ff' }]}>
-                        <Ionicons name="cube" size={24} color="#3b82f6" />
+                    <View style={[styles.iconBg, { backgroundColor: colors.primaryLight }]}>
+                        <Ionicons name="cube" size={24} color={colors.primary} />
                     </View>
                     <Text style={styles.statValue}>{stats.products}</Text>
                     <Text style={styles.statLabel}>{t.tabProducts}</Text>
                 </View>
                 <View style={styles.statCard}>
-                    <View style={[styles.iconBg, { backgroundColor: '#f0fdf4' }]}>
+                    <View style={[styles.iconBg, { backgroundColor: colors.successLight }]}>
                         <Ionicons name="cash" size={24} color="#16a34a" />
                     </View>
                     <Text style={styles.statValue}>{formatPrice(stats.revenue)}</Text>
@@ -297,15 +299,15 @@ export default function SellerDashboardScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#f8fafc' },
-    header: { padding: 20, backgroundColor: '#fff', paddingBottom: 20 },
-    title: { fontSize: 24, fontWeight: '800', color: '#111827' },
-    subtitle: { fontSize: 16, color: '#6b7280', marginTop: 4 },
+    container: { flex: 1, backgroundColor: colors.background },
+    header: { padding: 20, backgroundColor: colors.card, paddingBottom: 20 },
+    title: { fontSize: 24, fontWeight: '800', color: colors.text },
+    subtitle: { fontSize: 16, color: colors.textSecondary, marginTop: 4 },
     statsGrid: {
         flexDirection: 'row', flexWrap: 'wrap', gap: 12, padding: 16,
     },
     statCard: {
-        width: '48%', backgroundColor: '#fff', borderRadius: 16, padding: 16,
+        width: '48%', backgroundColor: colors.card, borderRadius: 16, padding: 16,
         shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
     },
@@ -313,29 +315,29 @@ const styles = StyleSheet.create({
         width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center',
         marginBottom: 12
     },
-    statValue: { fontSize: 18, fontWeight: '700', color: '#111827', marginBottom: 2 },
-    statLabel: { fontSize: 12, color: '#6b7280' },
+    statValue: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 2 },
+    statLabel: { fontSize: 12, color: colors.textSecondary },
     actions: { padding: 16 },
-    sectionTitle: { fontSize: 18, fontWeight: '700', color: '#111827', marginBottom: 12 },
+    sectionTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 12 },
     actionBtn: {
-        flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff',
+        flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
         padding: 16, borderRadius: 16, marginBottom: 12, gap: 14,
         shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
     },
     actionIcon: { width: 48, height: 48, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
-    actionTitle: { fontSize: 16, fontWeight: '600', color: '#111827' },
-    actionDesc: { fontSize: 13, color: '#6b7280' },
+    actionTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
+    actionDesc: { fontSize: 13, color: colors.textSecondary },
     
     // Membership styles
     membershipCard: {
         margin: 16,
         marginTop: 0,
-        backgroundColor: '#fff',
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 16,
         borderWidth: 1,
-        borderColor: '#e5e7eb',
+        borderColor: colors.border,
     },
     membershipHeader: {
         flexDirection: 'row',
@@ -351,27 +353,27 @@ const styles = StyleSheet.create({
     membershipTitle: {
         fontSize: 18,
         fontWeight: '700',
-        color: '#111827',
+        color: colors.text,
     },
     activeBadge: {
-        backgroundColor: '#dcfce7',
+        backgroundColor: colors.successLight,
         paddingHorizontal: 10,
         paddingVertical: 4,
         borderRadius: 12,
     },
     activeBadgeText: {
-        color: '#16a34a',
+        color: colors.success,
         fontSize: 12,
         fontWeight: '600',
     },
     pendingBadge: {
-        backgroundColor: '#fef3c7',
+        backgroundColor: colors.warningLight,
         paddingHorizontal: 10,
         paddingVertical: 4,
         borderRadius: 12,
     },
     pendingBadgeText: {
-        color: '#d97706',
+        color: colors.warning,
         fontSize: 12,
         fontWeight: '600',
     },
@@ -393,7 +395,7 @@ const styles = StyleSheet.create({
         marginTop: 8,
     },
     upgradeBtn: {
-        backgroundColor: '#3b82f6',
+        backgroundColor: colors.primary,
         paddingVertical: 12,
         borderRadius: 10,
         alignItems: 'center',
@@ -427,28 +429,28 @@ const styles = StyleSheet.create({
     modalTitle: {
         fontSize: 20,
         fontWeight: '700',
-        color: '#111827',
+        color: colors.text,
     },
     paymentInfo: {
-        backgroundColor: '#fef3c7',
+        backgroundColor: colors.warningLight,
         padding: 16,
         borderRadius: 12,
         marginBottom: 16,
     },
     paymentLabel: {
         fontSize: 12,
-        color: '#92400e',
+        color: colors.warning,
     },
     paymentValue: {
         fontSize: 18,
         fontWeight: '700',
-        color: '#111827',
+        color: colors.text,
         marginVertical: 4,
     },
     paymentAmount: {
         fontSize: 16,
         fontWeight: '700',
-        color: '#111827',
+        color: colors.text,
         marginTop: 8,
     },
     imagePickerBtn: {
@@ -465,7 +467,7 @@ const styles = StyleSheet.create({
     },
     imagePickerText: {
         marginTop: 8,
-        color: '#6b7280',
+        color: colors.textSecondary,
         fontSize: 14,
     },
     previewImage: {
@@ -474,13 +476,13 @@ const styles = StyleSheet.create({
         resizeMode: 'cover',
     },
     submitBtn: {
-        backgroundColor: '#3b82f6',
+        backgroundColor: colors.primary,
         paddingVertical: 14,
         borderRadius: 10,
         alignItems: 'center',
     },
     submitBtnDisabled: {
-        backgroundColor: '#9ca3af',
+        backgroundColor: colors.textTertiary,
     },
     submitBtnText: {
         color: '#fff',

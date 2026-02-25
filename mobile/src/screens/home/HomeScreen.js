@@ -80,14 +80,14 @@ export default function HomeScreen({ navigation }) {
         heroPrimary: {
             flex: 1,
             flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-            backgroundColor: isDarkMode ? '#1f2937' : '#fff', paddingHorizontal: 18, paddingVertical: 12,
+            backgroundColor: colors.card, paddingHorizontal: 18, paddingVertical: 12,
             borderRadius: 12,
         },
         heroPrimaryText: { color: colors.primary, fontWeight: '700', fontSize: 14 },
         heroSecondary: {
             flex: 1,
             flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-            backgroundColor: isDarkMode ? '#374151' : '#eff6ff', paddingHorizontal: 18, paddingVertical: 12,
+            backgroundColor: colors.primaryLight, paddingHorizontal: 18, paddingVertical: 12,
             borderRadius: 12,
         },
         heroSecondaryText: { color: colors.primary, fontWeight: '700', fontSize: 14 },

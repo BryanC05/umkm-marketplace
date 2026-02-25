@@ -4,9 +4,11 @@ import { Ionicons } from '@expo/vector-icons';
 import api from '../../api/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useLanguageStore } from '../../store/languageStore';
+import { useThemeStore } from '../../store/themeStore';
 
 export default function AdminMembershipScreen() {
     const { t } = useLanguageStore();
+    const { colors } = useThemeStore();
     const [pendingMembers, setPendingMembers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -147,13 +149,13 @@ export default function AdminMembershipScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#f8fafc' },
-    header: { padding: 20, backgroundColor: '#fff' },
-    title: { fontSize: 24, fontWeight: '800', color: '#111827' },
-    subtitle: { fontSize: 14, color: '#6b7280', marginTop: 4 },
+    container: { flex: 1, backgroundColor: colors.background },
+    header: { padding: 20, backgroundColor: colors.card },
+    title: { fontSize: 24, fontWeight: '800', color: colors.text },
+    subtitle: { fontSize: 14, color: colors.textSecondary, marginTop: 4 },
     list: { padding: 16 },
     card: {
-        backgroundColor: '#fff',
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 16,
         marginBottom: 12,
@@ -168,15 +170,15 @@ const styles = StyleSheet.create({
         width: 48,
         height: 48,
         borderRadius: 24,
-        backgroundColor: '#eff6ff',
+        backgroundColor: colors.primaryLight,
         justifyContent: 'center',
         alignItems: 'center',
     },
     info: { flex: 1 },
-    name: { fontSize: 16, fontWeight: '600', color: '#111827' },
-    email: { fontSize: 14, color: '#6b7280' },
-    business: { fontSize: 14, color: '#6b7280', fontStyle: 'italic' },
-    date: { fontSize: 12, color: '#9ca3af', marginTop: 4 },
+    name: { fontSize: 16, fontWeight: '600', color: colors.text },
+    email: { fontSize: 14, color: colors.textSecondary },
+    business: { fontSize: 14, color: colors.textSecondary, fontStyle: 'italic' },
+    date: { fontSize: 12, color: colors.textTertiary, marginTop: 4 },
     actions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     viewProofBtn: {
         flexDirection: 'row',

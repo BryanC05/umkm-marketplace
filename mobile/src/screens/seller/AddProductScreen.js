@@ -56,6 +56,7 @@ export default function AddProductScreen({ navigation }) {
     const [hasVariants, setHasVariants] = useState(false);
     const [variants, setVariants] = useState([]);
     const [optionGroups, setOptionGroups] = useState([]);
+    const [isGeneratingAI, setIsGeneratingAI] = useState(false);
 
     const pickImage = async () => {
         if (images.length >= MAX_IMAGES) {
@@ -93,6 +94,27 @@ export default function AddProductScreen({ navigation }) {
 
     const removeTag = (tagToRemove) => {
         setTags(prev => prev.filter(t => t !== tagToRemove));
+    };
+
+    const handleGenerateDescription = async () => {
+        if (!form.name) {
+            Alert.alert('Info', 'Please enter a product name first');
+            return;
+        }
+
+        setIsGeneratingAI(true);
+        try {
+            const response = await api.post('/ai/generate-description', {
+                name: form.name,
+                keywords: tags.join(', '),
+            });
+            setForm(prev => ({ ...prev, description: response.data.description }));
+        } catch (error) {
+            console.error('AI Generation failed:', error);
+            Alert.alert('Error', error.response?.data?.error || 'Failed to generate AI description. Please try again.');
+        } finally {
+            setIsGeneratingAI(false);
+        }
     };
 
     const handleSubmit = async () => {
@@ -226,10 +248,26 @@ export default function AddProductScreen({ navigation }) {
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={[styles.label, themedStyles.label]}>{t.description || 'Description'}</Text>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Text style={[styles.label, themedStyles.label]}>{t.description || 'Description'}</Text>
+                                <TouchableOpacity
+                                    style={[styles.aiBtn, { backgroundColor: isGeneratingAI ? colors.textSecondary : colors.primary }]}
+                                    onPress={handleGenerateDescription}
+                                    disabled={isGeneratingAI}
+                                >
+                                    {isGeneratingAI ? (
+                                        <ActivityIndicator size="small" color="#fff" />
+                                    ) : (
+                                        <>
+                                            <Ionicons name="sparkles" size={14} color="#fff" />
+                                            <Text style={styles.aiBtnText}>AI Generate</Text>
+                                        </>
+                                    )}
+                                </TouchableOpacity>
+                            </View>
                             <TextInput
                                 style={[styles.input, styles.textArea, themedStyles.input]}
-                                placeholder={t.productDescription || 'Describe your product...'}
+                                placeholder={t.productDescription || 'Describe your product...\n\nTip: Use **bold** and *italic* for formatting'}
                                 placeholderTextColor={colors.textSecondary}
                                 multiline
                                 numberOfLines={4}
@@ -639,6 +677,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14, paddingVertical: 12, fontSize: 15,
     },
     textArea: { height: 100, textAlignVertical: 'top' },
+    aiBtn: {
+        flexDirection: 'row', alignItems: 'center', gap: 4,
+        paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8,
+    },
+    aiBtnText: { color: '#fff', fontSize: 11, fontWeight: '600' },
     row: { flexDirection: 'row', gap: 12 },
 
     // Chips (category + unit)

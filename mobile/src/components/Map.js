@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f0f4f8',
+        backgroundColor: colors.input,
     },
     fallbackIcon: {
         fontSize: 48,
@@ -176,12 +176,12 @@ const styles = StyleSheet.create({
     fallbackTitle: {
         fontSize: 18,
         fontWeight: '700',
-        color: '#374151',
+        color: colors.text,
         marginBottom: 8,
     },
     fallbackText: {
         fontSize: 13,
-        color: '#6b7280',
+        color: colors.textSecondary,
         textAlign: 'center',
         lineHeight: 20,
         paddingHorizontal: 40,

@@ -17,6 +17,53 @@ import { API_HOST } from '../../config';
 
 const { width } = Dimensions.get('window');
 
+function parseMarkdown(text) {
+    if (!text) return [];
+    
+    const paragraphs = text.split(/\n\n+/);
+    
+    return paragraphs.map((paragraph, pIndex) => {
+        const parts = [];
+        let remaining = paragraph;
+        let keyIndex = 0;
+        
+        while (remaining) {
+            const boldMatch = remaining.match(/^\*\*(.+?)\*\*/);
+            const italicMatch = remaining.match(/^\*(.+?)\*/);
+            const boldUnderMatch = remaining.match(/^__(.+?)__/);
+            const italicUnderMatch = remaining.match(/^_(.+?)_/);
+            
+            if (boldMatch) {
+                parts.push(<Text key={`${pIndex}-${keyIndex++}`} style={{ fontWeight: '700' }}>{boldMatch[1]}</Text>);
+                remaining = remaining.slice(boldMatch[0].length);
+            } else if (boldUnderMatch) {
+                parts.push(<Text key={`${pIndex}-${keyIndex++}`} style={{ fontWeight: '700' }}>{boldUnderMatch[1]}</Text>);
+                remaining = remaining.slice(boldUnderMatch[0].length);
+            } else if (italicMatch) {
+                parts.push(<Text key={`${pIndex}-${keyIndex++}`} style={{ fontStyle: 'italic' }}>{italicMatch[1]}</Text>);
+                remaining = remaining.slice(italicMatch[0].length);
+            } else if (italicUnderMatch) {
+                parts.push(<Text key={`${pIndex}-${keyIndex++}`} style={{ fontStyle: 'italic' }}>{italicUnderMatch[1]}</Text>);
+                remaining = remaining.slice(italicUnderMatch[0].length);
+            } else {
+                const nextSpecial = remaining.search(/(\*\*|\*|__|_)/);
+                if (nextSpecial === -1) {
+                    parts.push(<Text key={`${pIndex}-${keyIndex++}`}>{remaining}</Text>);
+                    break;
+                } else if (nextSpecial === 0) {
+                    parts.push(<Text key={`${pIndex}-${keyIndex++}`}>{remaining[0]}</Text>);
+                    remaining = remaining.slice(1);
+                } else {
+                    parts.push(<Text key={`${pIndex}-${keyIndex++}`}>{remaining.slice(0, nextSpecial)}</Text>);
+                    remaining = remaining.slice(nextSpecial);
+                }
+            }
+        }
+        
+        return <Text key={pIndex} style={styles.paragraph}>{parts}</Text>;
+    });
+}
+
 export default function ProductDetailScreen({ route }) {
     const navigation = useNavigation();
     const { colors } = useThemeStore();
@@ -265,6 +312,7 @@ export default function ProductDetailScreen({ route }) {
         section: { marginBottom: 20 },
         sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 12 },
         description: { fontSize: 14, lineHeight: 22, color: colors.textSecondary },
+        paragraph: { fontSize: 14, lineHeight: 22, color: colors.textSecondary, marginBottom: 12 },
         stockRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
         stockLabel: { fontSize: 14, fontWeight: '600', color: colors.text },
         stockValue: { fontSize: 14, fontWeight: '600' },
@@ -317,14 +365,14 @@ export default function ProductDetailScreen({ route }) {
                         </View>
                     )}
                     <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                        <Ionicons name="arrow-back" size={22} color="#111827" />
+                        <Ionicons name="arrow-back" size={22} color={colors.text} />
                     </TouchableOpacity>
                     <View style={{ position: 'absolute', top: 50, right: 16, flexDirection: 'row', gap: 8 }}>
                         <TouchableOpacity style={styles.backBtn} onPress={handleToggleSave}>
-                            <Ionicons name={isSaved ? 'heart' : 'heart-outline'} size={20} color={isSaved ? '#ef4444' : '#111827'} />
+                            <Ionicons name={isSaved ? 'heart' : 'heart-outline'} size={20} color={isSaved ? colors.danger : colors.text} />
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.backBtn} onPress={handleShare}>
-                            <Ionicons name="share-outline" size={20} color="#111827" />
+                            <Ionicons name="share-outline" size={20} color={colors.text} />
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -386,7 +434,17 @@ export default function ProductDetailScreen({ route }) {
                     {/* Description */}
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>{t.description || 'Description'}</Text>
-                        <Text style={styles.description}>{product.description || t.noDescriptionAvailable || 'No description available.'}</Text>
+                        <ScrollView 
+                            style={{ maxHeight: 200 }} 
+                            showsVerticalScrollIndicator={true}
+                            nestedScrollEnabled={true}
+                        >
+                            {product.description ? (
+                                parseMarkdown(product.description)
+                            ) : (
+                                <Text style={styles.description}>{t.noDescriptionAvailable || 'No description available.'}</Text>
+                            )}
+                        </ScrollView>
                     </View>
 
                     {/* Variant Selector */}
@@ -466,14 +524,14 @@ export default function ProductDetailScreen({ route }) {
                                     style={styles.stepperBtn}
                                     onPress={() => setQuantity(Math.max(1, quantity - 1))}
                                 >
-                                    <Ionicons name="remove" size={18} color="#374151" />
+                                    <Ionicons name="remove" size={18} color={colors.text} />
                                 </TouchableOpacity>
                                 <Text style={styles.quantityValue}>{quantity}</Text>
                                 <TouchableOpacity
                                     style={styles.stepperBtn}
                                     onPress={() => setQuantity(Math.min(getAvailableStock(), quantity + 1))}
                                 >
-                                    <Ionicons name="add" size={18} color="#374151" />
+                                    <Ionicons name="add" size={18} color={colors.text} />
                                 </TouchableOpacity>
                             </View>
                         </View>

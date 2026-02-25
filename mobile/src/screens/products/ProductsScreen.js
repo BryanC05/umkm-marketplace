@@ -89,40 +89,40 @@ export default function ProductsScreen({ navigation, route }) {
         <View>
             {/* Search */}
             <View style={styles.searchRow}>
-                <View style={styles.searchWrap}>
-                    <Ionicons name="search" size={18} color="#9ca3af" />
+                <View style={[styles.searchWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                    <Ionicons name="search" size={18} color={colors.textSecondary} />
                     <TextInput
-                        style={styles.searchInput}
+                        style={[styles.searchInput, { color: colors.text }]}
                         placeholder={t.searchProducts || 'Search products...'}
-                        placeholderTextColor="#9ca3af"
+                        placeholderTextColor={colors.placeholder}
                         value={search}
                         onChangeText={setSearch}
                         returnKeyType="search"
                     />
                     {search.length > 0 && (
                         <TouchableOpacity onPress={() => setSearch('')}>
-                            <Ionicons name="close-circle" size={18} color="#9ca3af" />
+                            <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
                         </TouchableOpacity>
                     )}
                 </View>
-                <TouchableOpacity style={styles.sortBtn} onPress={() => setShowSort(!showSort)}>
-                    <Ionicons name="funnel-outline" size={18} color="#3b82f6" />
+                <TouchableOpacity style={[styles.sortBtn, { backgroundColor: colors.primaryLight }]} onPress={() => setShowSort(!showSort)}>
+                    <Ionicons name="funnel-outline" size={18} color={colors.primary} />
                 </TouchableOpacity>
             </View>
 
             {/* Sort dropdown */}
             {showSort && (
-                <View style={styles.sortDropdown}>
+                <View style={[styles.sortDropdown, { backgroundColor: colors.card, borderColor: colors.border }]}>
                     {sortOptions.map((opt) => (
                         <TouchableOpacity
                             key={opt.id}
-                            style={[styles.sortOption, sortBy === opt.id && styles.sortOptionActive]}
+                            style={[styles.sortOption, sortBy === opt.id && { backgroundColor: colors.primaryLight }, { borderBottomColor: colors.border }]}
                             onPress={() => { setSortBy(opt.id); setShowSort(false); }}
                         >
-                            <Text style={[styles.sortOptionText, sortBy === opt.id && styles.sortOptionTextActive]}>
+                            <Text style={[styles.sortOptionText, { color: colors.text }, sortBy === opt.id && { color: colors.primary, fontWeight: '600' }]}>
                                 {opt.name}
                             </Text>
-                            {sortBy === opt.id && <Ionicons name="checkmark" size={16} color="#3b82f6" />}
+                            {sortBy === opt.id && <Ionicons name="checkmark" size={16} color={colors.primary} />}
                         </TouchableOpacity>
                     ))}
                 </View>

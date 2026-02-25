@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import api from '../../api/api';
 import { getImageUrl, formatPrice } from '../../utils/helpers';
+import { useThemeStore } from '../../store/themeStore';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { BusinessDetailSkeleton } from '../../components/LoadingSkeleton';
 
@@ -13,6 +14,7 @@ export default function BusinessDetailsScreen() {
     const navigation = useNavigation();
     const route = useRoute();
     const { sellerId } = route.params;
+    const { colors, isDarkMode } = useThemeStore();
 
     const [seller, setSeller] = useState(null);
     const [products, setProducts] = useState([]);
@@ -266,52 +268,52 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: '#f3f4f6',
+        backgroundColor: colors.input,
         justifyContent: 'center',
         alignItems: 'center',
     },
-    headerTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: '#111827', textAlign: 'center' },
+    headerTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: colors.text, textAlign: 'center' },
     errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    errorText: { fontSize: 16, color: '#6b7280' },
-    businessHeader: { alignItems: 'center', padding: 24, backgroundColor: '#fff', marginBottom: 8 },
+    errorText: { fontSize: 16, color: colors.textSecondary },
+    businessHeader: { alignItems: 'center', padding: 24, backgroundColor: colors.card, marginBottom: 8 },
     businessImage: { width: 100, height: 100, borderRadius: 50, marginBottom: 12 },
     businessImagePlaceholder: {
-        width: 100, height: 100, borderRadius: 50, backgroundColor: '#f3f4f6',
+        width: 100, height: 100, borderRadius: 50, backgroundColor: colors.input,
         justifyContent: 'center', alignItems: 'center', marginBottom: 12,
     },
-    businessName: { fontSize: 22, fontWeight: '800', color: '#111827', marginBottom: 8, textAlign: 'center' },
+    businessName: { fontSize: 22, fontWeight: '800', color: colors.text, marginBottom: 8, textAlign: 'center' },
     badges: { flexDirection: 'row', gap: 8 },
-    badge: { paddingHorizontal: 12, paddingVertical: 4, backgroundColor: '#f3f4f6', borderRadius: 12 },
-    badgeText: { fontSize: 12, color: '#6b7280', fontWeight: '500' },
-    verifiedBadge: { backgroundColor: '#10b981', flexDirection: 'row', alignItems: 'center', gap: 4 },
+    badge: { paddingHorizontal: 12, paddingVertical: 4, backgroundColor: colors.input, borderRadius: 12 },
+    badgeText: { fontSize: 12, color: colors.textSecondary, fontWeight: '500' },
+    verifiedBadge: { backgroundColor: colors.success, flexDirection: 'row', alignItems: 'center', gap: 4 },
     verifiedText: { fontSize: 12, color: '#fff', fontWeight: '600' },
     locationCard: {
-        flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 16,
+        flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, padding: 16,
         marginHorizontal: 16, marginBottom: 8, borderRadius: 12,
     },
     locationIcon: {
-        width: 40, height: 40, borderRadius: 20, backgroundColor: '#eff6ff',
+        width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primaryLight,
         justifyContent: 'center', alignItems: 'center', marginRight: 12,
     },
     locationInfo: { flex: 1 },
-    locationAddress: { fontSize: 14, color: '#374151' },
-    locationHint: { fontSize: 12, color: '#9ca3af', marginTop: 2 },
+    locationAddress: { fontSize: 14, color: colors.textSecondary },
+    locationHint: { fontSize: 12, color: colors.textTertiary, marginTop: 2 },
     tabs: { flexDirection: 'row', paddingHorizontal: 16, marginBottom: 16 },
-    tab: { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: '#e5e7eb' },
-    tabActive: { borderBottomColor: '#3b82f6' },
-    tabText: { fontSize: 14, fontWeight: '600', color: '#9ca3af' },
-    tabTextActive: { color: '#3b82f6' },
+    tab: { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: colors.border },
+    tabActive: { borderBottomColor: colors.primary },
+    tabText: { fontSize: 14, fontWeight: '600', color: colors.textTertiary },
+    tabTextActive: { color: colors.primary },
     productsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12 },
     productWrapper: { width: '50%', padding: 4 },
-    productCard: { backgroundColor: '#fff', borderRadius: 12, overflow: 'hidden' },
-    productImage: { width: '100%', height: 120, backgroundColor: '#f3f4f6' },
+    productCard: { backgroundColor: colors.card, borderRadius: 12, overflow: 'hidden' },
+    productImage: { width: '100%', height: 120, backgroundColor: colors.input },
     productInfo: { padding: 10 },
-    productName: { fontSize: 13, fontWeight: '600', color: '#111827', height: 36 },
-    productPrice: { fontSize: 14, fontWeight: '700', color: '#3b82f6', marginTop: 4 },
+    productName: { fontSize: 13, fontWeight: '600', color: colors.text, height: 36 },
+    productPrice: { fontSize: 14, fontWeight: '700', color: colors.primary, marginTop: 4 },
     emptyProducts: { alignItems: 'center', paddingVertical: 40 },
-    emptyText: { fontSize: 14, color: '#9ca3af', marginTop: 8 },
+    emptyText: { fontSize: 14, color: colors.textTertiary, marginTop: 8 },
     infoSection: { padding: 16 },
-    infoItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 16, borderRadius: 12, marginBottom: 8 },
-    infoLabel: { fontSize: 14, color: '#6b7280', marginLeft: 12, marginRight: 4 },
-    infoValue: { fontSize: 14, fontWeight: '600', color: '#111827', flex: 1 },
+    infoItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, padding: 16, borderRadius: 12, marginBottom: 8 },
+    infoLabel: { fontSize: 14, color: colors.textSecondary, marginLeft: 12, marginRight: 4 },
+    infoValue: { fontSize: 14, fontWeight: '600', color: colors.text, flex: 1 },
 });

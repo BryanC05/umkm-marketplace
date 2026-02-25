@@ -14,6 +14,32 @@ import { resolveImageUrl } from '@/utils/imageUrl';
 import { Skeleton } from '@/components/ui/skeleton';
 import ReviewSection from '../components/ReviewSection';
 
+function MarkdownContent({ content }) {
+  if (!content) return null;
+
+  const paragraphs = content.split(/\n\n+/);
+  
+  return (
+    <div className="space-y-3">
+      {paragraphs.map((paragraph, index) => {
+        const formattedText = paragraph
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+          .replace(/__(.*?)__/g, '<strong>$1</strong>')
+          .replace(/_(.*?)_/g, '<em>$1</em>');
+        
+        return (
+          <p 
+            key={index} 
+            className="text-muted-foreground leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: formattedText }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -281,7 +307,9 @@ function ProductDetail() {
             {/* Description */}
             <div>
               <h3 className="font-semibold mb-2">{t('productDetail.description')}</h3>
-              <p className="text-muted-foreground leading-relaxed">{product.description}</p>
+              <div className="max-h-64 overflow-y-auto pr-2">
+                <MarkdownContent content={product.description} />
+              </div>
             </div>
 
             {/* Location */}

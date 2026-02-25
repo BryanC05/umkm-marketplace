@@ -4,9 +4,11 @@ import { Ionicons } from '@expo/vector-icons';
 import api from '../../api/api';
 import { useAuthStore } from '../../store/authStore';
 import { getImageUrl, formatPrice } from '../../utils/helpers';
+import { useThemeStore } from '../../store/themeStore';
 
 export default function MyProductsScreen({ navigation }) {
     const { user } = useAuthStore();
+    const { colors } = useThemeStore();
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -53,24 +55,24 @@ export default function MyProductsScreen({ navigation }) {
         center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
         list: { padding: 16, paddingBottom: 80 },
         card: {
-            flexDirection: 'row', backgroundColor: '#fff', borderRadius: 12, padding: 12,
+            flexDirection: 'row', backgroundColor: colors.card, borderRadius: 12, padding: 12,
             marginBottom: 12, alignItems: 'center',
             shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
             shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
         },
-        image: { width: 60, height: 60, borderRadius: 8, backgroundColor: '#f3f4f6' },
+        image: { width: 60, height: 60, borderRadius: 8, backgroundColor: colors.input },
         info: { flex: 1, marginLeft: 12, marginRight: 8 },
-        name: { fontSize: 15, fontWeight: '600', color: '#111827', marginBottom: 4 },
-        price: { fontSize: 14, fontWeight: '700', color: '#3b82f6', marginBottom: 4 },
+        name: { fontSize: 15, fontWeight: '600', color: colors.text, marginBottom: 4 },
+        price: { fontSize: 14, fontWeight: '700', color: colors.primary, marginBottom: 4 },
         stockBadge: {
             alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2,
-            borderRadius: 6, backgroundColor: '#f3f4f6'
+            borderRadius: 6, backgroundColor: colors.input
         },
-        inStock: { backgroundColor: '#dcfce7' },
-        lowStock: { backgroundColor: '#fee2e2' },
+        inStock: { backgroundColor: colors.successLight },
+        lowStock: { backgroundColor: colors.dangerLight },
         stockText: { fontSize: 11, fontWeight: '600' },
-        inStockText: { color: '#16a34a' },
-        lowStockText: { color: '#b91c1c' },
+        inStockText: { color: colors.success },
+        lowStockText: { color: colors.danger },
         deleteBtn: { padding: 8 },
         fab: {
             position: 'absolute', bottom: 24, right: 24,

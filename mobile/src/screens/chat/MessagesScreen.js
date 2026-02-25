@@ -7,6 +7,7 @@ import api from '../../api/api';
 import { useAuthStore } from '../../store/authStore';
 import { formatRelativeTime } from '../../utils/helpers';
 import { useLanguageStore } from '../../store/languageStore';
+import { useThemeStore } from '../../store/themeStore';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { MessagesScreenSkeleton } from '../../components/LoadingSkeleton';
 
@@ -16,6 +17,7 @@ export default function MessagesScreen({ navigation }) {
     const [refreshing, setRefreshing] = useState(false);
     const user = useAuthStore((s) => s.user);
     const { t } = useLanguageStore();
+    const { colors } = useThemeStore();
 
     const fetchRooms = useCallback(async () => {
         try {
@@ -117,17 +119,17 @@ const styles = StyleSheet.create({
     avatarText: { color: '#fff', fontWeight: '700', fontSize: 18 },
     roomInfo: { flex: 1 },
     roomHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-    roomName: { fontSize: 15, fontWeight: '600', color: '#111827', flex: 1, marginRight: 8 },
-    roomTime: { fontSize: 11, color: '#9ca3af' },
-    lastMessage: { fontSize: 13, color: '#6b7280', lineHeight: 18 },
+    roomName: { fontSize: 15, fontWeight: '600', color: colors.text, flex: 1, marginRight: 8 },
+    roomTime: { fontSize: 11, color: colors.textTertiary },
+    lastMessage: { fontSize: 13, color: colors.textSecondary, lineHeight: 18 },
     productTag: {
         flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4,
-        backgroundColor: '#f3f4f6', paddingHorizontal: 8, paddingVertical: 3,
+        backgroundColor: colors.input, paddingHorizontal: 8, paddingVertical: 3,
         borderRadius: 8, alignSelf: 'flex-start',
     },
-    productTagText: { fontSize: 10, color: '#6b7280' },
+    productTagText: { fontSize: 10, color: colors.textSecondary },
     unreadBadge: {
-        width: 22, height: 22, borderRadius: 11, backgroundColor: '#3b82f6',
+        width: 22, height: 22, borderRadius: 11, backgroundColor: colors.primary,
         justifyContent: 'center', alignItems: 'center', marginLeft: 8,
     },
     unreadText: { color: '#fff', fontSize: 11, fontWeight: '700' },
