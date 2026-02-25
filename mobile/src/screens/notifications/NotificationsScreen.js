@@ -247,6 +247,7 @@ const makeStyles = (colors) => StyleSheet.create({
         color: colors.primary,
     },
     filterContainer: {
+        flexGrow: 0,
         backgroundColor: colors.card,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
