@@ -5,11 +5,10 @@ import {
     FlatList,
     TouchableOpacity,
     StyleSheet,
-    SafeAreaView,
-    RefreshControl,
     ScrollView,
     ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNotificationStore } from '../../store/notificationStore';
 import { useThemeStore } from '../../store/themeStore';

@@ -14,6 +14,7 @@ try {
             shouldShowAlert: true,
             shouldPlaySound: true,
             shouldSetBadge: true,
+            priority: Notifications.AndroidNotificationPriority.MAX,
         }),
     });
     notificationHandlerSet = true;
@@ -146,6 +147,8 @@ class NotificationService {
                     body,
                     data,
                     sound: true,
+                    priority: Notifications.AndroidNotificationPriority.MAX,
+                    channelId: 'default',
                 },
                 trigger: null, // null fires immediately instead of requiring Android Exact Alarm permissions
             });
