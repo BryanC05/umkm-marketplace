@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "MSME Marketplace",
+    "slug": "msme-marketplace-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -15,12 +15,8 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.msmemarketplace.mobile",
-      "config": {
-        "googleMapsApiKey": "AIzaSyCCaG_ffRnoh2Vjtu6BnkM_MLCgQivH0M4"
-      },
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "We need your location to show nearby sellers and products",
-        "NSLocationAlwaysUsageDescription": "We need your location to show nearby sellers and products"
+        "NSLocationWhenInUseUsageDescription": "We need your location to show nearby sellers and products."
       }
     },
     "android": {
@@ -30,16 +26,9 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.msmemarketplace.mobile",
-      "config": {
-        "googleMaps": {
-          "apiKey": "AIzaSyCCaG_ffRnoh2Vjtu6BnkM_MLCgQivH0M4"
-        }
-      },
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
-        "SCHEDULE_EXACT_ALARM",
-        "USE_EXACT_ALARM",
         "VIBRATE"
       ]
     },
@@ -55,7 +44,7 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow MSME Marketplace to use your location to show nearby sellers and products."
+          "locationWhenInUsePermission": "Allow MSME Marketplace to use your location to show nearby sellers and products."
         }
       ]
     ]

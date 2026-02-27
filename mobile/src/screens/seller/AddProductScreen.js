@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import {
     View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView,
     Image, Alert, ActivityIndicator, KeyboardAvoidingView, Platform
@@ -96,6 +96,24 @@ export default function AddProductScreen({ navigation }) {
         setTags(prev => prev.filter(t => t !== tagToRemove));
     };
 
+    const resetForm = useCallback(() => {
+        setForm({
+            name: '',
+            description: '',
+            price: '',
+            stock: '',
+            category: 'food',
+            unit: 'pieces',
+            location: null,
+        });
+        setImages([]);
+        setTags([]);
+        setTagInput('');
+        setHasVariants(false);
+        setVariants([]);
+        setOptionGroups([]);
+    }, []);
+
     const handleGenerateDescription = async () => {
         if (!form.name) {
             Alert.alert('Info', 'Please enter a product name first');
@@ -161,7 +179,17 @@ export default function AddProductScreen({ navigation }) {
             await api.post('/products', productData);
 
             Alert.alert('Success', 'Product added successfully', [
-                { text: 'OK', onPress: () => navigation.goBack() },
+                { 
+                    text: 'Add Another', 
+                    onPress: () => resetForm()
+                },
+                { 
+                    text: 'Done', 
+                    onPress: () => {
+                        resetForm();
+                        navigation.goBack();
+                    }
+                },
             ]);
         } catch (error) {
             console.error(error);
@@ -193,16 +221,8 @@ export default function AddProductScreen({ navigation }) {
             <ScrollView
                 style={[styles.container, themedStyles.container]}
                 showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 100 }}
             >
-                {/* Header */}
-                <View style={[styles.header, themedStyles.card]}>
-                    <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                        <Ionicons name="arrow-back" size={24} color={colors.text} />
-                    </TouchableOpacity>
-                    <Text style={[styles.headerTitle, { color: colors.text }]}>Add Product</Text>
-                    <View style={styles.headerPlaceholder} />
-                </View>
-
                 <View style={styles.form}>
                     {/* ===== IMAGES SECTION ===== */}
                     <View style={[styles.section, themedStyles.card]}>
@@ -641,7 +661,7 @@ const createStyles = (colors, isDarkMode) => StyleSheet.create({
     },
     headerTitle: { fontSize: 18, fontWeight: '700' },
     headerPlaceholder: { width: 40 },
-    form: { padding: 16, gap: 16 },
+    form: { padding: 16, paddingTop: 8, gap: 16 },
 
     // Sections
     section: {

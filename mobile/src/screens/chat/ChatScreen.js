@@ -6,6 +6,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { io } from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import api from '../../api/api';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
@@ -59,7 +60,7 @@ export default function ChatScreen({ route, navigation }) {
         if (!roomId) return;
 
         const connectSocket = async () => {
-            const token = await AsyncStorage.getItem('token');
+            const token = await SecureStore.getItemAsync('token');
             const socket = io(SOCKET_URL, {
                 auth: { token },
                 transports: ['websocket', 'polling'],

@@ -9,9 +9,10 @@ import { useLanguageStore } from '../../store/languageStore';
 import { useDriverStore } from '../../store/driverStore';
 import { useTheme } from '../../theme/ThemeContext';
 import LocationService from '../../services/LocationService';
+import LoadingSkeleton from '../../components/LoadingSkeleton';
 
 function OrderCard({ order, onClaim, claiming }) {
-    const { colors } = useTheme();
+    const { colors, isDarkMode } = useTheme();
     const { t } = useLanguageStore();
 
     const styles = useMemo(() => StyleSheet.create({
@@ -21,9 +22,9 @@ function OrderCard({ order, onClaim, claiming }) {
             marginHorizontal: 16,
             marginVertical: 8,
             padding: 16,
-            shadowColor: '#000',
+            shadowColor: isDarkMode ? '#000' : '#e2e8f0',
             shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.05,
+            shadowOpacity: isDarkMode ? 0.3 : 0.8,
             shadowRadius: 8,
             elevation: 2,
         },
@@ -103,12 +104,12 @@ function OrderCard({ order, onClaim, claiming }) {
             backgroundColor: colors.textSecondary,
         },
         claimBtnText: {
-            color: '#fff',
+            color: colors.card,
             fontSize: 15,
             fontWeight: '700',
             marginLeft: 6,
         },
-    }), [colors]);
+    }), [colors, isDarkMode]);
 
     const distanceToStore = order.distance?.toFixed(1) || '0.0';
     const deliveryDistance = order.totalDistance?.toFixed(1) || '0.0';
@@ -164,16 +165,16 @@ function OrderCard({ order, onClaim, claiming }) {
                 </View>
             </View>
 
-            <TouchableOpacity 
-                style={[styles.claimBtn, claiming && styles.claimBtnDisabled]} 
+            <TouchableOpacity
+                style={[styles.claimBtn, claiming && styles.claimBtnDisabled]}
                 onPress={onClaim}
                 disabled={claiming}
             >
                 {claiming ? (
-                    <ActivityIndicator color="#fff" size="small" />
+                    <ActivityIndicator color={colors.card} size="small" />
                 ) : (
                     <>
-                        <Ionicons name="checkmark-circle" size={18} color="#fff" />
+                        <Ionicons name="checkmark-circle" size={18} color={colors.card} />
                         <Text style={styles.claimBtnText}>{t.claimOrder || 'Claim Order'}</Text>
                     </>
                 )}
@@ -184,7 +185,7 @@ function OrderCard({ order, onClaim, claiming }) {
 
 function EmptyState({ message }) {
     const { colors } = useTheme();
-    
+
     const styles = useMemo(() => StyleSheet.create({
         emptyContainer: {
             flex: 1,
@@ -203,7 +204,7 @@ function EmptyState({ message }) {
             color: colors.textSecondary,
         },
     }), [colors]);
-    
+
     return (
         <View style={styles.emptyContainer}>
             <Text style={styles.emptyIcon}>📦</Text>
@@ -213,14 +214,14 @@ function EmptyState({ message }) {
 }
 
 export default function AvailableOrdersScreen() {
-    const { colors } = useTheme();
+    const { colors, isDarkMode } = useTheme();
     const { t } = useLanguageStore();
-    const { 
-        availableOrders, 
-        isLoadingOrders, 
+    const {
+        availableOrders,
+        isLoadingOrders,
         currentLocation,
-        fetchAvailableOrders, 
-        claimOrder 
+        fetchAvailableOrders,
+        claimOrder
     } = useDriverStore();
 
     const [claimingId, setClaimingId] = React.useState(null);
@@ -266,8 +267,8 @@ export default function AvailableOrdersScreen() {
     }, [claimOrder, t.error]);
 
     const renderOrder = useCallback(({ item }) => (
-        <OrderCard 
-            order={item} 
+        <OrderCard
+            order={item}
             onClaim={() => handleClaim(item._id)}
             claiming={claimingId === item._id}
         />
@@ -286,14 +287,10 @@ export default function AvailableOrdersScreen() {
             justifyContent: 'center',
             alignItems: 'center',
         },
-    }), [colors]);
+    }), [colors, isDarkMode]);
 
     if (isLoadingOrders && availableOrders.length === 0) {
-        return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={colors.primary} />
-            </View>
-        );
+        return <LoadingSkeleton variant="orders-list" />;
     }
 
     return (
@@ -304,15 +301,15 @@ export default function AvailableOrdersScreen() {
                 keyExtractor={(item) => item._id}
                 contentContainerStyle={styles.listContent}
                 refreshControl={
-                    <RefreshControl 
+                    <RefreshControl
                         refreshing={refreshing}
                         onRefresh={handleRefresh}
                         tintColor={colors.primary}
                     />
                 }
                 ListEmptyComponent={
-                    <EmptyState 
-                        message={t.noAvailableOrders || 'No orders available nearby. Check back soon!'} 
+                    <EmptyState
+                        message={t.noAvailableOrders || 'No orders available nearby. Check back soon!'}
                     />
                 }
                 showsVerticalScrollIndicator={false}

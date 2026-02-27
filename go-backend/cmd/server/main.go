@@ -269,6 +269,7 @@ func main() {
 		{
 			reports.POST("/", reportHandler.CreateReport)
 			reports.GET("/", reportHandler.GetReports)
+			reports.POST("/fraud", reportHandler.CreateFraudReport)
 		}
 
 		disputes := api.Group("/disputes")
@@ -298,5 +299,5 @@ func main() {
 	}
 
 	fmt.Printf("🚀 Server running on port %s\n", port)
-	r.Run(":" + port)
+	r.Run("0.0.0.0:" + port)
 }

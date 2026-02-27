@@ -418,61 +418,115 @@ function NotificationListener() {
         fetchUnreadCount();
 
         function connect() {
+            // Clean up existing connection
+            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                wsRef.current.close();
+            }
+            
             const wsProtocol = API_HOST.startsWith('https') ? 'wss' : 'ws';
-            const wsHost = API_HOST.replace(/^https?:\/\//, '');
-            const ws = new WebSocket(`${wsProtocol}://${wsHost}/ws?token=${token}`);
-            wsRef.current = ws;
-
-            ws.onopen = () => {
-                console.log('🟢 [WebSocket] Connected successfully');
-                // Start ping heartbeat to keep reverse-proxy tunnels hot
-                pingRef.current = setInterval(() => {
-                    if (ws.readyState === WebSocket.OPEN) {
-                        ws.send(JSON.stringify({ type: 'ping' }));
+            // Remove any trailing slashes and protocol
+            const wsHost = API_HOST.replace(/^https?:\/\//, '').replace(/\/+$/, '');
+            const wsUrl = `${wsProtocol}://${wsHost}/ws?token=${token}`;
+            
+            console.log('🔌 [WebSocket] Attempting to connect to:', `${wsProtocol}://${wsHost}/ws`);
+            
+            // First test if server is reachable
+            fetch(`${API_HOST}/api/health`, { method: 'GET' })
+                .then(res => {
+                    console.log('✅ [WebSocket] Server reachable:', res.status);
+                })
+                .catch(err => {
+                    console.log('❌ [WebSocket] Server not reachable:', err.message);
+                });
+            
+            try {
+                const ws = new WebSocket(wsUrl);
+                
+                // Add connection timeout
+                const connectionTimeout = setTimeout(() => {
+                    if (ws.readyState !== WebSocket.OPEN) {
+                        console.log('⏱️ [WebSocket] Connection timeout, closing...');
+                        ws.close();
                     }
-                }, 30000);
-            };
+                }, 10000);
+                
+                ws.onopen = () => {
+                    clearTimeout(connectionTimeout);
+                    console.log('🟢 [WebSocket] Connected successfully');
+                    pingRef.current = setInterval(() => {
+                        if (ws.readyState === WebSocket.OPEN) {
+                            ws.send(JSON.stringify({ type: 'ping' }));
+                        }
+                    }, 30000);
+                };
 
-            ws.onmessage = (event) => {
-                try {
-                    const message = JSON.parse(event.data);
-                    // Silently ignore pong responses from server if they exist to reduce log noise
-                    if (message.type === 'pong' || message.type === 'ping') return;
+                ws.onmessage = (event) => {
+                    try {
+                        const message = JSON.parse(event.data);
+                        if (message.type === 'pong' || message.type === 'ping') return;
 
-                    console.log('🔵 [WebSocket] Message received:', event.data);
+                        console.log('🔵 [WebSocket] Message received:', event.data);
 
-                    if (message.type === 'notification' && message.data) {
-                        addNotification(message.data);
-                        console.log('🔵 [WebSocket] Triggering local notification...');
-                        // Also trigger a local push notification
-                        notificationService.scheduleLocalNotification(
-                            message.data.title,
-                            message.data.message,
-                            message.data.data || {},
-                            1
-                        );
+                        if (message.type === 'notification' && message.data) {
+                            // Handle both camelCase and PascalCase from backend
+                            const title = message.data.title || message.data.Title || 'New Notification';
+                            const body = message.data.message || message.data.Message || message.data.body || 'You have a new notification';
+                            const notifType = message.data.type || message.data.Type || 'notification';
+
+                            console.log('🔔 [Notification] Received:', notifType, title, body);
+
+                            // Add to store first (this updates the UI)
+                            addNotification(message.data);
+
+                            // Then show popup notification
+                            notificationService.initialize()
+                                .then(() => {
+                                    console.log('🔔 [Notification] Service initialized, scheduling...');
+                                    return notificationService.scheduleLocalNotification(
+                                        title,
+                                        body,
+                                        message.data.data || message.data.Data || { type: notifType },
+                                        1
+                                    );
+                                })
+                                .then(() => {
+                                    console.log('🔔 [Notification] Scheduled successfully');
+                                })
+                                .catch((err) => {
+                                    console.error('🔔 [Notification] Failed:', err.message);
+                                });
+                        }
+                    } catch (e) {
+                        console.error('🔴 [WebSocket] Parse error:', e);
                     }
-                } catch (e) {
-                    console.error('🔴 [WebSocket] Parse error:', e);
-                }
-            };
+                };
 
-            ws.onclose = () => {
-                clearInterval(pingRef.current);
-                if (wsRef.current === ws) {
-                    console.log('🟡 [WebSocket] Connection closed. Reconnecting in 5s...');
-                    reconnectRef.current = setTimeout(() => {
-                        if (isAuthenticated && token) connect();
-                    }, 5000);
-                }
-            };
+                ws.onclose = (event) => {
+                    clearInterval(pingRef.current);
+                    clearTimeout(connectionTimeout);
+                    console.log('🔌 [WebSocket] Closed:', event.code, event.reason);
+                    
+                    if (wsRef.current === ws) {
+                        // Only reconnect if not a normal closure
+                        if (event.code !== 1000) {
+                            console.log('🔄 [WebSocket] Reconnecting in 5s...');
+                            reconnectRef.current = setTimeout(() => {
+                                if (isAuthenticated && token) connect();
+                            }, 5000);
+                        }
+                    }
+                };
 
-            ws.onerror = (err) => {
-                console.error('🔴 [WebSocket] Error:', err);
-                if (wsRef.current === ws) {
-                    ws.close();
-                }
-            };
+                ws.onerror = (error) => {
+                    clearTimeout(connectionTimeout);
+                    console.log('⚠️ [WebSocket] Error - readyState:', ws.readyState);
+                    console.log('⚠️ [WebSocket] Error details:', error);
+                };
+                
+                wsRef.current = ws;
+            } catch (e) {
+                console.error('🔴 [WebSocket] Failed to create:', e);
+            }
         }
 
         connect();
@@ -480,13 +534,14 @@ function NotificationListener() {
         // Handle App going to background / foreground
         const appStateSubscription = AppState.addEventListener('change', nextAppState => {
             if (nextAppState === 'active') {
-                // When coming back to the foreground, aggressively ensure we are connected
                 if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED || wsRef.current.readyState === WebSocket.CLOSING) {
                     console.log('🔄 [WebSocket] App returned to foreground, forcing reconnect...');
                     clearInterval(pingRef.current);
                     clearTimeout(reconnectRef.current);
                     connect();
                 }
+                // Also fetch fresh notifications when app becomes active
+                fetchUnreadCount();
             }
         });
 
@@ -500,6 +555,17 @@ function NotificationListener() {
             }
         };
     }, [isAuthenticated, token, addNotification, fetchUnreadCount]);
+
+    // Fallback: Poll for notifications every 30 seconds if WebSocket fails
+    useEffect(() => {
+        if (!isAuthenticated) return;
+        
+        const pollInterval = setInterval(() => {
+            fetchUnreadCount();
+        }, 30000);
+        
+        return () => clearInterval(pollInterval);
+    }, [isAuthenticated, fetchUnreadCount]);
 
     return null;
 }

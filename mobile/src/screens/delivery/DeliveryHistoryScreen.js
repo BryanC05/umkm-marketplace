@@ -7,16 +7,17 @@ import { useThemeStore } from '../../store/themeStore';
 import { useLanguageStore } from '../../store/languageStore';
 import { useDriverStore } from '../../store/driverStore';
 import { useTheme } from '../../theme/ThemeContext';
+import LoadingSkeleton from '../../components/LoadingSkeleton';
 
 const STATUS_CONFIG = {
-    delivered: { icon: 'checkmark-circle', color: '#10b981', label: 'Delivered' },
-    cancelled: { icon: 'close-circle', color: '#ef4444', label: 'Cancelled' },
+    delivered: { icon: 'checkmark-circle', color: '#10b981', label: 'Delivered' }, // success color
+    cancelled: { icon: 'close-circle', color: '#ef4444', label: 'Cancelled' }, // danger color
 };
 
 function HistoryCard({ item }) {
     const { colors, isDarkMode } = useThemeStore();
     const { t } = useLanguageStore();
-    
+
     const statusConfig = STATUS_CONFIG[item.status] || STATUS_CONFIG.delivered;
 
     const styles = useMemo(() => StyleSheet.create({
@@ -211,11 +212,7 @@ export default function DeliveryHistoryScreen() {
     }), [colors]);
 
     if (loading) {
-        return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={colors.primary} />
-            </View>
-        );
+        return <LoadingSkeleton variant="orders-list" />;
     }
 
     const renderItem = ({ item }) => <HistoryCard item={item} />;
@@ -228,7 +225,7 @@ export default function DeliveryHistoryScreen() {
                 keyExtractor={(item) => item._id}
                 contentContainerStyle={styles.listContent}
                 refreshControl={
-                    <RefreshControl 
+                    <RefreshControl
                         refreshing={refreshing}
                         onRefresh={handleRefresh}
                         tintColor={colors.primary}

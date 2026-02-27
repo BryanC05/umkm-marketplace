@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import api from '../api/api';
 
 // Base64 decode function for React Native
@@ -27,7 +28,7 @@ export const useAuthStore = create((set, get) => ({
     isLoading: true,
 
     setAuth: async (user, token) => {
-        await AsyncStorage.setItem('token', token);
+        await SecureStore.setItemAsync('token', token);
         set({ user, token, isAuthenticated: true });
     },
 
@@ -36,14 +37,14 @@ export const useAuthStore = create((set, get) => ({
     },
 
     logout: async () => {
-        await AsyncStorage.removeItem('token');
+        await SecureStore.deleteItemAsync('token');
         await AsyncStorage.removeItem('cart-storage');
         set({ user: null, token: null, isAuthenticated: false });
     },
 
     initializeAuth: async () => {
         try {
-            const token = await AsyncStorage.getItem('token');
+            const token = await SecureStore.getItemAsync('token');
             if (token) {
                 // Decode JWT to check expiry
                 const base64Url = token.split('.')[1];
@@ -58,18 +59,18 @@ export const useAuthStore = create((set, get) => ({
                         set({ user: response.data, token, isAuthenticated: true, isLoading: false });
                     } catch {
                         // Token rejected by server (e.g. revoked/invalid) -> force fresh login
-                        await AsyncStorage.removeItem('token');
+                        await SecureStore.deleteItemAsync('token');
                         set({ user: null, token: null, isAuthenticated: false, isLoading: false });
                     }
                 } else {
-                    await AsyncStorage.removeItem('token');
+                    await SecureStore.deleteItemAsync('token');
                     set({ user: null, token: null, isAuthenticated: false, isLoading: false });
                 }
             } else {
                 set({ user: null, token: null, isAuthenticated: false, isLoading: false });
             }
         } catch {
-            await AsyncStorage.removeItem('token');
+            await SecureStore.deleteItemAsync('token');
             set({ user: null, token: null, isAuthenticated: false, isLoading: false });
         }
     },

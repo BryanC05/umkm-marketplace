@@ -11,6 +11,7 @@ import { useDriverStore } from './src/store/driverStore';
 import { ThemeProvider } from './src/theme/ThemeContext';
 import AuthNavigator from './src/navigation/AuthNavigator';
 import AppNavigator from './src/navigation/AppNavigator';
+import notificationService from './src/services/NotificationService';
 
 export default function App() {
   const { isAuthenticated, isLoading, initializeAuth } = useAuthStore();
@@ -38,6 +39,8 @@ export default function App() {
     initTheme();
     initLanguage();
     initDriverMode();
+    // Initialize notification service in background
+    notificationService.initialize().catch(() => {});
   }, []);
 
   // Custom navigation theme to prevent white flashes

@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { AppState } from 'react-native';
 import io from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { API_URL } from '../config';
 
 class WebSocketService {
@@ -16,7 +17,7 @@ class WebSocketService {
             return this.socket;
         }
 
-        const token = await AsyncStorage.getItem('token');
+        const token = await SecureStore.getItemAsync('token');
         if (!token) {
             return null;
         }

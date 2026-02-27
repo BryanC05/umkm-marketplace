@@ -20,6 +20,8 @@ npx eas-cli@latest login
 ## 2. Pre-Release Checks
 
 - [ ] Backend is deployed and reachable from mobile (`mobile/src/config/index.js`).
+- [ ] `EXPO_PUBLIC_API_HOST` is set in EAS `production` profile env.
+- [ ] `MAPS_API_KEY` is configured as EAS secret/env for Android builds.
 - [ ] Location permission flows work.
 - [ ] Login/register works on physical Android device.
 - [ ] Product list, product detail, cart, checkout, nearby sellers, chat all work.
@@ -37,6 +39,7 @@ Build AAB for Play Store:
 
 ```bash
 cd mobile
+npm run check:release
 npx eas-cli@latest build --platform android --profile production
 ```
 

@@ -65,7 +65,7 @@ function DriverModePrompt() {
             alignItems: 'center',
         },
         enableBtnText: {
-            color: '#fff',
+            color: colors.card,
             fontSize: 16,
             fontWeight: '700',
         },
@@ -82,7 +82,7 @@ function DriverModePrompt() {
             </Text>
             <TouchableOpacity style={styles.enableBtn} onPress={handleEnable} disabled={loading}>
                 {loading ? (
-                    <ActivityIndicator color="#fff" />
+                    <ActivityIndicator color={colors.card} />
                 ) : (
                     <Text style={styles.enableBtnText}>{t.enableDriverMode || 'Enable Driver Mode'}</Text>
                 )}
@@ -100,7 +100,7 @@ export default function DeliveryHubScreen() {
     useEffect(() => {
         if (isDriverMode) {
             fetchActiveDelivery();
-            
+
             const initLocation = async () => {
                 const location = await LocationService.getCurrentLocation();
                 if (location) {
@@ -142,7 +142,7 @@ export default function DeliveryHubScreen() {
         content: {
             flex: 1,
         },
-    }), [colors]);
+    }), [colors, isDarkMode]);
 
     if (!isDriverMode) {
         return <DriverModePrompt />;

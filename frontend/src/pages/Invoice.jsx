@@ -5,6 +5,21 @@ import api from '../utils/api';
 import Layout from '@/components/layout/Layout';
 import './Invoice.css';
 
+// Helper function to format address object to string
+const formatAddress = (address) => {
+    if (!address) return '';
+    if (typeof address === 'string') return address;
+    if (typeof address === 'object') {
+        const parts = [];
+        if (address.address) parts.push(address.address);
+        if (address.city) parts.push(address.city);
+        if (address.state) parts.push(address.state);
+        if (address.pincode) parts.push(address.pincode);
+        return parts.filter(Boolean).join(', ');
+    }
+    return String(address);
+};
+
 export default function Invoice() {
     const { orderId } = useParams();
     const navigate = useNavigate();
@@ -108,7 +123,7 @@ export default function Invoice() {
                     {order.deliveryAddress && (
                         <div className="invoice-address">
                             <span className="meta-label">Delivery Address</span>
-                            <p>{order.deliveryAddress}</p>
+                            <p>{formatAddress(order.deliveryAddress)}</p>
                         </div>
                     )}
 

@@ -17,9 +17,10 @@ The mobile app now fully supports in-app notifications and background local push
 
 ## Key Technical Decisions & Fixes
 
-### 1. Android 14+ Exact Alarm Permissions
-To schedule a notification (even one that fires immediately via a 1-second delay), Android 14+ strictly requires explicit permissions in the app manifest.
-- Added `SCHEDULE_EXACT_ALARM`, `USE_EXACT_ALARM`, and `VIBRATE` to `app.json`.
+### 1. Android Permission Scope
+The app uses standard local notification scheduling and vibration without exact alarm APIs.
+- Keep permissions minimal (`ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `VIBRATE`) to avoid Play policy friction.
+- Do **not** request `SCHEDULE_EXACT_ALARM`/`USE_EXACT_ALARM` unless the app has a strict, policy-allowed use case.
 
 ### 2. Expo SDK 53 Trigger Object Format
 Expo SDK 53 tightened the validation for local notification triggers.

@@ -14,15 +14,17 @@
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    border: 1px solid var(--color-border, #e5e7eb);
-    background: var(--color-card, #fff);
-    color: var(--color-text, #111);
+    border: none;
+}
+
+.invoice-back {
+    background: var(--color-text-secondary, #6b7280);
+    color: #fff;
 }
 
 .invoice-print {
     background: var(--color-primary, #3b82f6);
     color: #fff;
-    border: none;
 }
 
 .invoice-card {

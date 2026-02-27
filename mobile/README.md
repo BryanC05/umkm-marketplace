@@ -167,18 +167,17 @@ cd mobile
 npm install
 ```
 
-3. Configure API endpoint:
-   - Edit `src/config/index.js`:
-```javascript
-// For local development (use your computer's IP)
-export const API_HOST = 'http://YOUR_LOCAL_IP:5000';
-
-// For production (Railway)
-export const API_HOST = 'https://your-backend-url.up.railway.app';
-
-export const API_URL = `${API_HOST}/api`;
-export const SOCKET_URL = API_HOST;
+3. Configure environment variables:
+   - Copy `.env.example` to `.env` and adjust values:
+```bash
+cp .env.example .env
 ```
+```env
+EXPO_PUBLIC_API_HOST=https://your-backend-url.up.railway.app
+MAPS_API_KEY=your_android_google_maps_api_key
+```
+`EXPO_PUBLIC_API_HOST` is embedded in the app bundle for API/WebSocket endpoints.
+`MAPS_API_KEY` is consumed by Android native config during release builds.
 
 ### Running the App
 
@@ -224,12 +223,17 @@ npx expo login
 npx eas build:configure
 ```
 
-3. Build for Android (Preview profile):
+3. Validate release configuration:
+```bash
+npm run check:release
+```
+
+4. Build for Android (Preview profile):
 ```bash
 npx eas build -p android --profile preview
 ```
 
-4. Build for iOS (Preview profile):
+5. Build for iOS (Preview profile):
 ```bash
 npx eas build -p ios --profile preview
 ```
@@ -237,6 +241,7 @@ npx eas build -p ios --profile preview
 Notes:
 - `eas-cli` is already listed in `devDependencies`, so global install is not required.
 - If you prefer script usage, run `npm run build:android`.
+- For production Android AAB with pre-check, run `npm run build:android:production`.
 
 ### Option 2: Local Build
 
@@ -252,13 +257,12 @@ The APK will be at `android/app/build/outputs/apk/release/`
 
 ### API Configuration
 
-Edit `src/config/index.js`:
+Set via environment (`EXPO_PUBLIC_API_HOST`), not by editing source files:
 
 | Variable | Description |
 |----------|-------------|
-| API_HOST | Backend URL (default: Railway production) |
-| API_URL | API endpoint |
-| SOCKET_URL | WebSocket endpoint |
+| EXPO_PUBLIC_API_HOST | Backend URL (default fallback: Railway production) |
+| MAPS_API_KEY | Android Google Maps API key (use EAS secret for cloud builds) |
 
 ### App Configuration
 
@@ -318,7 +322,7 @@ Edit `app.json` for app name, icon, splash screen, etc.
 - For physical device, use local IP not localhost
 
 ### Map Not Loading
-- Check Google Maps API key in app.json
+- Check `MAPS_API_KEY` is set for build environment
 - Ensure location permissions granted
 
 ### Build Errors
@@ -326,7 +330,7 @@ Edit `app.json` for app name, icon, splash screen, etc.
 - Delete node_modules and reinstall
 
 ### "Network request failed"
-- Update `API_HOST` in `src/config/index.js` to your computer's local IP
+- Set `EXPO_PUBLIC_API_HOST` to your reachable backend URL
 - Make sure phone and computer are on same Wi-Fi
 
 ## Dependencies

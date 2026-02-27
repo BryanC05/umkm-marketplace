@@ -16,6 +16,7 @@ import { useNotificationStore } from '../../store/notificationStore';
 import { useThemeStore } from '../../store/themeStore';
 import api from '../../api/api';
 import LoadingSkeleton from '../../components/LoadingSkeleton';
+import notificationService from '../../services/NotificationService';
 
 const FILTERS = [
     { key: 'all', label: 'All' },
@@ -73,6 +74,8 @@ export default function NotificationsScreen({ navigation }) {
         markAllRead,
         deleteNotification,
         deleteAllNotifications,
+        addNotification,
+        fetchUnreadCount,
     } = useNotificationStore();
 
     useEffect(() => {
@@ -98,6 +101,37 @@ export default function NotificationsScreen({ navigation }) {
 
     const sendTestNotification = async () => {
         setSendingTest(true);
+        
+        // First, try local notification
+        try {
+            await notificationService.initialize();
+            await notificationService.scheduleLocalNotification(
+                'Test Notification',
+                'This is a test notification from the app!',
+                { type: 'test' },
+                1
+            );
+            
+            // Add to local notification store so it appears in the list
+            const newNotification = {
+                _id: 'test-' + Date.now(),
+                title: 'Test Notification',
+                message: 'This is a test notification from the app!',
+                type: 'test',
+                isRead: false,
+                createdAt: new Date().toISOString(),
+            };
+            addNotification(newNotification);
+            fetchUnreadCount();
+            
+            Alert.alert('Success', 'Local test notification sent!');
+            setSendingTest(false);
+            return;
+        } catch (err) {
+            console.log('Local notification failed, trying API:', err.message);
+        }
+
+        // Fallback to API notification
         try {
             await api.post(
                 '/notifications/test',

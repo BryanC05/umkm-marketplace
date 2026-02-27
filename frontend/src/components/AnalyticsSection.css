@@ -13,6 +13,7 @@
     font-size: 18px;
     font-weight: 700;
     margin-bottom: 20px;
+    color: var(--color-foreground, #1f2937);
 }
 
 .analytics-stats {
@@ -35,6 +36,7 @@
     display: block;
     font-size: 16px;
     font-weight: 700;
+    color: var(--color-foreground, #1f2937);
 }
 
 .analytics-stat .stat-label {
@@ -63,6 +65,7 @@
     font-size: 14px;
     font-weight: 600;
     margin-bottom: 12px;
+    color: var(--color-foreground, #1f2937);
 }
 
 .chart-bars {
@@ -123,6 +126,7 @@
 .top-name {
     flex: 1;
     font-weight: 500;
+    color: var(--color-foreground, #1f2937);
 }
 
 .top-sold {
@@ -132,6 +136,7 @@
 
 .top-revenue {
     font-weight: 600;
+    color: var(--color-foreground, #1f2937);
 }
 
 .analytics-loading {

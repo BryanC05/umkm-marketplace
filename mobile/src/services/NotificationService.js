@@ -8,31 +8,67 @@ import api from '../api/api';
 
 let notificationHandlerSet = false;
 
-try {
-    Notifications.setNotificationHandler({
-        handleNotification: async () => ({
-            shouldShowAlert: true,
-            shouldPlaySound: true,
-            shouldSetBadge: true,
-            priority: Notifications.AndroidNotificationPriority.MAX,
-        }),
-    });
-    notificationHandlerSet = true;
-} catch (error) {
-    console.log('Notification handler setup failed:', error.message);
-}
-
 class NotificationService {
     constructor() {
         this.expoPushToken = null;
         this.notificationListener = null;
         this.responseListener = null;
+        this.initialized = false;
+    }
+
+    // Initialize notification handler - call this before using notifications
+    async initialize() {
+        if (this.initialized) return true;
+
+        try {
+            // Set up the notification handler first
+            await Notifications.setNotificationHandler({
+                handleNotification: async () => ({
+                    shouldShowAlert: true,
+                    shouldPlaySound: true,
+                    shouldSetBadge: true,
+                    priority: Notifications.AndroidNotificationPriority.MAX,
+                }),
+            });
+
+            // Request permissions for local notifications (required on iOS)
+            if (Device.isDevice) {
+                const { status: existingStatus } = await Notifications.getPermissionsAsync();
+                console.log('📱 Current notification permission status:', existingStatus);
+
+                if (existingStatus !== 'granted') {
+                    const { status } = await Notifications.requestPermissionsAsync({
+                        ios: {
+                            allowAlert: true,
+                            allowBadge: true,
+                            allowSound: true,
+                        },
+                    });
+                    console.log('📱 Notification permission requested, new status:', status);
+
+                    if (status !== 'granted') {
+                        console.log('⚠️ Notification permissions not granted');
+                        return false;
+                    }
+                }
+            }
+
+            notificationHandlerSet = true;
+            this.initialized = true;
+            console.log('✅ Notification handler initialized successfully');
+            return true;
+        } catch (error) {
+            console.error('❌ Notification handler initialization failed:', error.message);
+            return false;
+        }
     }
 
     async registerForPushNotifications() {
         let token;
 
-        if (!notificationHandlerSet) {
+        // Initialize notification handler first
+        const initialized = await this.initialize();
+        if (!initialized) {
             console.log('Notifications not supported in this environment');
             return null;
         }
@@ -137,24 +173,42 @@ class NotificationService {
 
     async scheduleLocalNotification(title, body, data = {}, seconds = 1) {
         console.log('🔔 [LocalNotification] Triggering locally:', title, body);
+
+        // Try to initialize if not already done
         if (!notificationHandlerSet) {
-            console.log('Notifications not available');
-            return;
+            const initialized = await this.initialize();
+            if (!initialized) {
+                console.log('❌ Notifications not available - handler could not be initialized');
+                return;
+            }
         }
+
+        // Ensure Android notification channel exists
+        if (Platform.OS === 'android') {
+            try {
+                await Notifications.setNotificationChannelAsync('high_importance_channel', {
+                    name: 'High Importance Notifications',
+                    importance: Notifications.AndroidImportance.MAX,
+                    vibrationPattern: [0, 250, 250, 250],
+                    lightColor: '#3b82f6',
+                });
+            } catch (channelError) {
+                console.log('Channel setup (may already exist):', channelError.message);
+            }
+        }
+
         try {
+            // Use null trigger for immediate delivery
             await Notifications.scheduleNotificationAsync({
                 content: {
                     title,
                     body,
                     data,
                     sound: true,
-                    priority: 'max',
-                    channelId: 'high_importance_channel',
+                    priority: Platform.OS === 'android' ? Notifications.AndroidNotificationPriority.MAX : undefined,
+                    ...(Platform.OS === 'android' && { channelId: 'high_importance_channel' }),
                 },
-                trigger: {
-                    seconds: seconds || 1,
-                    channelId: 'high_importance_channel'
-                },
+                trigger: null, // Immediate delivery
             });
             console.log('🔔 [LocalNotification] Scheduled successfully');
         } catch (error) {
@@ -218,11 +272,19 @@ export default notificationService;
 export function usePushNotifications() {
     const [token, setToken] = React.useState(null);
     const [notification, setNotification] = React.useState(null);
+    const [initialized, setInitialized] = React.useState(false);
 
     React.useEffect(() => {
-        if (!notificationHandlerSet) return;
+        const init = async () => {
+            // Try to initialize notification handler
+            const isInitialized = await notificationService.initialize();
+            setInitialized(isInitialized);
 
-        const register = async () => {
+            if (!isInitialized) {
+                console.log('Notifications not available on this device');
+                return;
+            }
+
             try {
                 const pushToken = await notificationService.registerForPushNotifications();
                 setToken(pushToken);
@@ -231,7 +293,10 @@ export function usePushNotifications() {
             }
         };
 
-        register();
+        init();
+
+        // Only setup listeners if initialization succeeded
+        if (!initialized) return;
 
         const cleanup = notificationService.setupNotificationListeners(
             (notif) => setNotification(notif),
@@ -244,11 +309,12 @@ export function usePushNotifications() {
         );
 
         return cleanup;
-    }, []);
+    }, [initialized]);
 
     return {
         token,
         notification,
+        initialized,
         scheduleNotification: notificationService.scheduleLocalNotification,
         clearNotifications: notificationService.clearAllNotifications,
     };

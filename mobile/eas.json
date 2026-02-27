@@ -6,16 +6,25 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_HOST": "https://umkm-marketplace-production.up.railway.app"
+      }
     },
     "preview": {
       "android": {
         "buildType": "apk"
       },
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_HOST": "https://umkm-marketplace-production.up.railway.app"
+      }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_HOST": "https://umkm-marketplace-production.up.railway.app"
+      }
     }
   },
   "submit": {

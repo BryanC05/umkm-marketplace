@@ -37,6 +37,7 @@ const sourceUnsplashToKeywordImage = (url) => {
 
 export const getImageUrl = (url) => {
     if (!url) return '';
+    if (url.startsWith('data:')) return url;
     const blockedExternalHosts = [
         'source.unsplash.com',
         'images.unsplash.com',

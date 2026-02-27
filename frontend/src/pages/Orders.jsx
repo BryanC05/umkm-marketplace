@@ -24,7 +24,27 @@ const statusConfig = {
   ready: { icon: Package, color: 'var(--status-ready)', bg: 'var(--status-ready-bg)', label: 'Ready' },
   delivered: { icon: Truck, color: 'var(--status-delivered)', bg: 'var(--status-delivered-bg)', label: 'Delivered' },
   cancelled: { icon: XCircle, color: 'var(--status-cancelled)', bg: 'var(--status-cancelled-bg)', label: 'Cancelled' },
+  completed: { icon: CheckCircle, color: '#10b981', bg: '#d1fae5', label: 'Order is Completed' },
 };
+
+// Helper to get status config with dynamic labels for pickup orders
+const getStatusConfig = (order, user) => {
+  const isPickup = order.deliveryType === 'pickup';
+  const isBuyer = order.buyer?._id === user?.id;
+  const config = statusConfig[order.status] || statusConfig.pending;
+  
+  if (order.status === 'delivered') {
+    const label = isPickup ? 'Picked Up' : 'Delivered';
+    // Show "Order is Completed" to buyer when pickup order is delivered
+    const displayLabel = (isBuyer && isPickup) ? 'Order is Completed' : label;
+    return { ...config, label: displayLabel, icon: isPickup ? CheckCircle : Truck };
+  }
+  
+  return config;
+};
+
+// Creator email for fraud reports
+const CREATOR_EMAIL = 'admin@umkm-marketplace.com';
 
 const paymentIcons = {
   cash: { icon: Banknote, label: 'Cash on Delivery' },
@@ -191,7 +211,7 @@ function Orders() {
           ) : (
             filteredOrders.map((order, orderIndex) => {
               const orderId = resolveOrderId(order, `order-${orderIndex}`);
-              const status = statusConfig[order.status] || statusConfig.pending;
+              const status = getStatusConfig(order, user);
               const StatusIcon = status.icon;
               const nextStatus = getNextStatus(order.status);
               const isExpanded = !!expandedOrders[orderId];
@@ -205,7 +225,7 @@ function Orders() {
               const isPreorder = order.isPreorder && order.deliveryDate;
 
               return (
-                <>
+                <div key={`order-wrapper-${orderId}`} style={{ display: 'contents' }}>
                   {isPreorder && (
                     <div
                       key={`preorder-${orderId}`}
@@ -426,25 +446,76 @@ function Orders() {
                                   View Invoice
                                 </Button>
                               </Link>
-                              {order.status === 'delivered' && order.buyer?._id === user?.id && (
+                              {/* Fraud/Scam Reporting - Available to both buyer and seller */}
+                              {(order.buyer?._id === user?.id || order.seller?._id === user?.id) && (
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="gap-2 text-red-500 border-red-200 hover:bg-red-50"
+                                  className="gap-2 text-red-600 border-red-300 hover:bg-red-50"
                                   onClick={async (e) => {
                                     e.stopPropagation();
-                                    const reason = prompt('Describe the issue with your order:');
-                                    if (!reason) return;
-                                    try {
-                                      await api.post('/disputes/', { orderId, reason, details: reason });
-                                      alert('Dispute submitted! We will review it shortly.');
-                                    } catch (err) {
-                                      alert(err.response?.data?.error || 'Failed to submit dispute');
+                                    const reportType = window.confirm(
+                                      'Are you reporting fraud/scam?\n\nClick OK to report fraud/scam.\nClick Cancel for general issues.'
+                                    );
+                                    
+                                    if (reportType) {
+                                      // Fraud/Scam report - sends to creator email
+                                      const fraudDetails = prompt('Please describe the fraudulent activity in detail:');
+                                      if (!fraudDetails) return;
+                                      
+                                      const userRole = order.buyer?._id === user?.id ? 'Buyer' : 'Seller';
+                                      const reportData = {
+                                        orderId,
+                                        reportType: 'FRAUD_REPORT',
+                                        reporterId: user?.id,
+                                        reporterRole: userRole,
+                                        reporterName: user?.name || user?.businessName,
+                                        reporterEmail: user?.email,
+                                        fraudDetails,
+                                        orderDetails: {
+                                          orderDate: order.createdAt,
+                                          amount: order.totalAmount,
+                                          products: order.products?.map(p => p.name).join(', '),
+                                          otherParty: userRole === 'Buyer'
+                                            ? (order.seller?.businessName || order.seller?.name)
+                                            : (order.buyer?.name || order.buyer?.email),
+                                        },
+                                        toEmail: CREATOR_EMAIL,
+                                      };
+                                      
+                                      try {
+                                        await api.post('/reports/fraud', reportData);
+                                        alert('Fraud report submitted! The creator has been notified and will investigate this matter.');
+                                      } catch (err) {
+                                        // Fallback: open email client
+                                        const subject = encodeURIComponent(`FRAUD REPORT - Order #${orderId.slice(-8).toUpperCase()}`);
+                                        const body = encodeURIComponent(
+                                          `FRAUD REPORT\n\n` +
+                                          `Order ID: ${orderId}\n` +
+                                          `Reporter: ${userRole} - ${user?.name || user?.businessName}\n` +
+                                          `Reporter Email: ${user?.email}\n\n` +
+                                          `Fraud Details:\n${fraudDetails}\n\n` +
+                                          `Order Amount: Rp ${order.totalAmount?.toLocaleString('id-ID')}\n` +
+                                          `Products: ${order.products?.map(p => p.name).join(', ')}`
+                                        );
+                                        window.open(`mailto:${CREATOR_EMAIL}?subject=${subject}&body=${body}`);
+                                        alert('Email client opened. Please send the fraud report to the creator.');
+                                      }
+                                    } else {
+                                      // General dispute report
+                                      const reason = prompt('Describe the issue with your order:');
+                                      if (!reason) return;
+                                      try {
+                                        await api.post('/disputes/', { orderId, reason, details: reason });
+                                        alert('Dispute submitted! We will review it shortly.');
+                                      } catch (err) {
+                                        alert(err.response?.data?.error || 'Failed to submit dispute');
+                                      }
                                     }
                                   }}
                                 >
                                   <Flag className="h-4 w-4" />
-                                  Report Issue
+                                  Report Fraud/Issue
                                 </Button>
                               )}
                             </div>
@@ -479,7 +550,7 @@ function Orders() {
                       </div>
                     )}
                   </div>
-                </>
+                </div>
               );
             })
           )}

@@ -35,6 +35,7 @@ function NearbyMap() {
   const navigationMarkerRef = useRef(null);
   const watchIdRef = useRef(null);
   const liveLocationWatchIdRef = useRef(null);
+  const lastKnownGpsLocationRef = useRef(null);
   const hasAutoCenteredRef = useRef(false);
   const locationSourceRef = useRef('gps');
   const hasAutoProfileFallbackRef = useRef(false);
@@ -101,10 +102,23 @@ function NearbyMap() {
               }, 'gps');
               resolve(true);
             },
-            (error) => {
-              console.warn('Browser geolocation unavailable, trying profile location:', error);
-              resolve(false);
-            },
+      (error) => {
+        console.warn('Geolocation error:', error);
+        let errorMessage = 'Unable to access GPS. Please allow location permission in your browser.';
+        
+        if (error.code === 1) {
+          errorMessage = 'Location permission denied. Please allow location access in your browser settings.';
+        } else if (error.code === 2) {
+          errorMessage = 'Unable to determine location. Please check your GPS is enabled.';
+        } else if (error.code === 3) {
+          errorMessage = 'Location request timed out. Please try again.';
+        } else if (error.code === 0) {
+          errorMessage = 'An unexpected error occurred while getting location.';
+        }
+        
+        setGeolocationError(errorMessage);
+        resolve(false);
+      },
             { timeout: GEOLOCATION_TIMEOUT, enableHighAccuracy: true, maximumAge: GEOLOCATION_MAX_AGE }
           );
         });
@@ -168,24 +182,47 @@ function NearbyMap() {
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) return;
     hasAutoProfileFallbackRef.current = true;
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const latestLocation = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        };
-        setGeolocationError(null);
-        applyCurrentLocation(latestLocation, 'gps');
-        if (mapRef.current) {
-          mapRef.current.setView([latestLocation.lat, latestLocation.lng], mapRef.current.getZoom());
-        }
-      },
-      (error) => {
-        console.warn('Could not refresh GPS location:', error);
-        setGeolocationError('Unable to access GPS. Please allow location permission in your browser.');
-      },
-      { timeout: GEOLOCATION_TIMEOUT, enableHighAccuracy: true, maximumAge: GEOLOCATION_MAX_AGE }
-    );
+    
+    const tryGetLocation = (highAccuracy = true) => {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const latestLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setGeolocationError(null);
+          applyCurrentLocation(latestLocation, 'gps');
+          if (mapRef.current) {
+            mapRef.current.setView([latestLocation.lat, latestLocation.lng], mapRef.current.getZoom());
+          }
+        },
+        (error) => {
+          console.warn('Geolocation attempt (highAccuracy=' + highAccuracy + '):', error);
+          
+          if (highAccuracy) {
+            tryGetLocation(false);
+            return;
+          }
+          
+          let errorMessage = 'Unable to access GPS. Please allow location permission in your browser.';
+          
+          if (error.code === 1) {
+            errorMessage = 'Location permission denied. Please allow location access in your browser settings.';
+          } else if (error.code === 2) {
+            errorMessage = 'Unable to determine location. Please check your GPS is enabled.';
+          } else if (error.code === 3) {
+            errorMessage = 'Location request timed out. Please try again.';
+          } else if (error.code === 0) {
+            errorMessage = 'An unexpected error occurred while getting location.';
+          }
+          
+          setGeolocationError(errorMessage);
+        },
+        { timeout: highAccuracy ? GEOLOCATION_TIMEOUT : GEOLOCATION_TIMEOUT * 2, enableHighAccuracy: highAccuracy, maximumAge: GEOLOCATION_MAX_AGE }
+      );
+    };
+    
+    tryGetLocation(true);
   };
 
   const handleUseProfileLocation = () => {
@@ -322,45 +359,70 @@ function NearbyMap() {
       return;
     }
 
-    liveLocationWatchIdRef.current = navigator.geolocation.watchPosition(
-      (position) => {
-        if (locationSourceRef.current !== 'gps') {
-          return;
-        }
-        const latestLocation = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        };
-
-        setGeolocationError(null);
-        setUserLocation((previousLocation) => {
-          if (!previousLocation) {
-            return latestLocation;
-          }
-          const movedDistanceKm = haversineDistanceKm(previousLocation, latestLocation);
-          // Prevent noisy GPS jitter from triggering unnecessary rerenders/API calls.
-          if (movedDistanceKm < 0.03) {
-            return previousLocation;
-          }
-          return latestLocation;
-        });
-        setIsUsingDefaultLocation(false);
-        setIsUsingProfileLocation(false);
-      },
-      (error) => {
-        console.warn('Live location tracking unavailable:', error);
-        if (error.code === 1) {
-          setGeolocationError('Location permission denied. Enable location access to track your live position.');
-          return;
-        }
-        setGeolocationError('Live location temporarily unavailable.');
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: GEOLOCATION_TIMEOUT,
-        maximumAge: GEOLOCATION_MAX_AGE,
+    const startWatching = (highAccuracy = true) => {
+      if (liveLocationWatchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(liveLocationWatchIdRef.current);
       }
-    );
+
+      liveLocationWatchIdRef.current = navigator.geolocation.watchPosition(
+        (position) => {
+          if (locationSourceRef.current !== 'gps') {
+            return;
+          }
+          const latestLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          
+          lastKnownGpsLocationRef.current = latestLocation;
+          setGeolocationError(null);
+          setUserLocation((previousLocation) => {
+            if (!previousLocation) {
+              return latestLocation;
+            }
+            const movedDistanceKm = haversineDistanceKm(previousLocation, latestLocation);
+            if (movedDistanceKm < 0.03) {
+              return previousLocation;
+            }
+            return latestLocation;
+          });
+          setIsUsingDefaultLocation(false);
+          setIsUsingProfileLocation(false);
+        },
+        (error) => {
+          console.warn('Live location tracking error (highAccuracy=' + highAccuracy + '):', error);
+          
+          if (error.code === 1) {
+            setGeolocationError('Location permission denied. Enable location access to track your live position.');
+            return;
+          }
+          
+          if (lastKnownGpsLocationRef.current) {
+            console.log('Using last known GPS location:', lastKnownGpsLocationRef.current);
+          }
+          
+          if (highAccuracy) {
+            setTimeout(() => startWatching(false), 1000);
+            return;
+          }
+          
+          setGeolocationError('Live location temporarily unavailable.');
+          
+          setTimeout(() => {
+            if (locationSourceRef.current === 'gps') {
+              startWatching(true);
+            }
+          }, 5000);
+        },
+        {
+          enableHighAccuracy: highAccuracy,
+          timeout: highAccuracy ? GEOLOCATION_TIMEOUT : GEOLOCATION_TIMEOUT * 2,
+          maximumAge: highAccuracy ? 0 : 30000,
+        }
+      );
+    };
+
+    startWatching(true);
 
     return () => {
       if (liveLocationWatchIdRef.current !== null) {
