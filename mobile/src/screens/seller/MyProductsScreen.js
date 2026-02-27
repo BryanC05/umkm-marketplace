@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../api/api';
@@ -14,6 +14,10 @@ export default function MyProductsScreen({ navigation }) {
     const [loading, setLoading] = useState(true);
 
     const fetchProducts = useCallback(async () => {
+        if (!user?._id) {
+            setLoading(false);
+            return;
+        }
         try {
             const response = await api.get(`/products/seller/${user._id}`);
             setProducts(response.data || []);
@@ -22,7 +26,7 @@ export default function MyProductsScreen({ navigation }) {
         } finally {
             setLoading(false);
         }
-    }, [user._id]);
+    }, [user?._id]);
 
     const renderItem = ({ item }) => {
         const imageUrl = item.images?.[0] ? getImageUrl(item.images[0]) : '';
@@ -88,43 +92,46 @@ export default function MyProductsScreen({ navigation }) {
         );
     };
 
-    const styles = {
-        container: { flex: 1, backgroundColor: colors.background },
-        center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-        list: { padding: 16, paddingBottom: 80 },
-        card: {
-            flexDirection: 'row', backgroundColor: colors.card, borderRadius: 12, padding: 12,
-            marginBottom: 12, alignItems: 'center',
-            shadowColor: isDarkMode ? '#000' : '#e2e8f0', shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: isDarkMode ? 0.3 : 0.8, shadowRadius: 4, elevation: 2,
-        },
-        image: { width: 60, height: 60, borderRadius: 8, backgroundColor: colors.input },
-        info: { flex: 1, marginLeft: 12, marginRight: 8 },
-        name: { fontSize: 15, fontWeight: '600', color: colors.text, marginBottom: 4 },
-        price: { fontSize: 14, fontWeight: '700', color: colors.primary, marginBottom: 4 },
-        stockBadge: {
-            alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2,
-            borderRadius: 6, backgroundColor: colors.input
-        },
-        inStock: { backgroundColor: colors.successLight },
-        lowStock: { backgroundColor: colors.dangerLight },
-        stockText: { fontSize: 11, fontWeight: '600' },
-        inStockText: { color: colors.success },
-        lowStockText: { color: colors.danger },
-        deleteBtn: { padding: 8 },
-        fab: {
-            position: 'absolute', bottom: 24, right: 24,
-            width: 56, height: 56, borderRadius: 28, backgroundColor: colors.primary,
-            justifyContent: 'center', alignItems: 'center',
-            shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
-        },
-        empty: { alignItems: 'center', paddingTop: 60 },
-        emptyTitle: { fontSize: 16, fontWeight: '600', color: colors.textSecondary, marginTop: 12 },
-        emptyText: { fontSize: 13, color: colors.textTertiary, marginTop: 4 },
-    };
+    const styles = useMemo(() => {
+        if (!colors) return {};
+        return StyleSheet.create({
+            container: { flex: 1, backgroundColor: colors.background },
+            center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+            list: { padding: 16, paddingBottom: 80 },
+            card: {
+                flexDirection: 'row', backgroundColor: colors.card, borderRadius: 12, padding: 12,
+                marginBottom: 12, alignItems: 'center',
+                shadowColor: isDarkMode ? '#000' : '#e2e8f0', shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: isDarkMode ? 0.3 : 0.8, shadowRadius: 4, elevation: 2,
+            },
+            image: { width: 60, height: 60, borderRadius: 8, backgroundColor: colors.input },
+            info: { flex: 1, marginLeft: 12, marginRight: 8 },
+            name: { fontSize: 15, fontWeight: '600', color: colors.text, marginBottom: 4 },
+            price: { fontSize: 14, fontWeight: '700', color: colors.primary, marginBottom: 4 },
+            stockBadge: {
+                alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2,
+                borderRadius: 6, backgroundColor: colors.input
+            },
+            inStock: { backgroundColor: colors.successLight },
+            lowStock: { backgroundColor: colors.dangerLight },
+            stockText: { fontSize: 11, fontWeight: '600' },
+            inStockText: { color: colors.success },
+            lowStockText: { color: colors.danger },
+            deleteBtn: { padding: 8 },
+            fab: {
+                position: 'absolute', bottom: 24, right: 24,
+                width: 56, height: 56, borderRadius: 28, backgroundColor: colors.primary,
+                justifyContent: 'center', alignItems: 'center',
+                shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
+            },
+            empty: { alignItems: 'center', paddingTop: 60 },
+            emptyTitle: { fontSize: 16, fontWeight: '600', color: colors.textSecondary, marginTop: 12 },
+            emptyText: { fontSize: 13, color: colors.textTertiary, marginTop: 4 },
+        });
+    }, [colors, isDarkMode]);
 
-    if (loading) {
+    if (loading || !colors) {
         return <LoadingSkeleton variant="products" />;
     }
 
