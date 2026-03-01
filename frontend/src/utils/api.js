@@ -16,6 +16,12 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  // Add cache buster to bypass aggressive 301 cached redirects from previous backend CORS bug
+  if (config.method?.toLowerCase() === 'get') {
+    config.params = { ...config.params, _cb: 'v2' };
+  }
+
   return config;
 });
 
@@ -41,8 +47,7 @@ api.interceptors.response.use(
         localStorage.removeItem('token');
         window.location.href = '/login';
       }
-      // Return a resolved promise to prevent error from propagating
-      return Promise.resolve({ data: [] });
+      return Promise.reject(error);
     }
     return Promise.reject(error);
   }
