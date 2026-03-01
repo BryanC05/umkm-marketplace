@@ -103,7 +103,7 @@ function HomeStackNavigator() {
 
 function ProductsStackNavigator() {
     const { colors } = useThemeStore();
-    const { t, language } = useLanguageStore();
+    const { t, languageVersion } = useLanguageStore();
 
     const ProductsWrapper = ({ navigation: nav, route }) => {
         React.useEffect(() => {
@@ -123,7 +123,6 @@ function ProductsStackNavigator() {
 
     return (
         <ProductsStack.Navigator
-            key={`products-lang-${language}`}
             screenOptions={{
                 contentStyle: { backgroundColor: colors.background },
                 animation: 'slide_from_right',
@@ -161,10 +160,9 @@ function ProductsStackNavigator() {
 
 function CartStackNavigator() {
     const { colors } = useThemeStore();
-    const { t, language } = useLanguageStore();
+    const { t, languageVersion } = useLanguageStore();
     return (
         <CartStack.Navigator
-            key={`cart-lang-${language}`}
             screenOptions={{
                 contentStyle: { backgroundColor: colors.background },
                 animation: 'slide_from_right',
@@ -205,10 +203,9 @@ function AddStackNavigator() {
 
 function DeliveryStackNavigator() {
     const { colors } = useThemeStore();
-    const { t, language } = useLanguageStore();
+    const { t, languageVersion } = useLanguageStore();
     return (
         <DeliveryStack.Navigator
-            key={`delivery-lang-${language}`}
             screenOptions={{
                 contentStyle: { backgroundColor: colors.background },
                 animation: 'slide_from_right',
@@ -225,10 +222,9 @@ function DeliveryStackNavigator() {
 
 function ProfileStackNavigator() {
     const { colors } = useThemeStore();
-    const { t, language } = useLanguageStore();
+    const { t, languageVersion } = useLanguageStore();
     return (
         <ProfileStack.Navigator
-            key={`profile-lang-${language}`}
             screenOptions={{
                 contentStyle: { backgroundColor: colors.background },
                 animation: 'slide_from_right',
@@ -650,14 +646,13 @@ const badgeStyles = StyleSheet.create({
 // Main Tab Navigator
 export default function AppNavigator() {
     const { colors, isDarkMode } = useThemeStore();
-    const { t, language } = useLanguageStore();
+    const { t, languageVersion } = useLanguageStore();
     const isDriverMode = useDriverStore((s) => s.isDriverMode);
 
     return (
         <>
             <NotificationListener />
             <Tab.Navigator
-                key={`lang-${language}`}
                 screenOptions={({ route, navigation }) => ({
                     tabBarOnPress: ({ defaultHandler, navigation: tabNavigation }) => {
                         const state = tabNavigation.getState();

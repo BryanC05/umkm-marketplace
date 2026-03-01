@@ -11,7 +11,7 @@ import { useThemeStore } from '../../store/themeStore';
 
 export default function SellerDashboardScreen({ navigation }) {
     const { user } = useAuthStore();
-    const { t } = useLanguageStore();
+    const { t, language } = useLanguageStore();
     const { colors, isDarkMode } = useThemeStore();
     const [stats, setStats] = useState({ products: 0, orders: 0, revenue: 0, pending: 0 });
     const [loading, setLoading] = useState(true);

@@ -24,7 +24,7 @@ const DELIVERY_TYPES = [
 
 export default function CartScreen({ navigation }) {
     const { colors } = useThemeStore();
-    const { t } = useLanguageStore();
+    const { t, language } = useLanguageStore();
     const { items, updateQuantity, removeFromCart, clearSellerCart, loadCart, isLoaded, getItemsBySeller, getSellerTotal } = useCartStore();
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
     const [showCheckoutModal, setShowCheckoutModal] = useState(false);

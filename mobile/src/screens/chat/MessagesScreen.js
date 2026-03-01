@@ -16,7 +16,7 @@ export default function MessagesScreen({ navigation }) {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const user = useAuthStore((s) => s.user);
-    const { t } = useLanguageStore();
+    const { t, language } = useLanguageStore();
     const { colors } = useThemeStore();
 
     const fetchRooms = useCallback(async () => {
