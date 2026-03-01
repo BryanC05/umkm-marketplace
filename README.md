@@ -163,6 +163,9 @@ msme-marketplace/
 - Node.js (v18 or higher)
 - Go (v1.21 or higher)
 - MongoDB (local or cloud instance like MongoDB Atlas)
+- Git
+
+> **Note:** This repository does not include `node_modules` directories. After cloning, you must run `npm install` in each project directory (backend, frontend, mobile) to install dependencies.
 
 ### Backend Setup (Go)
 
@@ -397,6 +400,31 @@ Orders flow through statuses:
 - Toggle between light and dark modes
 - System preference detection
 - Theme persists across sessions
+
+## Repository Setup
+
+### Git Best Practices
+
+This repository follows standard Node.js best practices by **not tracking `node_modules` directories** in git. Dependencies are managed via `package.json` files and installed locally using `npm install`.
+
+**Why we don't commit `node_modules`:**
+- **Repository size**: `node_modules` can contain thousands of files and hundreds of megabytes
+- **Platform differences**: Binaries and symlinks vary between operating systems
+- **Security**: Avoids committing potentially vulnerable dependency versions
+- **Noise prevention**: Eliminates unnecessary diffs from dependency updates
+- **Reproducibility**: Use `package-lock.json` for deterministic installs
+
+**After cloning, always run:**
+```bash
+# Install backend dependencies
+cd backend && npm install
+
+# Install frontend dependencies  
+cd frontend && npm install
+
+# Install mobile dependencies (if using mobile app)
+cd mobile && npm install
+```
 
 ## Development Notes
 
