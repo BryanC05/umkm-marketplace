@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeStore } from '../../store/themeStore';
-import { useLanguageStore } from '../../store/languageStore';
+import { useTranslation } from '../../hooks/useTranslation';
 import { useDriverStore } from '../../store/driverStore';
 import { useTheme } from '../../theme/ThemeContext';
 import LocationService from '../../services/LocationService';
@@ -13,7 +13,7 @@ import LoadingSkeleton from '../../components/LoadingSkeleton';
 
 function OrderCard({ order, onClaim, claiming }) {
     const { colors, isDarkMode } = useTheme();
-    const { t } = useLanguageStore();
+    const { t } = useTranslation();
 
     const styles = useMemo(() => StyleSheet.create({
         card: {
@@ -130,7 +130,7 @@ function OrderCard({ order, onClaim, claiming }) {
                     <View style={{ flex: 1 }}>
                         <Text style={styles.locationLabel}>{t.pickup || 'PICKUP'}</Text>
                         <Text style={styles.locationText} numberOfLines={2}>
-                            {order.store?.address || 'Store address'}
+                            {order.store?.address || t.storeAddress || 'Alamat Toko'}
                         </Text>
                     </View>
                 </View>
@@ -142,7 +142,7 @@ function OrderCard({ order, onClaim, claiming }) {
                     <View style={{ flex: 1 }}>
                         <Text style={styles.locationLabel}>{t.deliverTo || 'DELIVER TO'}</Text>
                         <Text style={styles.locationText} numberOfLines={2}>
-                            {order.deliveryAddress?.address || 'Delivery address'}
+                            {order.deliveryAddress?.address || t.deliveryAddress || 'Alamat Pengantaran'}
                         </Text>
                     </View>
                 </View>
@@ -215,7 +215,7 @@ function EmptyState({ message }) {
 
 export default function AvailableOrdersScreen() {
     const { colors, isDarkMode } = useTheme();
-    const { t } = useLanguageStore();
+    const { t } = useTranslation();
     const {
         availableOrders,
         isLoadingOrders,

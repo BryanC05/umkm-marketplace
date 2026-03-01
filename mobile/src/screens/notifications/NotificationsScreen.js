@@ -14,21 +14,22 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNotificationStore } from '../../store/notificationStore';
 import { useThemeStore } from '../../store/themeStore';
+import { useTranslation } from '../../hooks/useTranslation';
 import api from '../../api/api';
 import LoadingSkeleton from '../../components/LoadingSkeleton';
 import notificationService from '../../services/NotificationService';
 
-const FILTERS = [
-    { key: 'all', label: 'All' },
-    { key: 'orders', label: 'Orders', types: ['new_order', 'order_status'] },
-    { key: 'messages', label: 'Messages', types: ['new_message'] },
-    { key: 'payments', label: 'Payments', types: ['payment_update'] },
-    { key: 'delivery', label: 'Delivery', types: ['delivery_update'] },
+const getFilters = (t) => [
+    { key: 'all', label: t('notificationFilters.all') },
+    { key: 'orders', label: t('notificationFilters.orders'), types: ['new_order', 'order_status'] },
+    { key: 'messages', label: t('notificationFilters.messages'), types: ['new_message'] },
+    { key: 'payments', label: t('notificationFilters.payments'), types: ['payment_update'] },
+    { key: 'delivery', label: t('notificationFilters.delivery'), types: ['delivery_update'] },
 ];
 
 const NOTIFICATION_ACTION_TIMEOUT_MS = 25000;
 
-function formatTimeAgo(dateStr) {
+function formatTimeAgo(dateStr, t) {
     const date = new Date(dateStr);
     const now = new Date();
     const diffMs = now - date;
@@ -36,7 +37,7 @@ function formatTimeAgo(dateStr) {
     const diffHrs = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMin < 1) return 'Just now';
+    if (diffMin < 1) return t('justNowNotif');
     if (diffMin < 60) return `${diffMin}m ago`;
     if (diffHrs < 24) return `${diffHrs}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
@@ -61,10 +62,12 @@ function getNotifIcon(type) {
 
 export default function NotificationsScreen({ navigation }) {
     const { colors } = useThemeStore();
+    const { t } = useTranslation();
     const [activeFilter, setActiveFilter] = useState('all');
     const [refreshing, setRefreshing] = useState(false);
     const [loading, setLoading] = useState(true);
     const [sendingTest, setSendingTest] = useState(false);
+    const FILTERS = getFilters(t);
     const {
         notifications,
         unreadCount,
@@ -84,7 +87,7 @@ export default function NotificationsScreen({ navigation }) {
             const result = await fetchNotifications();
             setLoading(false);
             if (!result?.success && result?.error) {
-                Alert.alert('Notifications Unavailable', result.error);
+                Alert.alert(t('notificationsUnavailable'), result.error);
             }
         };
         load();
@@ -95,7 +98,7 @@ export default function NotificationsScreen({ navigation }) {
         const result = await fetchNotifications();
         setRefreshing(false);
         if (!result?.success && result?.error) {
-            Alert.alert('Refresh Failed', result.error);
+            Alert.alert(t('refreshFailed'), result.error);
         }
     }, [fetchNotifications]);
 
@@ -106,7 +109,7 @@ export default function NotificationsScreen({ navigation }) {
         try {
             await notificationService.initialize();
             await notificationService.scheduleLocalNotification(
-                'Test Notification',
+                t('testNotification'),
                 'This is a test notification from the app!',
                 { type: 'test' },
                 1
@@ -115,7 +118,7 @@ export default function NotificationsScreen({ navigation }) {
             // Add to local notification store so it appears in the list
             const newNotification = {
                 _id: 'test-' + Date.now(),
-                title: 'Test Notification',
+                title: t('testNotification'),
                 message: 'This is a test notification from the app!',
                 type: 'test',
                 isRead: false,
@@ -124,7 +127,7 @@ export default function NotificationsScreen({ navigation }) {
             addNotification(newNotification);
             fetchUnreadCount();
             
-            Alert.alert('Success', 'Local test notification sent!');
+            Alert.alert(t('success'), t('testNotificationSent'));
             setSendingTest(false);
             return;
         } catch (err) {
@@ -148,9 +151,9 @@ export default function NotificationsScreen({ navigation }) {
             console.error('🔴 Failed to send test notification:', err.message);
             const isTimeout = err?.code === 'ECONNABORTED';
             Alert.alert(
-                'Test Notification Failed',
+                t('testNotificationFailed'),
                 isTimeout
-                    ? 'Request timed out. Please try again.'
+                    ? t('requestTimedOut')
                     : (err?.response?.data?.error || err?.response?.data?.message || 'Could not send test notification.')
             );
             if (err.response) {

@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeStore } from '../../store/themeStore';
-import { useLanguageStore } from '../../store/languageStore';
+import { useTranslation } from '../../hooks/useTranslation';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../api/api';
 import { getImageUrl, formatPrice, formatDate } from '../../utils/helpers';
@@ -35,8 +35,7 @@ const STATUS_COLORS = {
 
 export default function OrdersScreen({ navigation }) {
     const { colors } = useThemeStore();
-    const language = useLanguageStore((s) => s.language);
-    const { t } = useLanguageStore();
+    const { t, language } = useTranslation();
     const { user } = useAuthStore();
     
     const [orders, setOrders] = useState([]);

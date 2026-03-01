@@ -3,12 +3,11 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, Alert, Refre
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../api/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { useLanguageStore } from '../../store/languageStore';
+import { useTranslation } from '../../hooks/useTranslation';
 import { useThemeStore } from '../../store/themeStore';
 
 export default function AdminMembershipScreen() {
-    const language = useLanguageStore((s) => s.language);
-    const { t } = useLanguageStore();
+    const { t, language } = useTranslation();
     const { colors } = useThemeStore();
     const [pendingMembers, setPendingMembers] = useState([]);
     const [loading, setLoading] = useState(true);

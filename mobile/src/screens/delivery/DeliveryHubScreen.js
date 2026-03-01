@@ -12,7 +12,7 @@ import LocationService from '../../services/LocationService';
 
 function DriverModePrompt() {
     const { colors } = useTheme();
-    const { t } = useLanguageStore();
+    const { t } = useTranslation();
     const { toggleDriverMode } = useDriverStore();
     const [loading, setLoading] = useState(false);
 
@@ -93,7 +93,7 @@ function DriverModePrompt() {
 
 export default function DeliveryHubScreen() {
     const { colors, isDarkMode } = useThemeStore();
-    const { t } = useLanguageStore();
+    const { t } = useTranslation();
     const { isDriverMode, activeDelivery, fetchActiveDelivery, currentLocation, updateLocation } = useDriverStore();
     const [activeTab, setActiveTab] = useState(0);
 

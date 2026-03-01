@@ -110,7 +110,7 @@ const Home = () => {
 
   return (
     <>
-      <section className="relative overflow-hidden bg-[#0a0f1c]">
+      <section className="relative overflow-hidden bg-background">
         <div className="container py-16 md:py-24">
           <OnboardingPrompt />
           
@@ -119,11 +119,11 @@ const Home = () => {
               <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
               MARKETPLACE UMKM INDONESIA
             </Badge>
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white mb-4">
+            <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-foreground mb-4">
               Temukan Produk{" "}
               <span className="text-primary">Lokal Terbaik</span>
             </h1>
-            <p className="text-lg md:text-xl text-gray-400 mb-10 max-w-xl mx-auto">
+            <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-xl mx-auto">
               Hubungkan langsung dengan penjual UMKM di sekitarmu. Belanja mudah, dukung ekonomi lokal.
             </p>
 
@@ -135,7 +135,7 @@ const Home = () => {
                   placeholder="Cari produk, toko, atau kategori..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-12 h-14 text-base bg-[#1a1f2e] border-[#2a3040] text-white placeholder:text-gray-500 rounded-lg"
+                  className="pl-12 h-14 text-base bg-muted border-border text-foreground placeholder:text-muted-foreground rounded-lg"
                 />
                 <Button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 h-10 px-6 bg-primary hover:bg-primary/90 text-primary-foreground">
                   Cari
@@ -146,10 +146,10 @@ const Home = () => {
         </div>
       </section>
 
-      <section className="py-12 bg-[#0d1117]">
+      <section className="py-12 bg-background">
         <div className="container">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-xl font-bold text-white">Kategori</h2>
+            <h2 className="text-xl font-bold text-foreground">Kategori</h2>
             <Link to="/products" className="text-primary text-sm hover:underline">
               Lihat semua →
             </Link>
@@ -168,10 +168,10 @@ const Home = () => {
               const count = categoryCounts[category.id] || 0;
               return (
                 <Link key={category.id} to={`/products?category=${category.id}`}>
-                  <div className="bg-[#161b22] border border-[#2a3040] rounded-xl p-4 text-center hover:bg-[#1c2128] hover:border-[#3a4050] transition-all">
+                  <div className="bg-card border border-border rounded-xl p-4 text-center hover:bg-accent hover:border-accent transition-all">
                     <span className="text-3xl mb-3 block">{category.icon}</span>
-                    <p className="text-sm text-white font-medium mb-1">{category.name}</p>
-                    <p className="text-xs text-gray-500">{count} produk</p>
+                    <p className="text-sm text-card-foreground font-medium mb-1">{category.name}</p>
+                    <p className="text-xs text-muted-foreground">{count} produk</p>
                   </div>
                 </Link>
               );
@@ -180,10 +180,10 @@ const Home = () => {
         </div>
       </section>
 
-      <section className="py-12 bg-[#0d1117]">
+      <section className="py-12 bg-background">
         <div className="container">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-xl font-bold text-white">Produk Unggulan</h2>
+            <h2 className="text-xl font-bold text-foreground">Produk Unggulan</h2>
             <Link to="/products" className="text-primary text-sm hover:underline">
               Lihat semua →
             </Link>

@@ -38,8 +38,8 @@ const ProductCard = ({ product }) => {
 
     return (
         <Link to={`/product/${productId}`}>
-            <Card className="group overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 bg-[#161b22] border-[#21262d]">
-                <div className="relative aspect-square overflow-hidden bg-[#0d1117]">
+            <Card className="group overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 bg-card border-border">
+                <div className="relative aspect-square overflow-hidden bg-muted">
                     {productImage ? (
                       <img
                         src={productImage}
@@ -47,7 +47,6 @@ const ProductCard = ({ product }) => {
                         className="h-full w-full object-cover transition-transform group-hover:scale-105"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
-                          e.currentTarget.parentElement?.classList.add('bg-[#0d1117]');
                         }}
                       />
                     ) : null}
@@ -68,7 +67,7 @@ const ProductCard = ({ product }) => {
                     <Button
                         variant="ghost"
                         size="icon"
-                        className={`absolute top-2 right-2 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full h-7 w-7 p-0 border-0 ${isSaved ? 'text-red-500' : 'text-white'}`}
+                        className={`absolute top-2 right-2 bg-background/60 hover:bg-background/80 backdrop-blur-sm rounded-full h-7 w-7 p-0 border-0 ${isSaved ? 'text-red-500' : 'text-foreground'}`}
                         onClick={handleSaveClick}
                         disabled={isLoading}
                         title="Save product"
@@ -86,7 +85,7 @@ const ProductCard = ({ product }) => {
                     )}
                     
                     {/* Product Name */}
-                    <h3 className="font-medium text-sm text-white line-clamp-2 mb-2 min-h-[40px]">
+                    <h3 className="font-medium text-sm text-card-foreground line-clamp-2 mb-2 min-h-[40px]">
                         {product.name}
                     </h3>
                     

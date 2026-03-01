@@ -18,14 +18,8 @@ import api from '../../api/api';
 export default function ProfileScreen({ navigation }) {
     const { user, logout, setUser } = useAuthStore();
     const { isDarkMode, toggleTheme, initTheme } = useThemeStore();
-    const { toggleLanguage, initLanguage } = useLanguageStore();
-    const { t, language } = useTranslation();
-
-    // Debug: log when toggleLanguage is called
-    const handleToggleLanguage = () => {
-        console.log('Toggle language pressed, current language:', language);
-        toggleLanguage();
-    };
+    const { initLanguage } = useLanguageStore();
+    const { t } = useTranslation();
     const { isDriverMode, stats, initDriverMode, toggleDriverMode } = useDriverStore();
     const unreadNotifCount = useNotificationStore((s) => s.unreadCount);
     const { colors } = useTheme();
@@ -346,18 +340,31 @@ export default function ProfileScreen({ navigation }) {
             <View style={styles.menuSection}>
                 {menuItems.map((item, idx) => (
                     item.isToggle ? (
-                        <View key={idx} style={styles.menuItem}>
+                        <TouchableOpacity
+                            key={idx}
+                            style={styles.menuItem}
+                            onPress={() => item.onPress && item.onPress()}
+                        >
                             <View style={[styles.menuIcon, { backgroundColor: `${item.color}15` }]}>
                                 <Ionicons name={item.icon} size={20} color={item.color} />
                             </View>
                             <Text style={[styles.menuLabel, { color: colors.text }]}>{item.label}</Text>
-                            <Switch
-                                value={item.toggleValue}
-                                onValueChange={() => item.onPress()}
-                                trackColor={{ true: item.color, false: colors.border }}
-                                thumbColor={colors.white}
-                            />
-                        </View>
+                            {item.showValue ? (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                    <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 14 }}>
+                                        {item.showValue}
+                                    </Text>
+                                    <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+                                </View>
+                            ) : (
+                                <Switch
+                                    value={item.toggleValue}
+                                    onValueChange={() => item.onPress()}
+                                    trackColor={{ true: item.color, false: colors.border }}
+                                    thumbColor={colors.white}
+                                />
+                            )}
+                        </TouchableOpacity>
                     ) : (
                         <TouchableOpacity
                             key={idx}
@@ -395,3 +402,4 @@ export default function ProfileScreen({ navigation }) {
         </ScrollView>
     );
 }
+

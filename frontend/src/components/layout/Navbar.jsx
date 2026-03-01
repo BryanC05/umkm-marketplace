@@ -122,10 +122,10 @@ const Navbar = () => {
       <div className="container flex h-16 items-center gap-4">
         <Link to="/" className="flex items-center gap-2 shrink-0">
           <div className="w-8 h-8 rounded bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-display font-bold text-lg">M</span>
+            <span className="text-primary-foreground font-display font-bold text-lg">T</span>
           </div>
           <span className="font-display text-xl font-bold tracking-wider hidden sm:block">
-            MART<span className="text-primary">KU</span>
+            Troli<span className="text-primary">Toko</span>
           </span>
         </Link>
 
@@ -134,7 +134,7 @@ const Navbar = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
             <Input
               placeholder={t("nav.searchPlaceholder") || "Cari produk UMKM..."}
-              className="pl-9 bg-[#1a1f2e] border-[#2a3040] text-white placeholder:text-gray-500"
+              className="pl-9 bg-muted border-border text-foreground placeholder:text-muted-foreground"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -172,6 +172,14 @@ const Navbar = () => {
                 </span>
               )}
             </Link>
+          </Button>
+
+          <Button variant="ghost" size="icon" onClick={toggleLanguage} aria-label="Toggle Language">
+            <Languages className="h-5 w-5" />
+          </Button>
+
+          <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle Theme">
+            {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
           </Button>
 
           <Button variant="ghost" size="icon" className="xl:hidden" onClick={() => setMobileOpen(true)}>

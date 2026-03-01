@@ -7,7 +7,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../store/themeStore';
-import { useLanguageStore } from '../../store/languageStore';
+import { useTranslation } from '../../hooks/useTranslation';
 import api from '../../api/api';
 import ProductCard from '../../components/ProductCard';
 import ForumPostCard from '../../components/ForumPostCard';
@@ -21,8 +21,7 @@ const { width } = Dimensions.get('window');
 
 export default function HomeScreen({ navigation }) {
     const { colors, isDarkMode } = useThemeStore();
-    const language = useLanguageStore((s) => s.language);
-    const { t } = useLanguageStore();
+    const { t, language } = useTranslation();
     const insets = useSafeAreaInsets();
     const [refreshing, setRefreshing] = useState(false);
     const [stats, setStats] = useState({ sellers: 0, products: 0 });
@@ -491,7 +490,7 @@ export default function HomeScreen({ navigation }) {
                         <Ionicons name="search" size={18} color={colors.textSecondary} style={styles.searchIcon} />
                         <TextInput
                             style={styles.searchTextInput}
-                            placeholder={t('home.searchPlaceholder') || 'Cari produk, toko, atau kategori...'}
+                            placeholder={t('home.searchPlaceholder')}
                             placeholderTextColor={colors.textSecondary}
                             value={searchQuery}
                             onChangeText={setSearchQuery}
@@ -565,7 +564,7 @@ export default function HomeScreen({ navigation }) {
                                             {seller.businessName || seller.name}
                                         </Text>
                                         <Text style={styles.nearbySellerLocation} numberOfLines={1}>
-                                            {seller.location?.city || 'Nearby'}
+                                            {seller.location?.city || t('nearby')}
                                         </Text>
                                     </View>
                                     {seller.distanceKm && (
@@ -592,7 +591,7 @@ export default function HomeScreen({ navigation }) {
             {categories.filter((cat) => (categoryCounts[cat.id] || 0) > 0).length > 0 && (
                 <View style={styles.categorySection}>
                     <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>Kategori</Text>
+                        <Text style={styles.sectionTitle}>{t('categories') || 'Kategori'}</Text>
                         <TouchableOpacity onPress={() => navigation.navigate('ProductsTab')}>
                             <Text style={styles.seeAll}>Lihat semua</Text>
                         </TouchableOpacity>
@@ -618,7 +617,7 @@ export default function HomeScreen({ navigation }) {
 
             <View style={styles.productsSection}>
                 <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Produk Unggulan</Text>
+                    <Text style={styles.sectionTitle}>{t('featuredProducts') || 'Produk Unggulan'}</Text>
                     <TouchableOpacity onPress={() => navigation.navigate('ProductsTab')}>
                         <Text style={styles.seeAll}>Lihat semua</Text>
                     </TouchableOpacity>

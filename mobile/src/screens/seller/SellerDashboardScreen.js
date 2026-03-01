@@ -6,13 +6,12 @@ import api from '../../api/api';
 import { useAuthStore } from '../../store/authStore';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { formatPrice } from '../../utils/helpers';
-import { useLanguageStore } from '../../store/languageStore';
+import { useTranslation } from '../../hooks/useTranslation';
 import { useThemeStore } from '../../store/themeStore';
 
 export default function SellerDashboardScreen({ navigation }) {
     const { user } = useAuthStore();
-    const language = useLanguageStore((s) => s.language);
-    const { t } = useLanguageStore();
+    const { t, language } = useTranslation();
     const { colors, isDarkMode } = useThemeStore();
     const [stats, setStats] = useState({ products: 0, orders: 0, revenue: 0, pending: 0 });
     const [loading, setLoading] = useState(true);

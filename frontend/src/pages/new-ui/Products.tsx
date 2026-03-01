@@ -4,7 +4,7 @@ import { Search, SlidersHorizontal, Grid3X3, List, ChevronLeft, ChevronRight, Pa
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import ProductCard from "@/components/new-ui/ProductCard";
+import ProductCard from "@/components/products/ProductCard";
 import api from "@/utils/api";
 import { motion } from "framer-motion";
 import { useTranslation } from "@/hooks/useTranslation";

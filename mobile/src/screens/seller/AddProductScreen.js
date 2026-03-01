@@ -8,7 +8,7 @@ import * as ImagePicker from 'expo-image-picker';
 import api from '../../api/api';
 import { CATEGORIES_EN, CATEGORIES_ID } from '../../config';
 import { useThemeStore } from '../../store/themeStore';
-import { useLanguageStore } from '../../store/languageStore';
+import { useTranslation } from '../../hooks/useTranslation';
 import LocationPicker from '../../components/location/LocationPicker';
 
 const UNITS_EN = [
@@ -35,8 +35,7 @@ const MAX_IMAGES = 4;
 
 export default function AddProductScreen({ navigation }) {
     const { colors, isDarkMode } = useThemeStore();
-    const language = useLanguageStore((s) => s.language);
-    const { t } = useLanguageStore();
+    const { t, language } = useTranslation();
 
     const categories = language === 'id' ? CATEGORIES_ID : CATEGORIES_EN;
     const units = language === 'id' ? UNITS_ID : UNITS_EN;

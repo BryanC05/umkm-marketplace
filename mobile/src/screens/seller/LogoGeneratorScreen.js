@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import api from '../../api/api';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
-import { useLanguageStore } from '../../store/languageStore';
+import { useTranslation } from '../../hooks/useTranslation';
 import { getImageUrl } from '../../utils/helpers';
 import { API_HOST } from '../../config';
 
@@ -44,7 +44,7 @@ function formatResetTime(resetTimeISO) {
 export default function LogoGeneratorScreen({ navigation }) {
     const { user, setUser } = useAuthStore();
     const { colors } = useThemeStore();
-    const { t } = useLanguageStore();
+    const { t } = useTranslation();
     const [prompt, setPrompt] = useState('');
     const [loading, setLoading] = useState(false);
     const [resetting, setResetting] = useState(false);

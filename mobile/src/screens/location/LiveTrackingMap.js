@@ -5,7 +5,7 @@ import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useThemeStore } from '../../store/themeStore';
-import { useLanguageStore } from '../../store/languageStore';
+import { useTranslation } from '../../hooks/useTranslation';
 import api from '../../api/api';
 import { haversineDistanceKm } from '../../utils/helpers';
 
@@ -14,7 +14,7 @@ export default function LiveTrackingMap() {
     const navigation = useNavigation();
     const mapRef = useRef(null);
     const { colors, isDarkMode } = useThemeStore();
-    const { t } = useLanguageStore();
+    const { t } = useTranslation();
     
     const { orderId, destination, title } = route.params || {};
     

@@ -139,12 +139,12 @@ const Products = () => {
   };
 
   return (
-    <div className="bg-[#0d1117] min-h-screen">
+    <div className="bg-background min-h-screen">
       <div className="container py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-white mb-2">Produk UMKM</h1>
-          <p className="text-gray-400">
+          <h1 className="text-2xl font-bold text-foreground mb-2">Produk UMKM</h1>
+          <p className="text-muted-foreground">
             Jelajahi {pagination.total} produk dari penjual lokal
           </p>
         </div>
@@ -158,7 +158,7 @@ const Products = () => {
               placeholder="Cari produk..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-[#161b22] border-[#21262d] text-white placeholder:text-gray-500"
+              className="pl-10 bg-muted border-border text-foreground placeholder:text-muted-foreground"
             />
           </div>
           <div className="flex gap-2">
@@ -166,7 +166,7 @@ const Products = () => {
               type="button"
               variant="outline"
               onClick={() => setShowFilters(!showFilters)}
-              className="gap-2 bg-[#161b22] border-[#21262d] text-white hover:bg-[#1c2128]"
+              className="gap-2 bg-card border-border text-card-foreground hover:bg-accent"
             >
               <SlidersHorizontal className="h-4 w-4" />
               Semua
@@ -179,7 +179,7 @@ const Products = () => {
             <Button
               type="button"
               variant="outline"
-              className="gap-2 bg-[#161b22] border-[#21262d] text-white hover:bg-[#1c2128]"
+              className="gap-2 bg-card border-border text-card-foreground hover:bg-accent"
             >
               Terbaru
             </Button>
@@ -193,7 +193,7 @@ const Products = () => {
             <Button
               type="button"
               variant="outline"
-              className="bg-[#161b22] border-[#21262d] text-white hover:bg-[#1c2128]"
+              className="bg-card border-border text-card-foreground hover:bg-accent"
             >
               List
             </Button>

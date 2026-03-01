@@ -204,21 +204,21 @@ function ProductDetail() {
 
   return (
     <>
-      <div className="bg-[#0d1117] min-h-screen py-8">
+      <div className="bg-background min-h-screen py-8">
       <div className="container">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-gray-400 mb-6">
-          <Link to="/" className="hover:text-white">Beranda</Link>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
+          <Link to="/" className="hover:text-foreground">Beranda</Link>
           <span>›</span>
-          <Link to="/products" className="hover:text-white">Produk</Link>
+          <Link to="/products" className="hover:text-foreground">Produk</Link>
           <span>›</span>
-          <span className="text-white">{product.name}</span>
+          <span className="text-foreground">{product.name}</span>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
           {/* Product Images */}
           <div className="space-y-4">
-            <div className="aspect-square bg-[#161b22] rounded-xl overflow-hidden border border-[#21262d]">
+            <div className="aspect-square bg-muted rounded-xl overflow-hidden border border-border">
               {productImages[selectedImage] ? (
                 <img
                   src={productImages[selectedImage]}
@@ -227,7 +227,7 @@ function ProductDetail() {
                   onError={(e) => { e.currentTarget.style.display = 'none'; }}
                 />
               ) : (
-                <div className="w-full h-full bg-[#161b22]" />
+                <div className="w-full h-full bg-muted" />
               )}
             </div>
 
@@ -237,7 +237,7 @@ function ProductDetail() {
                   <button
                     key={index}
                     onClick={() => setSelectedImage(index)}
-                    className={`aspect-square bg-[#161b22] rounded-lg overflow-hidden border-2 transition-colors ${selectedImage === index ? 'border-primary' : 'border-transparent hover:border-gray-600'
+                    className={`aspect-square bg-muted rounded-lg overflow-hidden border-2 transition-colors ${selectedImage === index ? 'border-primary' : 'border-transparent hover:border-muted-foreground'
                       }`}
                   >
                     <img src={img} alt={`${product.name} ${index + 1}`} className="w-full h-full object-cover" />
@@ -257,12 +257,12 @@ function ProductDetail() {
             </div>
 
             {/* Product Title */}
-            <h1 className="text-2xl md:text-3xl font-bold text-white">{product.name}</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">{product.name}</h1>
 
             {/* Rating */}
             <div className="flex items-center gap-2">
               <Star className="h-5 w-5 fill-primary text-primary" />
-              <span className="text-white font-medium">{product.rating?.toFixed(1) || '4.5'}</span>
+              <span className="text-foreground font-medium">{product.rating?.toFixed(1) || '4.5'}</span>
               <span className="text-gray-400">({product.reviewCount || product.reviews?.length || 0} ulasan)</span>
             </div>
 
@@ -281,13 +281,13 @@ function ProductDetail() {
             {/* Tags */}
             <div className="flex flex-wrap gap-2">
               {product.tags?.map((tag) => (
-                <Badge key={tag} variant="outline" className="bg-[#21262d] border-[#30363d] text-gray-300">
+                <Badge key={tag} variant="outline" className="bg-muted border-border text-muted-foreground">
                   #{tag}
                 </Badge>
               )) || (
                 <>
-                  <Badge variant="outline" className="bg-[#21262d] border-[#30363d] text-gray-300">#produk-lokal</Badge>
-                  <Badge variant="outline" className="bg-[#21262d] border-[#30363d] text-gray-300">#umkm</Badge>
+                  <Badge variant="outline" className="bg-muted border-border text-muted-foreground">#produk-lokal</Badge>
+                  <Badge variant="outline" className="bg-muted border-border text-muted-foreground">#umkm</Badge>
                 </>
               )}
             </div>
@@ -352,19 +352,19 @@ function ProductDetail() {
                   <div className="space-y-4">
                     {/* Quantity Selector */}
                     <div className="flex items-center gap-4">
-                      <div className="flex items-center border border-[#30363d] rounded-lg bg-[#0d1117]">
+                      <div className="flex items-center border border-border rounded-lg bg-muted">
                         <button
                           onClick={() => setQuantity(Math.max(1, quantity - 1))}
                           disabled={quantity <= 1}
-                          className="w-10 h-10 flex items-center justify-center hover:bg-[#161b22] rounded-l-lg text-lg font-bold text-white disabled:opacity-50 transition-colors"
+                          className="w-10 h-10 flex items-center justify-center hover:bg-accent rounded-l-lg text-lg font-bold text-foreground disabled:opacity-50 transition-colors"
                         >
                           −
                         </button>
-                        <span className="w-12 text-center font-medium text-white">{quantity}</span>
+                        <span className="w-12 text-center font-medium text-foreground">{quantity}</span>
                         <button
                           onClick={() => setQuantity(Math.min(getAvailableStock(), quantity + 1))}
                           disabled={quantity >= getAvailableStock()}
-                          className="w-10 h-10 flex items-center justify-center hover:bg-[#161b22] rounded-r-lg text-lg font-bold text-white disabled:opacity-50 transition-colors"
+                          className="w-10 h-10 flex items-center justify-center hover:bg-accent rounded-r-lg text-lg font-bold text-foreground disabled:opacity-50 transition-colors"
                         >
                           +
                         </button>
@@ -391,7 +391,7 @@ function ProductDetail() {
                       <Button
                         variant="outline"
                         size="lg"
-                        className="flex-1 gap-2 bg-transparent border-[#30363d] text-white hover:bg-[#161b22] h-12"
+                        className="flex-1 gap-2 bg-transparent border-border text-foreground hover:bg-accent h-12"
                         onClick={async (e) => {
                           if (!isSaved) {
                             window.dispatchEvent(new CustomEvent('particle-burst', {
@@ -407,7 +407,7 @@ function ProductDetail() {
                       <Button
                         variant="outline"
                         size="lg"
-                        className="gap-2 bg-transparent border-[#30363d] text-white hover:bg-[#161b22] h-12"
+                        className="gap-2 bg-transparent border-border text-foreground hover:bg-accent h-12"
                         onClick={() => {
                           const url = window.location.href;
                           if (navigator.share) {

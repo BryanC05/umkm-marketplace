@@ -6,7 +6,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useThemeStore } from '../../store/themeStore';
-import { useLanguageStore } from '../../store/languageStore';
+import { useTranslation } from '../../hooks/useTranslation';
 import api from '../../api/api';
 import { useCartStore } from '../../store/cartStore';
 import { useAuthStore } from '../../store/authStore';
@@ -67,8 +67,7 @@ function parseMarkdown(text, textColor, fallbackColor) {
 export default function ProductDetailScreen({ route }) {
     const navigation = useNavigation();
     const { colors, isDarkMode } = useThemeStore();
-    const language = useLanguageStore((s) => s.language);
-    const { t } = useLanguageStore();
+    const { t, language } = useTranslation();
     const { productId } = route.params;
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);

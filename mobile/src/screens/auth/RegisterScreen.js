@@ -6,12 +6,11 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
-import { useLanguageStore } from '../../store/languageStore';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export default function RegisterScreen({ navigation }) {
     const { colors, isDarkMode } = useThemeStore();
-    const language = useLanguageStore((s) => s.language);
-    const { t } = useLanguageStore();
+    const { t, language } = useTranslation();
     const [form, setForm] = useState({
         name: '', email: '', password: '', phone: '',
         businessName: '', businessType: 'none',

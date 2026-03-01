@@ -6,12 +6,11 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
-import { useLanguageStore } from '../../store/languageStore';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export default function LoginScreen({ navigation }) {
     const { colors, isDarkMode } = useThemeStore();
-    const language = useLanguageStore((s) => s.language);
-    const { t } = useLanguageStore();
+    const { t, language } = useTranslation();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -173,7 +172,7 @@ export default function LoginScreen({ navigation }) {
                                 <Ionicons name="lock-closed-outline" size={18} color={colors.textSecondary} style={styles.inputIcon} />
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="••••••••"
+                                    placeholder="Type your Password"
                                     placeholderTextColor={colors.textSecondary}
                                     value={password}
                                     onChangeText={setPassword}

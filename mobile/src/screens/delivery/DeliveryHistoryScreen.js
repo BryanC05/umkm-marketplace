@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeStore } from '../../store/themeStore';
-import { useLanguageStore } from '../../store/languageStore';
+import { useTranslation } from '../../hooks/useTranslation';
 import { useDriverStore } from '../../store/driverStore';
 import { useTheme } from '../../theme/ThemeContext';
 import LoadingSkeleton from '../../components/LoadingSkeleton';
@@ -16,7 +16,7 @@ const STATUS_CONFIG = {
 
 function HistoryCard({ item }) {
     const { colors, isDarkMode } = useThemeStore();
-    const { t } = useLanguageStore();
+    const { t } = useTranslation();
 
     const statusConfig = STATUS_CONFIG[item.status] || STATUS_CONFIG.delivered;
 
@@ -156,7 +156,7 @@ function HistoryCard({ item }) {
 
 export default function DeliveryHistoryScreen() {
     const { colors } = useThemeStore();
-    const { t } = useLanguageStore();
+    const { t } = useTranslation();
     const { deliveryHistory, fetchDeliveryHistory } = useDriverStore();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);

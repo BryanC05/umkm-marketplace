@@ -7,7 +7,7 @@ import { useCartStore } from '../../store/cartStore';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { particleEvents } from '../../components/BackgroundEffect';
-import { useLanguageStore } from '../../store/languageStore';
+import { useTranslation } from '../../hooks/useTranslation';
 import { getImageUrl, formatPrice } from '../../utils/helpers';
 import api from '../../api/api';
 
@@ -24,8 +24,7 @@ const DELIVERY_TYPES = [
 
 export default function CartScreen({ navigation }) {
     const { colors } = useThemeStore();
-    const language = useLanguageStore((s) => s.language);
-    const { t } = useLanguageStore();
+    const { t, language } = useTranslation();
     const { items, updateQuantity, removeFromCart, clearSellerCart, loadCart, isLoaded, getItemsBySeller, getSellerTotal } = useCartStore();
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
     const [showCheckoutModal, setShowCheckoutModal] = useState(false);
@@ -463,7 +462,7 @@ export default function CartScreen({ navigation }) {
                                             }}
                                         >
                                             <Text style={{ fontSize: 16, color: scheduledDate ? colors.text : colors.textSecondary }}>
-                                                {scheduledDate || 'Select date'}
+                                                {scheduledDate || t.selectDate || 'Pilih Tanggal'}
                                             </Text>
                                             <Ionicons name="calendar-outline" size={20} color={colors.textSecondary} />
                                         </TouchableOpacity>
@@ -483,7 +482,7 @@ export default function CartScreen({ navigation }) {
                                             }}
                                         >
                                             <Text style={{ fontSize: 16, color: scheduledTime ? colors.text : colors.textSecondary }}>
-                                                {scheduledTime || 'Select time'}
+                                                {scheduledTime || t.selectTime || 'Pilih Waktu'}
                                             </Text>
                                             <Ionicons name="time-outline" size={20} color={colors.textSecondary} />
                                         </TouchableOpacity>

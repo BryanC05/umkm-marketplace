@@ -4,7 +4,7 @@ import { Search, ArrowRight, MapPin, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
-import ProductCard from "@/components/new-ui/ProductCard";
+import ProductCard from "@/components/products/ProductCard";
 import api from "@/utils/api";
 import { useTranslation } from "@/hooks/useTranslation";
 

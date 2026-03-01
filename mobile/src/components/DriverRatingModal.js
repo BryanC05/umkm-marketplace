@@ -5,12 +5,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeStore } from '../store/themeStore';
-import { useLanguageStore } from '../store/languageStore';
+import { useTranslation } from '../hooks/useTranslation';
 import api from '../api/api';
 
 export default function DriverRatingModal({ visible, orderId, driverName, onClose, onRated }) {
     const { colors, isDarkMode } = useThemeStore();
-    const { t } = useLanguageStore();
+    const { t } = useTranslation();
     const [rating, setRating] = useState(5);
     const [comment, setComment] = useState('');
     const [submitting, setSubmitting] = useState(false);

@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import { useThemeStore } from '../../store/themeStore';
-import { useLanguageStore } from '../../store/languageStore';
+import { useTranslation } from '../../hooks/useTranslation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Map from '../../components/Map';
 import api from '../../api/api';
@@ -51,7 +51,7 @@ export default function NearbySellersScreen() {
     const navigation = useNavigation();
     const insets = useSafeAreaInsets();
     const { colors } = useThemeStore();
-    const { t } = useLanguageStore();
+    const { t } = useTranslation();
     const [location, setLocation] = useState(null);
     const [sellers, setSellers] = useState([]);
     const [loading, setLoading] = useState(true);

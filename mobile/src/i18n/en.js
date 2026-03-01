@@ -19,6 +19,9 @@ export default {
     done: 'Done',
     noResults: 'No results found',
     seeAll: 'See All',
+    categories: 'Categories',
+    featuredProducts: 'Featured Products',
+    nearby: 'Nearby',
 
     // Tab Bar
     tabHome: 'Home',
@@ -414,4 +417,28 @@ export default {
     chatChanges: 'Chat/Changes',
     requestDeclinedBySeller: 'Request declined by seller',
     reasonLabel: 'Reason',
+
+    // Notifications
+    notifications: 'Notifications',
+    notificationFilters: {
+        all: 'All',
+        orders: 'Orders',
+        messages: 'Messages',
+        payments: 'Payments',
+        delivery: 'Delivery',
+    },
+    justNowNotif: 'Just now',
+    notificationsUnavailable: 'Notifications Unavailable',
+    refreshFailed: 'Refresh Failed',
+    testNotification: 'Test Notification',
+    testNotificationSent: 'Local test notification sent!',
+    testNotificationFailed: 'Test Notification Failed',
+    requestTimedOut: 'Request timed out. Please try again.',
+    noNotifications: 'No notifications',
+    noNotificationsDesc: 'Your notifications will appear here',
+    deleteNotification: 'Delete Notification',
+    deleteNotificationConfirm: 'Are you sure you want to delete this notification?',
+    deleteAllNotifications: 'Delete All Notifications',
+    deleteAllNotificationsConfirm: 'Are you sure you want to delete all notifications?',
+    markAllRead: 'Mark All as Read',
 };

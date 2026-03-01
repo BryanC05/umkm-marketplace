@@ -4,13 +4,13 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeStore } from '../../store/themeStore';
-import { useLanguageStore } from '../../store/languageStore';
+import { useTranslation } from '../../hooks/useTranslation';
 import { useDriverStore } from '../../store/driverStore';
 import { useTheme } from '../../theme/ThemeContext';
 
 function StatCard({ label, value, icon, color }) {
     const { colors, isDarkMode } = useTheme();
-    const { t } = useLanguageStore();
+    const { t } = useTranslation();
 
     const styles = useMemo(() => StyleSheet.create({
         card: {
@@ -122,7 +122,7 @@ function EarningsRow({ item }) {
 
 export default function EarningsScreen() {
     const { colors, isDarkMode } = useThemeStore();
-    const { t } = useLanguageStore();
+    const { t } = useTranslation();
     const { stats, earningsHistory, fetchDriverStats, fetchEarnings } = useDriverStore();
     const [loading, setLoading] = useState(true);
     const [period, setPeriod] = useState('week');

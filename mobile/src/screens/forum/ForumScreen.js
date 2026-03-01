@@ -5,14 +5,14 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeStore } from '../../store/themeStore';
-import { useLanguageStore } from '../../store/languageStore';
+import { useTranslation } from '../../hooks/useTranslation';
 import api from '../../api/api';
 import ForumPostCard from '../../components/ForumPostCard';
 import { ForumScreenSkeleton } from '../../components/LoadingSkeleton';
 
 export default function ForumScreen({ navigation }) {
     const { colors } = useThemeStore();
-    const { t } = useLanguageStore();
+    const { t } = useTranslation();
     const [threads, setThreads] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);

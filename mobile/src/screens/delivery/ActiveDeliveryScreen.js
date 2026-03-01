@@ -6,7 +6,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useThemeStore } from '../../store/themeStore';
-import { useLanguageStore } from '../../store/languageStore';
+import { useTranslation } from '../../hooks/useTranslation';
 import { useDriverStore } from '../../store/driverStore';
 import { haversineDistanceKm } from '../../utils/helpers';
 import { useTheme } from '../../theme/ThemeContext';
@@ -22,7 +22,7 @@ const DELIVERY_STEPS = [
 
 export default function ActiveDeliveryScreen() {
     const { colors, isDarkMode } = useThemeStore();
-    const { t } = useLanguageStore();
+    const { t } = useTranslation();
     const { 
         activeDelivery, 
         currentLocation, 

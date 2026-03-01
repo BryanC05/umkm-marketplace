@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeStore } from '../../store/themeStore';
-import { useLanguageStore } from '../../store/languageStore';
+import { useTranslation } from '../../hooks/useTranslation';
 import api from '../../api/api';
 import ProductCard from '../../components/ProductCard';
 import { ProductsListSkeleton } from '../../components/LoadingSkeleton';
@@ -15,8 +15,7 @@ const { width } = Dimensions.get('window');
 
 export default function ProductsScreen({ navigation, route }) {
     const { colors, isDarkMode } = useThemeStore();
-    const language = useLanguageStore((s) => s.language);
-    const { t } = useLanguageStore();
+    const { t, language } = useTranslation();
     const initialCategory = route?.params?.category || 'all';
     const initialSearch = route?.params?.search || '';
     const [products, setProducts] = useState([]);

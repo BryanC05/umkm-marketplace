@@ -1,5 +1,5 @@
-import Navbar from "../new-ui/Navbar";
-import Footer from "../new-ui/Footer";
+import Navbar from "./Navbar";
+import Footer from "./Footer";
 import AnimatedOutlet from "./AnimatedOutlet";
 
 const Layout = () => {
