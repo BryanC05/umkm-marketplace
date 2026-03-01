@@ -71,7 +71,7 @@ export default function ReviewSection({ productId }) {
         if (!newRating || !token) return;
         setSubmitting(true);
         try {
-            const res = await fetch(`${API_URL}/reviews/`, {
+            const res = await fetch(`${API_URL}/reviews`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

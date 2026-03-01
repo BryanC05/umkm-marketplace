@@ -13,8 +13,8 @@ export default function PromoManager() {
 
     const fetchPromos = async () => {
         try {
-            const res = await api.get('/promos/');
-            setPromos(res.data || []);
+            const res = await api.get('/promos');
+            setPromos(Array.isArray(res.data) ? res.data : []);
         } catch (e) { /* ignore */ }
         setLoading(false);
     };
@@ -24,7 +24,7 @@ export default function PromoManager() {
     const handleCreate = async (e) => {
         e.preventDefault();
         try {
-            await api.post('/promos/', {
+            await api.post('/promos', {
                 code: form.code,
                 discountType: form.discountType,
                 discountValue: Number(form.discountValue),

@@ -64,7 +64,7 @@ export default function BusinessSection() {
 
         setSaving(true);
         try {
-            const response = await api.post('/business/', form);
+            const response = await api.post('/business', form);
             setBusiness(response.data.business);
             setEditing(false);
             toast({
@@ -113,7 +113,7 @@ export default function BusinessSection() {
             const reader = new FileReader();
             reader.onloadend = async () => {
                 const base64 = reader.result;
-                
+
                 // Upload image
                 const uploadResponse = await api.post('/product-images/process', {
                     image: base64,
@@ -124,7 +124,7 @@ export default function BusinessSection() {
                 // Update business logo
                 await api.put('/business/logo', { logoUrl });
                 await fetchBusiness();
-                
+
                 toast({
                     title: 'Success',
                     description: 'Logo updated successfully!',
@@ -164,7 +164,7 @@ export default function BusinessSection() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <p className="text-muted-foreground">
-                        Register your business to access logo generation, showcase your brand, 
+                        Register your business to access logo generation, showcase your brand,
                         and unlock verified seller status.
                     </p>
                     <Button onClick={() => setEditing(true)} className="w-full">
@@ -306,7 +306,7 @@ export default function BusinessSection() {
                                 </div>
                             )}
                         </div>
-                        
+
                         <div>
                             <CardTitle className="text-xl">{business.name}</CardTitle>
                             <div className="flex items-center gap-2 mt-1">
@@ -317,7 +317,7 @@ export default function BusinessSection() {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div className="flex gap-2">
                         <div className="relative">
                             <input
@@ -338,12 +338,12 @@ export default function BusinessSection() {
                     </div>
                 </div>
             </CardHeader>
-            
+
             <CardContent className="space-y-4 pt-0">
                 {business.description && (
                     <p className="text-muted-foreground">{business.description}</p>
                 )}
-                
+
                 <div className="grid gap-3">
                     <div className="flex items-center gap-3 text-sm">
                         <Mail className="h-4 w-4 text-muted-foreground" />
