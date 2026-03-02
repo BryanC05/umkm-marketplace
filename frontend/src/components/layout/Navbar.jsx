@@ -209,7 +209,7 @@ const Navbar = () => {
                         <ChevronDown className="h-3.5 w-3.5" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-52">
+                    <DropdownMenuContent align="end" className="w-52 bg-white/50 dark:bg-black/50 backdrop-blur-sm border-border">
                       <DropdownMenuLabel>Seller Menu</DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onSelect={() => handleNavigate("/seller/dashboard")}>
@@ -247,12 +247,6 @@ const Navbar = () => {
                       <Heart className="h-4 w-4 mr-2" />
                       Tersimpan
                     </DropdownMenuItem>
-                    {isSeller && (
-                      <DropdownMenuItem onSelect={() => handleNavigate("/seller/add-product")}>
-                        <PlusCircle className="h-4 w-4 mr-2" />
-                        Add Product
-                      </DropdownMenuItem>
-                    )}
                     <DropdownMenuItem onSelect={() => handleNavigate("/notifications")}>
                       <Bell className="h-4 w-4 mr-2" />
                       Notifikasi
