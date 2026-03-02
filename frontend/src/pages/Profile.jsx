@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useParams } from "react-router-dom";
 import { getBackendUrl } from "@/config";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -233,11 +233,13 @@ const ProfileOrders = () => {
 
 const Profile = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
   const { user, isAuthenticated, setUser } = useAuthStore();
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
-  const isSellerUser = true; // All users are treated equally - no buyer/seller distinction in UI
+  const isOwnProfile = !id || id === user?.id;
+  const isSellerUser = true;
   const [myProducts, setMyProducts] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -255,31 +257,41 @@ const Profile = () => {
   const [showMapPicker, setShowMapPicker] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated && !id) {
       navigate("/login");
       return;
     }
     fetchProfile();
-    if (isSellerUser) {
+    if (isOwnProfile && isSellerUser) {
       fetchMyProducts();
     }
-  }, [isAuthenticated, navigate, user?.role]);
+  }, [isAuthenticated, navigate, user?.role, id]);
 
   const fetchProfile = async () => {
     try {
-      const response = await api.get("/users/profile");
-      setProfile(response.data);
-      setEditForm({
-        name: response.data.name || "",
-        phone: response.data.phone || "",
-        businessName: response.data.businessName || "",
-        businessType: response.data.businessType || "",
-        address: response.data.location?.address || "",
-        city: response.data.location?.city || "",
-        state: response.data.location?.state || "",
-        lat: response.data.location?.coordinates?.[1] || null,
-        lng: response.data.location?.coordinates?.[0] || null,
-      });
+      let response;
+      if (id && id !== user?.id) {
+        // Viewing another user's profile
+        response = await api.get(`/sellers/${id}`);
+        setProfile(response.data);
+        // Don't allow editing other users' profiles
+        setIsEditing(false);
+      } else {
+        // Viewing own profile
+        response = await api.get("/users/profile");
+        setProfile(response.data);
+        setEditForm({
+          name: response.data.name || "",
+          phone: response.data.phone || "",
+          businessName: response.data.businessName || "",
+          businessType: response.data.businessType || "",
+          address: response.data.location?.address || "",
+          city: response.data.location?.city || "",
+          state: response.data.location?.state || "",
+          lat: response.data.location?.coordinates?.[1] || null,
+          lng: response.data.location?.coordinates?.[0] || null,
+        });
+      }
     } catch (error) {
       console.error("Failed to fetch profile:", error);
     } finally {

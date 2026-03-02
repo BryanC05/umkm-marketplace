@@ -141,7 +141,9 @@ export default function OrdersScreen({ navigation }) {
                     )}
                     <View style={{ flex: 1, marginLeft: 10 }}>
                         <Text style={{ fontSize: 15, fontWeight: '700', color: colors?.text }}>
-                            {order.seller?.name || order.seller?.businessName || 'Store'}
+                            {isSeller(order) 
+                                ? (order.buyer?.name || 'Buyer') 
+                                : (order.seller?.name || order.seller?.businessName || 'Store')}
                         </Text>
                         <Text style={{ fontSize: 12, color: colors?.textSecondary }}>
                             {order.itemsCount || order.items?.reduce((sum, item) => sum + (item.quantity || 1), 0) || order.products?.reduce((sum, item) => sum + (item.quantity || 1), 0) || 0} item(s)
@@ -233,7 +235,7 @@ export default function OrdersScreen({ navigation }) {
                             <TouchableOpacity 
                                 onPress={() => {
                                     if (order.seller?._id) {
-                                        navigation.navigate('ProfileScreen', { userId: order.seller._id });
+                                        navigation.navigate('ProfileMain', { userId: order.seller._id });
                                     }
                                 }}
                             >
@@ -250,7 +252,7 @@ export default function OrdersScreen({ navigation }) {
                                 <TouchableOpacity 
                                     onPress={() => {
                                         if (order.buyer?._id) {
-                                            navigation.navigate('ProfileScreen', { userId: order.buyer._id });
+                                            navigation.navigate('ProfileMain', { userId: order.buyer._id });
                                         }
                                     }}
                                 >

@@ -397,6 +397,7 @@ func (h *OrderHandler) GetMyOrders(c *gin.Context) {
 				"buyerInfo":       0,
 				"seller.password": 0,
 				"buyer.password":  0,
+				"buyer.email":     0,
 			},
 		},
 	}

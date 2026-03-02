@@ -81,6 +81,7 @@ function App() {
               <Route path="/seller/product-tracking" element={<SellerProductTracking />} />
               <Route path="/orders" element={<Orders />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/profile/:id" element={<Profile />} />
               <Route path="/chat" element={<Chat />} />
               <Route path="/sell" element={<Sell />} />
               <Route path="/messages" element={<Messages />} />
