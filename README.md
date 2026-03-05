@@ -533,11 +533,13 @@ npm run dev
 
 - Detailed phased roadmap: [`MVP_ROADMAP.md`](./MVP_ROADMAP.md)
 - Monetization workflow and pricing model: [`MONETIZATION_WORKFLOW.md`](./MONETIZATION_WORKFLOW.md)
+- Centralized n8n automation architecture: [`N8N_AUTOMATION.md`](./N8N_AUTOMATION.md)
 - [x] Real-time chat between buyers and sellers
 - [x] Community forum system
 - [x] Multi-language support (English/Hindi)
 - [x] Dark/light theme support
 - [x] Mobile app (React Native/Expo)
+- [x] n8n Webhook Automations (Order Confirmations, Inventory Alerts)
 - [ ] Review and rating system
 - [ ] Push notifications for order updates
 - [ ] Advanced analytics for sellers

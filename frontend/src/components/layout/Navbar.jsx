@@ -21,6 +21,7 @@ import {
   ChevronDown,
   Palette,
   Zap,
+  Crown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +43,7 @@ const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [activeOrderCount, setActiveOrderCount] = useState(0);
+  const [membership, setMembership] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -50,8 +52,21 @@ const Navbar = () => {
   const { theme, toggleTheme } = useThemeStore();
   const { language, toggleLanguage } = useLanguageStore();
   const { t } = useTranslation();
-  // All users are now sellers by default - no more buyer/seller classification
-  const isSeller = true;
+  const isSeller = user?.isSeller || false;
+
+  useEffect(() => {
+    const fetchMembership = async () => {
+      if (isAuthenticated && user?.isSeller) {
+        try {
+          const response = await api.get('/users/membership/status');
+          setMembership(response.data);
+        } catch (err) {
+          console.error('Failed to fetch membership:', err);
+        }
+      }
+    };
+    fetchMembership();
+  }, [isAuthenticated, user?.isSeller]);
 
   const cartCount = getTotalItems();
 
@@ -89,7 +104,8 @@ const Navbar = () => {
         { to: "/seller/dashboard", label: t("nav.dashboard") || "Dashboard Penjual", icon: Store },
         { to: "/seller/product-tracking", label: "Product Tracker", icon: BarChart3 },
         { to: "/seller/add-product", label: "Tambah Produk", icon: PlusCircle },
-        { to: "/automation", label: "Automations", icon: Zap },
+        { to: "/logo-generator", label: "Logo Generator", icon: Palette, badge: !isSeller ? 'seller' : (!membership?.isMember ? 'membership' : null) },
+        { to: "/automation", label: "Automations", icon: Zap, badge: !isSeller ? 'seller' : (!membership?.isMember ? 'membership' : null) },
       ]
       : []),
   ];
@@ -229,10 +245,20 @@ const Navbar = () => {
                       <DropdownMenuItem onSelect={() => handleNavigate("/logo-generator")}>
                         <Palette className="h-4 w-4 mr-2" />
                         Logo Generator
+                        {!isSeller ? (
+                          <Store className="h-3 w-3 ml-auto text-orange-500" />
+                        ) : !membership?.isMember ? (
+                          <Crown className="h-3 w-3 ml-auto text-yellow-500" />
+                        ) : null}
                       </DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => handleNavigate("/automation")}>
                         <Zap className="h-4 w-4 mr-2" />
                         Automations
+                        {!isSeller ? (
+                          <Store className="h-3 w-3 ml-auto text-orange-500" />
+                        ) : !membership?.isMember ? (
+                          <Crown className="h-3 w-3 ml-auto text-yellow-500" />
+                        ) : null}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -338,11 +364,15 @@ const Navbar = () => {
                         <link.icon className="h-4 w-4" />
                         {link.label}
                       </span>
-                      {!!link.badge && (
+                      {link.badge === 'seller' ? (
+                        <Store className="h-4 w-4 text-orange-500" />
+                      ) : link.badge === 'membership' ? (
+                        <Crown className="h-4 w-4 text-yellow-500" />
+                      ) : link.badge ? (
                         <span className="inline-flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground font-bold">
                           {link.badge > 9 ? "9+" : link.badge}
                         </span>
-                      )}
+                      ) : null}
                     </Link>
                   ))}
                 </div>

@@ -11,40 +11,44 @@ import {
 } from 'lucide-react';
 import api from '@/utils/api';
 import { useAuthStore } from '@/store/authStore';
+import { useTranslation } from '@/hooks/useTranslation';
 import './Automation.css';
 
-const WORKFLOW_TYPES = [
+const getWorkflowTypes = (t) => [
   {
     value: 'order_confirmation',
-    label: 'Order Confirmation',
-    description: 'Send confirmation emails when new orders are placed',
+    label: t('automation.workflowTypes.order_confirmation') || 'Order Confirmation',
+    description: t('automation.workflowTypes.order_confirmation_desc') || 'Send confirmation emails when new orders are placed',
     icon: Mail,
     color: 'text-blue-500',
     bgColor: 'bg-blue-500/10',
   },
   {
     value: 'inventory_alert',
-    label: 'Inventory Alert',
-    description: 'Get notified when product stock runs low',
+    label: t('automation.workflowTypes.inventory_alert') || 'Inventory Alert',
+    description: t('automation.workflowTypes.inventory_alert_desc') || 'Get notified when product stock runs low',
     icon: Package,
     color: 'text-orange-500',
     bgColor: 'bg-orange-500/10',
   },
   {
     value: 'welcome_series',
-    label: 'Welcome Series',
-    description: 'Send welcome emails to new customers',
+    label: t('automation.workflowTypes.welcome_series') || 'Welcome Series',
+    description: t('automation.workflowTypes.welcome_series_desc') || 'Send welcome emails to new customers',
     icon: UserPlus,
     color: 'text-green-500',
     bgColor: 'bg-green-500/10',
   },
 ];
 
-const getWorkflowMeta = (type) =>
-  WORKFLOW_TYPES.find((w) => w.value === type) || WORKFLOW_TYPES[0];
-
 const Automation = () => {
   const { user } = useAuthStore();
+  const { t } = useTranslation();
+  const workflowTypes = getWorkflowTypes(t);
+
+  const getWorkflowMeta = (type) =>
+    workflowTypes.find((w) => w.value === type) || workflowTypes[0];
+
   const [workflows, setWorkflows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -89,11 +93,11 @@ const Automation = () => {
       );
       setFeedback({
         type: 'success',
-        message: currentStatus ? 'Workflow paused' : 'Workflow activated',
+        message: currentStatus ? (t('automation.workflowPaused') || 'Workflow paused') : (t('automation.workflowActivated') || 'Workflow activated'),
       });
     } catch (error) {
       console.error('Failed to toggle workflow:', error);
-      setFeedback({ type: 'error', message: 'Failed to toggle workflow' });
+      setFeedback({ type: 'error', message: t('automation.toggleFailed') || 'Failed to toggle workflow' });
     }
   };
 
@@ -151,15 +155,60 @@ const Automation = () => {
   if (!user?.isSeller) {
     return (
       <div className="container py-12">
+        {/* How It Works - Always visible */}
+        <div className="endfield-card endfield-gradient p-5 md:p-7 mb-8">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-primary mb-2">
+                {t('automation.workflowEngine') || 'Workflow Engine'}
+              </p>
+              <h1 className="text-3xl font-bold">{t('automation.title') || 'Automation'}</h1>
+              <p className="text-muted-foreground">
+                {t('automation.subtitle') || 'Connect n8n workflows to automate your business processes'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="endfield-card p-5 md:p-6 mb-8">
+          <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+            <Zap size={20} className="text-primary" />
+            {t('automation.howItWorks') || 'How It Works'}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 rounded-lg bg-muted/50">
+              <div className="text-2xl font-bold text-primary mb-1">1</div>
+              <p className="text-sm font-medium mb-1">{t('automation.step1Title') || 'Choose a Workflow'}</p>
+              <p className="text-xs text-muted-foreground">
+                {t('automation.step1Desc')}
+              </p>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/50">
+              <div className="text-2xl font-bold text-primary mb-1">2</div>
+              <p className="text-sm font-medium mb-1">{t('automation.step2Title') || 'Activate It'}</p>
+              <p className="text-xs text-muted-foreground">
+                {t('automation.step2Desc')}
+              </p>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/50">
+              <div className="text-2xl font-bold text-primary mb-1">3</div>
+              <p className="text-sm font-medium mb-1">{t('automation.step3Title') || 'Sit Back & Relax'}</p>
+              <p className="text-xs text-muted-foreground">
+                {t('automation.step3Desc')}
+              </p>
+            </div>
+          </div>
+        </div>
+
         <Card>
           <CardContent className="p-8 text-center">
             <Zap className="mx-auto mb-4 text-muted-foreground" size={48} />
-            <h2 className="text-xl font-bold mb-2">Seller Access Required</h2>
+            <h2 className="text-xl font-bold mb-2">{t('automation.sellerAccessRequired') || 'Seller Access Required'}</h2>
             <p className="text-muted-foreground mb-4">
-              Automation features are available for sellers only. Register your business to get started.
+              {t('automation.sellerAccessDesc') || 'Automation features are available for sellers only. Register your business to get started.'}
             </p>
             <Link to="/sell">
-              <Button>Register as Seller</Button>
+              <Button>{t('automation.registerAsSeller') || 'Register as Seller'}</Button>
             </Link>
           </CardContent>
         </Card>
@@ -172,7 +221,7 @@ const Automation = () => {
     return (
       <div className="container py-12 flex items-center justify-center text-muted-foreground gap-2">
         <Loader2 size={20} className="animate-spin" />
-        Loading…
+        {t('common.loading') || 'Loading…'}
       </div>
     );
   }
@@ -180,20 +229,65 @@ const Automation = () => {
   if (!membership?.isMember) {
     return (
       <div className="container py-12">
+        {/* How It Works - Always visible */}
+        <div className="endfield-card endfield-gradient p-5 md:p-7 mb-8">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-primary mb-2">
+                {t('automation.workflowEngine') || 'Workflow Engine'}
+              </p>
+              <h1 className="text-3xl font-bold">{t('automation.title') || 'Automation'}</h1>
+              <p className="text-muted-foreground">
+                {t('automation.subtitle') || 'Connect n8n workflows to automate your business processes'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="endfield-card p-5 md:p-6 mb-8">
+          <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+            <Zap size={20} className="text-primary" />
+            {t('automation.howItWorks') || 'How It Works'}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 rounded-lg bg-muted/50">
+              <div className="text-2xl font-bold text-primary mb-1">1</div>
+              <p className="text-sm font-medium mb-1">{t('automation.step1Title') || 'Choose a Workflow'}</p>
+              <p className="text-xs text-muted-foreground">
+                {t('automation.step1Desc')}
+              </p>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/50">
+              <div className="text-2xl font-bold text-primary mb-1">2</div>
+              <p className="text-sm font-medium mb-1">{t('automation.step2Title') || 'Activate It'}</p>
+              <p className="text-xs text-muted-foreground">
+                {t('automation.step2Desc')}
+              </p>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/50">
+              <div className="text-2xl font-bold text-primary mb-1">3</div>
+              <p className="text-sm font-medium mb-1">{t('automation.step3Title') || 'Sit Back & Relax'}</p>
+              <p className="text-xs text-muted-foreground">
+                {t('automation.step3Desc')}
+              </p>
+            </div>
+          </div>
+        </div>
+
         <Card className="border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20">
           <CardContent className="p-8 text-center">
             <Crown className="mx-auto mb-4 text-yellow-500" size={48} />
-            <h2 className="text-xl font-bold mb-2">Premium Feature</h2>
+            <h2 className="text-xl font-bold mb-2">{t('automation.premiumFeature') || 'Premium Feature'}</h2>
             <p className="text-muted-foreground mb-1">
-              Workflow automation is available exclusively for <strong>Premium Members</strong>.
+              {t('automation.premiumDesc') || 'Workflow automation is available exclusively for Premium Members.'}
             </p>
             <p className="text-muted-foreground mb-6 text-sm">
-              Upgrade to Premium for <strong>Rp 10.000/month</strong> to unlock automated emails, inventory alerts, and more.
+              {t('automation.upgradeDesc') || 'Upgrade to Premium for Rp 10.000/month to unlock automated emails, inventory alerts, and more.'}
             </p>
             <Link to="/seller/dashboard">
               <Button className="gap-2">
                 <Crown size={16} />
-                Upgrade on Dashboard
+                {t('automation.upgradeOnDashboard') || 'Upgrade on Dashboard'}
               </Button>
             </Link>
           </CardContent>
@@ -223,11 +317,11 @@ const Automation = () => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-primary mb-2">
-              Workflow Engine
+              {t('automation.workflowEngine') || 'Workflow Engine'}
             </p>
-            <h1 className="text-3xl font-bold">Automation</h1>
+            <h1 className="text-3xl font-bold">{t('automation.title') || 'Automation'}</h1>
             <p className="text-muted-foreground">
-              Connect n8n workflows to automate your business processes
+              {t('automation.subtitle') || 'Connect n8n workflows to automate your business processes'}
             </p>
           </div>
           <div className="flex gap-3 flex-wrap">
@@ -236,11 +330,11 @@ const Automation = () => {
               className="inline-flex items-center gap-2 px-4 py-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md transition-colors"
             >
               <ArrowLeft size={18} />
-              Dashboard
+              {t('nav.dashboard') || 'Dashboard'}
             </Link>
             <Button onClick={() => setShowCreateModal(true)} className="gap-2">
               <Plus size={18} />
-              Create Workflow
+              {t('automation.createWorkflow') || 'Create Workflow'}
             </Button>
           </div>
         </div>
@@ -251,28 +345,28 @@ const Automation = () => {
         <div className="endfield-card p-5 md:p-6 mb-8">
           <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
             <Zap size={20} className="text-primary" />
-            How It Works
+            {t('automation.howItWorks') || 'How It Works'}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="p-4 rounded-lg bg-muted/50">
               <div className="text-2xl font-bold text-primary mb-1">1</div>
-              <p className="text-sm font-medium mb-1">Choose a Workflow</p>
+              <p className="text-sm font-medium mb-1">{t('automation.step1Title') || 'Choose a Workflow'}</p>
               <p className="text-xs text-muted-foreground">
-                Pick the type of automation you want — order confirmations, inventory alerts, or welcome emails.
+                {t('automation.step1Desc') || 'Pick the type of automation you want — order confirmations, inventory alerts, or welcome emails.'}
               </p>
             </div>
             <div className="p-4 rounded-lg bg-muted/50">
               <div className="text-2xl font-bold text-primary mb-1">2</div>
-              <p className="text-sm font-medium mb-1">Activate It</p>
+              <p className="text-sm font-medium mb-1">{t('automation.step2Title') || 'Activate It'}</p>
               <p className="text-xs text-muted-foreground">
-                Click Create and you're done. Our platform handles the automation infrastructure for you.
+                {t('automation.step2Desc') || 'Click Create and you\'re done. Our platform handles the automation infrastructure for you.'}
               </p>
             </div>
             <div className="p-4 rounded-lg bg-muted/50">
               <div className="text-2xl font-bold text-primary mb-1">3</div>
-              <p className="text-sm font-medium mb-1">Sit Back & Relax</p>
+              <p className="text-sm font-medium mb-1">{t('automation.step3Title') || 'Sit Back & Relax'}</p>
               <p className="text-xs text-muted-foreground">
-                When events occur (e.g. new orders), your automations trigger automatically.
+                {t('automation.step3Desc') || 'When events occur (e.g. new orders), your automations trigger automatically.'}
               </p>
             </div>
           </div>
@@ -283,18 +377,18 @@ const Automation = () => {
       {loading ? (
         <div className="flex items-center justify-center py-12 text-muted-foreground gap-2">
           <Loader2 size={20} className="animate-spin" />
-          Loading workflows…
+          {t('automation.loadingWorkflows') || 'Loading workflows…'}
         </div>
       ) : workflows.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center">
             <Zap className="mx-auto mb-4 text-muted-foreground" size={40} />
             <p className="text-muted-foreground mb-4">
-              No workflows configured yet
+              {t('automation.noWorkflows') || 'No workflows configured yet'}
             </p>
             <Button onClick={() => setShowCreateModal(true)} className="gap-2">
               <Plus size={16} />
-              Create Your First Workflow
+              {t('automation.createFirstWorkflow') || 'Create Your First Workflow'}
             </Button>
           </CardContent>
         </Card>
@@ -321,7 +415,7 @@ const Automation = () => {
                             workflow.isActive ? 'default' : 'secondary'
                           }
                         >
-                          {workflow.isActive ? 'Active' : 'Paused'}
+                          {workflow.isActive ? (t('automation.active') || 'Active') : (t('automation.inactive') || 'Paused')}
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">
@@ -395,7 +489,7 @@ const Automation = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Zap size={20} className="text-primary" />
-                Create Workflow
+                {t('automation.createWorkflow') || 'Create Workflow'}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -403,10 +497,10 @@ const Automation = () => {
                 {/* Workflow Type Selection */}
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Workflow Type
+                    {t('automation.selectType') || 'Workflow Type'}
                   </label>
                   <div className="space-y-2">
-                    {WORKFLOW_TYPES.map((wt) => {
+                    {workflowTypes.map((wt) => {
                       const WtIcon = wt.icon;
                       return (
                         <button
@@ -440,7 +534,7 @@ const Automation = () => {
                 {/* Custom Name (Optional) */}
                 <div>
                   <label className="block text-sm font-medium mb-1.5">
-                    Workflow Name{' '}
+                    {t('automation.workflowName') || 'Workflow Name'}{' '}
                     <span className="text-muted-foreground font-normal">
                       (optional)
                     </span>
@@ -463,7 +557,7 @@ const Automation = () => {
                       setNewWorkflowName('');
                     }}
                   >
-                    Cancel
+                    {t('common.cancel') || 'Cancel'}
                   </Button>
                   <Button
                     type="submit"
@@ -473,10 +567,10 @@ const Automation = () => {
                     {creating ? (
                       <>
                         <Loader2 size={16} className="animate-spin" />
-                        Creating…
+                        {t('common.loading') || 'Creating…'}
                       </>
                     ) : (
-                      'Create Workflow'
+                      t('automation.create') || 'Create'
                     )}
                   </Button>
                 </div>

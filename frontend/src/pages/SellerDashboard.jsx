@@ -255,10 +255,19 @@ function SellerDashboard() {
               >
                 <Sparkles size={18} />
                 Logo Generator
+                {!membership?.isMember && <Crown size={14} className="text-yellow-500" />}
               </Link>
               <Link to="/seller/add-product" className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90">
                 <Plus size={20} />
                 {t('seller.addProduct')}
+              </Link>
+              <Link
+                to="/automation"
+                className="inline-flex items-center gap-2 px-4 py-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md transition-colors"
+              >
+                <Sparkles size={18} />
+                Automations
+                {!membership?.isMember && <Crown size={14} className="text-yellow-500" />}
               </Link>
             </div>
           </div>
@@ -270,7 +279,10 @@ function SellerDashboard() {
             <p className="text-xs text-muted-foreground mt-1">Monitor buyer status and delivery locations.</p>
           </Link>
           <Link to="/logo-generator" className="endfield-card p-4 hover:border-primary/60 transition-colors">
-            <p className="text-sm font-semibold">Generate Brand Logo</p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-semibold">Generate Brand Logo</p>
+              {!membership?.isMember && <Crown className="h-3.5 w-3.5 text-yellow-500" />}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">Create and apply AI logos for your store profile.</p>
           </Link>
           <Link to="/orders" className="endfield-card p-4 hover:border-primary/60 transition-colors">
@@ -278,7 +290,10 @@ function SellerDashboard() {
             <p className="text-xs text-muted-foreground mt-1">Review new orders and payment status.</p>
           </Link>
           <Link to="/automation" className="endfield-card p-4 hover:border-primary/60 transition-colors">
-            <p className="text-sm font-semibold">⚡ Automations</p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-semibold">⚡ Automations</p>
+              {!membership?.isMember && <Crown className="h-3.5 w-3.5 text-yellow-500" />}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">Connect n8n workflows for emails & alerts.</p>
           </Link>
         </div>

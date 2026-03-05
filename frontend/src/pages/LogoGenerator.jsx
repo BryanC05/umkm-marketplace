@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Sparkles, Upload, AlertCircle, Loader2, Check, ArrowLeft, RefreshCw } from 'lucide-react';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { Sparkles, Upload, AlertCircle, Loader2, Check, ArrowLeft, RefreshCw, Crown, Store } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -11,6 +11,7 @@ import { useLogoGenerator } from '@/hooks/useLogoGenerator';
 import { useAuthStore } from '@/store/authStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { getBackendUrl } from '@/config';
+import api from '@/utils/api';
 import LogoGallery from '@/components/logo/LogoGallery';
 import LogoUpload from '@/components/logo/LogoUpload';
 import PromptSuggestions from '@/components/logo/PromptSuggestions';
@@ -26,13 +27,15 @@ const getLogoUrl = (url) => {
 function LogoGenerator() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
   const { t } = useTranslation();
 
   const [prompt, setPrompt] = useState('');
   const [currentBusinessLogo, setCurrentBusinessLogo] = useState(null);
   const [hasCustomLogo, setHasCustomLogo] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [membership, setMembership] = useState(null);
+  const [membershipLoading, setMembershipLoading] = useState(true);
 
   const fromRegistration = searchParams.get('from') === 'registration';
 
@@ -53,13 +56,32 @@ function LogoGenerator() {
     clearError
   } = useLogoGenerator();
 
-  // Load initial data
+  // Fetch membership status
+  useEffect(() => {
+    const fetchMembership = async () => {
+      if (user?.isSeller) {
+        try {
+          const response = await api.get('/users/membership/status');
+          setMembership(response.data);
+        } catch (err) {
+          console.error('Failed to fetch membership:', err);
+        }
+      }
+      setMembershipLoading(false);
+    };
+    fetchMembership();
+  }, [user?.isSeller]);
+
+  // Gate: Must be authenticated
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login', { state: { from: '/logo-generator' } });
       return;
     }
+  }, [isAuthenticated, navigate]);
 
+  // Load initial data
+  useEffect(() => {
     const loadData = async () => {
       try {
         const historyData = await getHistory();
@@ -74,8 +96,10 @@ function LogoGenerator() {
       }
     };
 
-    loadData();
-  }, [isAuthenticated, navigate, getHistory, getStatus]);
+    if (isAuthenticated && user?.isSeller && membership?.isMember) {
+      loadData();
+    }
+  }, [isAuthenticated, user?.isSeller, membership?.isMember, getHistory, getStatus]);
 
   // Clear success message after 3 seconds
   useEffect(() => {
@@ -84,6 +108,61 @@ function LogoGenerator() {
       return () => clearTimeout(timer);
     }
   }, [successMessage]);
+
+  // Gate: Must be a seller
+  if (!membershipLoading && !user?.isSeller) {
+    return (
+      <div className="container py-12">
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Store className="mx-auto mb-4 text-muted-foreground" size={48} />
+            <h2 className="text-xl font-bold mb-2">Seller Access Required</h2>
+            <p className="text-muted-foreground mb-4">
+              Logo Generator is available for sellers only. Register your business to get started.
+            </p>
+            <Link to="/sell">
+              <Button>Register as Seller</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Gate: Must have premium membership
+  if (!membershipLoading && membership && !membership.isMember) {
+    return (
+      <div className="container py-12">
+        <Card className="border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20">
+          <CardContent className="p-8 text-center">
+            <Crown className="mx-auto mb-4 text-yellow-500" size={48} />
+            <h2 className="text-xl font-bold mb-2">Premium Feature</h2>
+            <p className="text-muted-foreground mb-1">
+              Logo Generator is available exclusively for <strong>Premium Members</strong>.
+            </p>
+            <p className="text-muted-foreground mb-6 text-sm">
+              Upgrade to Premium for <strong>Rp 10.000/month</strong> to unlock AI logo generation and more.
+            </p>
+            <Link to="/seller/dashboard">
+              <Button className="gap-2">
+                <Crown size={16} />
+                Upgrade on Dashboard
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (membershipLoading) {
+    return (
+      <div className="container py-12 flex items-center justify-center text-muted-foreground gap-2">
+        <Loader2 size={20} className="animate-spin" />
+        Loading…
+      </div>
+    );
+  }
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
