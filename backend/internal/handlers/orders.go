@@ -350,6 +350,10 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 		map[string]interface{}{"orderId": order.ID.Hex()},
 	)
 
+	// Trigger the n8n webhook automation
+	webhookHandler := NewWebhookHandler()
+	go webhookHandler.TriggerOrderConfirmation(order, sellerID)
+
 	c.JSON(201, order)
 }
 
