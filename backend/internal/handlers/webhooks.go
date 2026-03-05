@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"os"
 
@@ -126,6 +128,7 @@ func (h *WebhookHandler) TriggerOrderConfirmation(order models.Order, sellerID p
 	// Use centralized N8N_WEBHOOK_URL from environment
 	webhookURL := os.Getenv("N8N_WEBHOOK_URL")
 	if webhookURL == "" {
+		fmt.Println("[Webhook] Central webhook omitted: N8N_WEBHOOK_URL not set in .env")
 		return // No centralized webhook configured
 	}
 
@@ -139,8 +142,11 @@ func (h *WebhookHandler) TriggerOrderConfirmation(order models.Order, sellerID p
 	}).Decode(&workflow)
 
 	if err != nil {
+		fmt.Printf("[Webhook] Seller %s has not opted in for order_confirmation\n", sellerID.Hex())
 		return // Seller has not opted in
 	}
+
+	fmt.Printf("[Webhook] Triggering order_confirmation to centralized URL for seller %s\n", sellerID.Hex())
 
 	payload := map[string]interface{}{
 		"event":     "order.created",
@@ -154,9 +160,29 @@ func (h *WebhookHandler) TriggerOrderConfirmation(order models.Order, sellerID p
 		},
 	}
 
-	jsonData, _ := json.Marshal(payload)
-	httpClient := &http.Client{}
-	httpClient.Post(webhookURL, "application/json", bytes.NewBuffer(jsonData))
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		fmt.Printf("[Webhook] JSON marshal error: %v\n", err)
+		return
+	}
+
+	go func() {
+		httpClient := &http.Client{}
+		resp, err := httpClient.Post(webhookURL, "application/json", bytes.NewBuffer(jsonData))
+
+		if err != nil {
+			fmt.Printf("[Webhook] Post Error: %v\n", err)
+			return
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode >= 400 {
+			bodyBytes, _ := io.ReadAll(resp.Body)
+			fmt.Printf("[Webhook] Failed with status %d: %s\n", resp.StatusCode, string(bodyBytes))
+		} else {
+			fmt.Printf("[Webhook] Success! Payload delivered.\n")
+		}
+	}()
 
 	workflowsCollection.UpdateOne(context.Background(), bson.M{"_id": workflow.ID}, bson.M{
 		"$inc": bson.M{"executionCount": 1},
