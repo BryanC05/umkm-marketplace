@@ -37,6 +37,7 @@ import SellerDashboardScreen from '../screens/seller/SellerDashboardScreen';
 import AddProductScreen from '../screens/seller/AddProductScreen';
 import MyProductsScreen from '../screens/seller/MyProductsScreen';
 import LogoGeneratorScreen from '../screens/seller/LogoGeneratorScreen';
+import AutomationScreen from '../screens/seller/AutomationScreen';
 import BusinessDetailsScreen from '../screens/seller/BusinessDetailsScreen';
 import MapViewScreen from '../screens/location/MapViewScreen';
 import NearbySellersScreen from '../screens/location/NearbySellersScreen';
@@ -300,6 +301,13 @@ function ProfileStackNavigator() {
             <ProfileStack.Screen
                 name="LogoGenerator"
                 component={LogoGeneratorScreen}
+                options={{
+                    headerShown: false,
+                }}
+            />
+            <ProfileStack.Screen
+                name="Automation"
+                component={AutomationScreen}
                 options={{
                     headerShown: false,
                 }}

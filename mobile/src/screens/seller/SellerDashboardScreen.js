@@ -359,6 +359,44 @@ export default function SellerDashboardScreen({ navigation }) {
                     </View>
                     <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} style={{ marginLeft: 'auto' }} />
                 </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={styles.actionBtn}
+                    onPress={() => navigation.navigate('LogoGenerator')}
+                >
+                    <View style={[styles.actionIcon, { backgroundColor: '#f59e0b' }]}>
+                        <Ionicons name="color-palette" size={24} color="#fff" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <Text style={styles.actionTitle}>{t.logoGenerator || 'Logo Generator'}</Text>
+                            {!membership?.isMember && (
+                                <Ionicons name="star" size={14} color="#f59e0b" />
+                            )}
+                        </View>
+                        <Text style={styles.actionDesc}>Create AI-generated logos for your store</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} style={{ marginLeft: 'auto' }} />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={styles.actionBtn}
+                    onPress={() => navigation.navigate('Automation')}
+                >
+                    <View style={[styles.actionIcon, { backgroundColor: '#8b5cf6' }]}>
+                        <Ionicons name="flash" size={24} color="#fff" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <Text style={styles.actionTitle}>{t.automation || 'Automations'}</Text>
+                            {!membership?.isMember && (
+                                <Ionicons name="star" size={14} color="#f59e0b" />
+                            )}
+                        </View>
+                        <Text style={styles.actionDesc}>Connect n8n workflows for emails & alerts</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} style={{ marginLeft: 'auto' }} />
+                </TouchableOpacity>
             </View>
         </ScrollView>
     );

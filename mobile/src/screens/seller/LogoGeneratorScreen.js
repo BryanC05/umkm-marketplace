@@ -53,7 +53,25 @@ export default function LogoGeneratorScreen({ navigation }) {
     const [countdown, setCountdown] = useState('');
     const [selectedLogo, setSelectedLogo] = useState(null);
     const [hasBusiness, setHasBusiness] = useState(null);
+    const [membership, setMembership] = useState(null);
+    const [membershipLoading, setMembershipLoading] = useState(true);
     const timerRef = useRef(null);
+
+    // Fetch membership status
+    useEffect(() => {
+        const fetchMembership = async () => {
+            if (user?.isSeller) {
+                try {
+                    const response = await api.get('/users/membership/status');
+                    setMembership(response.data);
+                } catch (err) {
+                    console.error('Failed to fetch membership:', err);
+                }
+            }
+            setMembershipLoading(false);
+        };
+        fetchMembership();
+    }, [user?.isSeller]);
 
     // Check if user has a business
     useEffect(() => {
@@ -66,7 +84,6 @@ export default function LogoGeneratorScreen({ navigation }) {
                     setHasBusiness(false);
                 }
             } catch (error) {
-                // If 404 or no business, user needs to register
                 if (error.response?.status === 404) {
                     setHasBusiness(false);
                 } else {
@@ -77,6 +94,81 @@ export default function LogoGeneratorScreen({ navigation }) {
         };
         checkBusiness();
     }, []);
+
+    // Show loading while checking membership and business
+    if (membershipLoading) {
+        return (
+            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={{ marginTop: 16, color: colors.textSecondary }}>{t.loading}</Text>
+            </View>
+        );
+    }
+
+    // Show seller required gate
+    if (!user?.isSeller) {
+        return (
+            <View style={styles.container}>
+                <View style={styles.header}>
+                    <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+                        <Ionicons name="arrow-back" size={24} color={colors.text} />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>{t.logoGenerator}</Text>
+                    <View style={{ width: 40 }} />
+                </View>
+                <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 32 }]}>
+                    <Ionicons name="storefront-outline" size={64} color={colors.primary} style={{ marginBottom: 16 }} />
+                    <Text style={{ fontSize: 20, fontWeight: '700', color: colors.text, textAlign: 'center', marginBottom: 12 }}>
+                        {t.sellerAccessRequired || 'Seller Access Required'}
+                    </Text>
+                    <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginBottom: 24 }}>
+                        {t.sellerAccessDescLogo || 'Logo Generator is available for sellers only. Register your business to get started.'}
+                    </Text>
+                    <TouchableOpacity
+                        style={[styles.generateBtn, { paddingHorizontal: 32 }]}
+                        onPress={() => navigation.navigate('Profile')}
+                    >
+                        <Ionicons name="storefront" size={20} color="#fff" />
+                        <Text style={styles.generateBtnText}>{t.registerAsSeller || 'Register as Seller'}</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+    }
+
+    // Show premium membership required gate
+    if (membership && !membership.isMember) {
+        return (
+            <View style={styles.container}>
+                <View style={styles.header}>
+                    <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+                        <Ionicons name="arrow-back" size={24} color={colors.text} />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>{t.logoGenerator}</Text>
+                    <View style={{ width: 40 }} />
+                </View>
+                <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 32 }]}>
+                    <Ionicons name="star-outline" size={64} color="#f59e0b" style={{ marginBottom: 16 }} />
+                    <Text style={{ fontSize: 20, fontWeight: '700', color: colors.text, textAlign: 'center', marginBottom: 12 }}>
+                        {t.premiumFeature || 'Premium Feature'}
+                    </Text>
+                    <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginBottom: 8 }}>
+                        {t.premiumDescLogo || 'Logo Generator is available exclusively for Premium Members.'}
+                    </Text>
+                    <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginBottom: 24 }}>
+                        {t.upgradeDescLogo || 'Upgrade to Premium for Rp 10.000/month to unlock AI logo generation and more.'}
+                    </Text>
+                    <TouchableOpacity
+                        style={[styles.generateBtn, { paddingHorizontal: 32 }]}
+                        onPress={() => navigation.navigate('SellerDashboard')}
+                    >
+                        <Ionicons name="star" size={20} color="#fff" />
+                        <Text style={styles.generateBtnText}>{t.upgradeOnDashboard || 'Upgrade on Dashboard'}</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+    }
 
     // Show business required alert
     useEffect(() => {
