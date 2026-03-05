@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { useLogoGenerator } from '@/hooks/useLogoGenerator';
 import { useAuthStore } from '@/store/authStore';
+import { useTranslation } from '@/hooks/useTranslation';
 import { getBackendUrl } from '@/config';
 import LogoGallery from '@/components/logo/LogoGallery';
 import LogoUpload from '@/components/logo/LogoUpload';
@@ -26,6 +27,7 @@ function LogoGenerator() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { isAuthenticated } = useAuthStore();
+  const { t } = useTranslation();
 
   const [prompt, setPrompt] = useState('');
   const [currentBusinessLogo, setCurrentBusinessLogo] = useState(null);
@@ -169,19 +171,19 @@ function LogoGenerator() {
                 onClick={() => navigate('/register')}
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
-                Back to Registration
+                {t('common.back')} Registration
               </Button>
             )}
             <p className="text-xs uppercase tracking-[0.2em] text-primary mb-2">Brand Builder</p>
-            <h1 className="text-3xl font-bold">Logo Generator</h1>
+            <h1 className="text-3xl font-bold">{t('logo.title')}</h1>
             <p className="text-muted-foreground mt-1">
-              Create a professional logo for your business using AI
+              {t('logo.logoDesc') || 'Create a professional logo for your business using AI'}
             </p>
           </div>
 
           {fromRegistration && currentBusinessLogo && (
             <Button onClick={handleContinue}>
-              Continue
+              {t('common.continue') || 'Continue'}
               <Check className="h-4 w-4 ml-1" />
             </Button>
           )}
@@ -209,9 +211,9 @@ function LogoGenerator() {
         <Card className="mb-6 endfield-card">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Daily Generation Limit</span>
+              <span className="text-sm font-medium">{t('logo.dailyLimit') || 'Daily Generation Limit'}</span>
               <span className="text-sm text-muted-foreground">
-                {status ? `${status.remaining} of ${status.limit} remaining` : 'Loading...'}
+                {status ? `${status.remaining} ${t('logo.of') || 'of'} ${status.limit} ${t('logo.remaining') || 'remaining'}` : t('common.loading') || 'Loading...'}
               </span>
             </div>
             <Progress
@@ -220,7 +222,7 @@ function LogoGenerator() {
             />
             {status && status.remaining === 0 && (
               <p className="text-sm text-destructive mt-2">
-                Daily limit reached. Resets in {status.resetInHours} hours.
+                {t('logo.limitReached') || 'Daily limit reached. Resets in'} {status.resetInHours} {t('logo.hours') || 'hours'}.
               </p>
             )}
               <div className="mt-4">
@@ -234,12 +236,12 @@ function LogoGenerator() {
                 {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                    Resetting...
+                    {t('logo.resetting') || 'Resetting...'}
                   </>
                 ) : (
                   <>
                     <RefreshCw className="h-4 w-4 mr-1" />
-                    Reset Limit (Testing)
+                    {t('logo.resetLimit') || 'Reset Limit'}
                   </>
                 )}
               </Button>
@@ -251,9 +253,9 @@ function LogoGenerator() {
         {currentBusinessLogo && (
         <Card className="mb-6 border-primary endfield-card">
             <CardHeader>
-              <CardTitle className="text-base">Current Business Logo</CardTitle>
+              <CardTitle className="text-base">{t('logo.currentLogo')}</CardTitle>
               <CardDescription>
-                {hasCustomLogo ? 'Your uploaded custom logo' : 'Your selected AI-generated logo'}
+                {hasCustomLogo ? t('logo.customLogo') : t('logo.aiLogo')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -269,29 +271,29 @@ function LogoGenerator() {
                     onClick={removeCustomLogo}
                     disabled={isLoading}
                   >
-                    Remove Custom Logo
+                    {t('logo.removeCustom')}
                   </Button>
                 )}
               </div>
             </CardContent>
           </Card>
+ {/* Generation Section */}
         )}
 
-        {/* Generation Section */}
-        <Card className="mb-6 endfield-card">
+               <Card className="mb-6 endfield-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
-              Generate New Logo
+              {t('logo.generateNew')}
             </CardTitle>
             <CardDescription>
-              Describe your ideal logo and our AI will create it for you
+              {t('logo.describePrompt')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Textarea
-                placeholder="Describe your logo in English or Bahasa Indonesia (e.g., 'Modern tech company logo with blue gradient' or 'Logo perusahaan teknologi modern dengan gradasi biru')"
+                placeholder={t('logo.describeLogo')}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 maxLength={500}
@@ -299,13 +301,13 @@ function LogoGenerator() {
                 disabled={isGenerating || (status && status.remaining === 0)}
               />
               <p className="text-xs text-muted-foreground">
-                Tip: Supports Bahasa Indonesia. Prompts are auto-translated for best results.
+                {t('logo.tip')}
               </p>
             </div>
 
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">
-                {prompt.length}/500 characters
+                {prompt.length}/500 {t('logo.characters')}
               </span>
 
               <div className="flex gap-2">
@@ -318,12 +320,12 @@ function LogoGenerator() {
                   {isGenerating ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                      Generating...
+                      {t('logo.generating')}
                     </>
                   ) : (
                     <>
                       <Sparkles className="h-4 w-4 mr-1" />
-                      Generate Logo
+                      {t('logo.generateLogo')}
                     </>
                   )}
                 </Button>

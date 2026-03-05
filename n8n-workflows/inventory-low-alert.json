@@ -1,0 +1,63 @@
+{
+    "name": "Inventory Low Alert",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "inventory-low",
+                "responseMode": "onReceived",
+                "options": {}
+            },
+            "id": "trigger-3",
+            "name": "Inventory Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1.1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "fromEmail": "={{ $env.SMTP_USER || 'your.email@gmail.com' }}",
+                "toEmail": "={{ $json.data.seller.email }}",
+                "subject": "⚠️ Low Stock Alert: {{ $json.data.productName }}",
+                "text": "Hi {{ $json.data.seller.name }},\n\nYour product \"{{ $json.data.productName }}\" is running low on stock!\n\n📦 Current Stock: {{ $json.data.currentStock }}\n⚠️ Threshold: {{ $json.data.threshold }}\n\nPlease restock soon to avoid missing sales.\n\n---\nMSME Marketplace Inventory System",
+                "options": {}
+            },
+            "id": "smtp-3",
+            "name": "Send Alert Email",
+            "type": "n8n-nodes-base.emailSend",
+            "typeVersion": 2,
+            "position": [
+                500,
+                300
+            ],
+            "credentials": {
+                "smtp": {
+                    "id": "REPLACE_WITH_SMTP_CREDENTIAL_ID",
+                    "name": "Gmail SMTP"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Inventory Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Send Alert Email",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "meta": {
+        "instanceId": "msme-marketplace"
+    }
+}

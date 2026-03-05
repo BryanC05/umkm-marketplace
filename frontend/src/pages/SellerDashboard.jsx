@@ -264,7 +264,7 @@ function SellerDashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <Link to="/seller/product-tracking" className="endfield-card p-4 hover:border-primary/60 transition-colors">
             <p className="text-sm font-semibold">Track Deliveries</p>
             <p className="text-xs text-muted-foreground mt-1">Monitor buyer status and delivery locations.</p>
@@ -276,6 +276,10 @@ function SellerDashboard() {
           <Link to="/orders" className="endfield-card p-4 hover:border-primary/60 transition-colors">
             <p className="text-sm font-semibold">Manage Orders</p>
             <p className="text-xs text-muted-foreground mt-1">Review new orders and payment status.</p>
+          </Link>
+          <Link to="/automation" className="endfield-card p-4 hover:border-primary/60 transition-colors">
+            <p className="text-sm font-semibold">⚡ Automations</p>
+            <p className="text-xs text-muted-foreground mt-1">Connect n8n workflows for emails & alerts.</p>
           </Link>
         </div>
 

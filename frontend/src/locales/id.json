@@ -1,5 +1,16 @@
 {
-    "nav": {
+  "common": {
+    "back": "Kembali ke",
+    "continue": "Lanjutkan",
+    "loading": "Memuat...",
+    "save": "Simpan",
+    "cancel": "Batal",
+    "delete": "Hapus",
+    "edit": "Edit",
+    "add": "Tambah",
+    "search": "Cari"
+  },
+  "nav": {
         "home": "Beranda",
         "products": "Produk",
         "nearby": "Terdekat",
@@ -490,6 +501,7 @@
     },
     "logo": {
         "title": "Pembuat Logo",
+        "logoDesc": "Buat logo profesional untuk bisnis Anda menggunakan AI",
         "generateLogo": "Buat Logo",
         "describeLogo": "Deskripsikan logo Anda...",
         "generating": "Sedang membuat...",
@@ -497,7 +509,22 @@
         "useLogo": "Gunakan sebagai Logo Bisnis",
         "deleteLogo": "Hapus Logo",
         "noLogos": "Belum ada logo yang dibuat",
-        "resetLimit": "Reset Batas"
+        "resetLimit": "Reset Batas",
+        "dailyLimit": "Batas Pembuatan Harian",
+        "of": "dari",
+        "remaining": "tersisa",
+        "limitReached": "Batas harian tercapai. Reset dalam",
+        "hours": "jam",
+        "resetting": "Mereset...",
+        "currentLogo": "Logo Bisnis Saat Ini",
+        "customLogo": "Logo kustom yang Andaunggah",
+        "aiLogo": "Logo AI yang Anda pilih",
+        "removeCustom": "Hapus Logo Kustom",
+        "generateNew": "Buat Logo Baru",
+        "describePrompt": "Jelaskan logo ideal Anda dan AI akan membuatnya untuk Anda",
+        "tip": "Tips: Mendukung Bahasa Indonesia.",
+        "characters": "karakter",
+        "suggestions": "Saran Prompt"
     },
     "chat": {
         "title": "Pesan",

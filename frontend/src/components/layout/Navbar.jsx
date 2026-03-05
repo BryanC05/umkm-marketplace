@@ -241,7 +241,7 @@ const Navbar = () => {
                       <ChevronDown className="h-3.5 w-3.5" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuContent align="end" className="w-52 bg-white/50 dark:bg-black/50 backdrop-blur-sm border-border">
                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onSelect={() => handleNavigate("/profile")}>

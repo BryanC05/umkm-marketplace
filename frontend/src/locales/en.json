@@ -1,4 +1,15 @@
 {
+  "common": {
+    "back": "Back to",
+    "continue": "Continue",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search"
+  },
   "nav": {
     "home": "Home",
     "products": "Products",
@@ -490,6 +501,7 @@
   },
   "logo": {
     "title": "Logo Generator",
+    "logoDesc": "Create a professional logo for your business using AI",
     "generateLogo": "Generate Logo",
     "describeLogo": "Describe your logo...",
     "generating": "Generating...",
@@ -497,7 +509,22 @@
     "useLogo": "Use as Business Logo",
     "deleteLogo": "Delete Logo",
     "noLogos": "No logos generated yet",
-    "resetLimit": "Reset Limit"
+    "resetLimit": "Reset Limit",
+    "dailyLimit": "Daily Generation Limit",
+    "of": "of",
+    "remaining": "remaining",
+    "limitReached": "Daily limit reached. Resets in",
+    "hours": "hours",
+    "resetting": "Resetting...",
+    "currentLogo": "Current Business Logo",
+    "customLogo": "Your uploaded custom logo",
+    "aiLogo": "Your selected AI-generated logo",
+    "removeCustom": "Remove Custom Logo",
+    "generateNew": "Generate New Logo",
+    "describePrompt": "Describe your ideal logo and our AI will create it for you",
+    "tip": "Tip: Supports Bahasa Indonesia. Prompts are auto-translated for best results.",
+    "characters": "characters",
+    "suggestions": "Prompt Suggestions"
   },
   "chat": {
     "title": "Messages",
