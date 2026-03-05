@@ -20,8 +20,13 @@ import {
     Users,
     Shield,
     ArrowRight,
+    Sparkles,
+    Zap,
+    Award,
+    Crown,
 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 const categories = [
     "Food & Beverages",
@@ -38,6 +43,7 @@ const Sell = () => {
     const [images, setImages] = useState([]);
     const [tags, setTags] = useState([]);
     const [tagInput, setTagInput] = useState("");
+    const { t } = useTranslation();
 
     const addTag = () => {
         if (tagInput.trim() && !tags.includes(tagInput.trim())) {
@@ -56,43 +62,60 @@ const Sell = () => {
                 {/* Hero Section */}
                 <div className="text-center mb-12">
                     <Badge variant="secondary" className="mb-4">
-                        Start Your Business Journey
+                        {t('sell.benefitsTitle') || 'Start Your Business Journey'}
                     </Badge>
                     <h1 className="text-3xl md:text-4xl font-bold mb-4">
-                        Sell Your Products on MSMEHub
+                        {t('sell.title') || 'Sell Your Products on MSMEHub'}
                     </h1>
                     <p className="text-muted-foreground max-w-2xl mx-auto">
-                        Join thousands of MSMEs already growing their business. List your products, reach local customers, and build your brand.
+                        {t('sell.subtitle') || 'Join thousands of MSMEs already growing their business. List your products, reach local customers, and build your brand.'}
                     </p>
                 </div>
 
                 {/* Benefits */}
-                <div className="grid md:grid-cols-4 gap-4 mb-12">
+                <div className="grid md:grid-cols-3 gap-4 mb-8">
                     {[
                         {
                             icon: Users,
-                            title: "50,000+ Buyers",
-                            description: "Access to active local customers",
+                            title: t('sell.benefit1Title') || "50,000+ Buyers",
+                            description: t('sell.benefit1Desc') || "Access to active local customers",
                         },
                         {
                             icon: TrendingUp,
-                            title: "Grow Sales",
-                            description: "Average 3x increase in reach",
+                            title: t('sell.benefit2Title') || "Grow Sales",
+                            description: t('sell.benefit2Desc') || "Average 3x increase in reach",
                         },
                         {
                             icon: Shield,
-                            title: "Secure Platform",
-                            description: "Protected transactions",
+                            title: t('sell.benefit3Title') || "Secure Platform",
+                            description: t('sell.benefit3Desc') || "Protected transactions",
                         },
                         {
                             icon: Store,
-                            title: "Free to Start",
-                            description: "No listing fees for basic plan",
+                            title: t('sell.benefit4Title') || "Free to Start",
+                            description: t('sell.benefit4Desc') || "No listing fees for basic plan",
+                        },
+                        {
+                            icon: Sparkles,
+                            title: t('sell.benefit5Title') || "AI Logo Generator",
+                            description: t('sell.benefit5Desc') || "Create professional logos for your brand",
+                            premium: true,
+                        },
+                        {
+                            icon: Zap,
+                            title: t('sell.benefit6Title') || "Automation Tools",
+                            description: t('sell.benefit6Desc') || "Streamline order confirmations & alerts",
+                            premium: true,
                         },
                     ].map((benefit) => (
                         <Card key={benefit.title} className="text-center">
                             <CardContent className="pt-6">
-                                <benefit.icon className="h-8 w-8 mx-auto mb-2 text-primary" />
+                                <div className="relative inline-block">
+                                    <benefit.icon className={`h-8 w-8 mx-auto mb-2 ${benefit.premium ? 'text-yellow-500' : 'text-primary'}`} />
+                                    {benefit.premium && (
+                                        <Crown className="h-4 w-4 absolute -top-1 -right-3 text-yellow-500" />
+                                    )}
+                                </div>
                                 <h3 className="font-semibold">{benefit.title}</h3>
                                 <p className="text-sm text-muted-foreground">{benefit.description}</p>
                             </CardContent>
@@ -100,12 +123,48 @@ const Sell = () => {
                     ))}
                 </div>
 
+                {/* Premium Membership Call-to-Action */}
+                <Card className="mb-12 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 border-yellow-200 dark:border-yellow-800">
+                    <CardContent className="pt-6 text-center">
+                        <div className="flex justify-center mb-4">
+                            <div className="bg-yellow-100 dark:bg-yellow-900/40 p-3 rounded-full">
+                                <Crown className="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
+                            </div>
+                        </div>
+                        <h3 className="text-xl font-bold mb-2">
+                            {t('membership.title') || 'Unlock Premium Features'}
+                        </h3>
+                        <p className="text-muted-foreground mb-4 max-w-lg mx-auto">
+                            {t('membership.subtitle') || 'Get exclusive access to AI Logo Generator and Workflow Automation'}
+                        </p>
+                        <div className="flex flex-wrap justify-center gap-3 mb-4">
+                            <Badge variant="secondary" className="gap-1">
+                                <Sparkles className="h-3 w-3" />
+                                {t('membership.benefit1Title') || 'AI Logo Generator'}
+                            </Badge>
+                            <Badge variant="secondary" className="gap-1">
+                                <Zap className="h-3 w-3" />
+                                {t('membership.benefit2Title') || 'Workflow Automation'}
+                            </Badge>
+                            <Badge variant="secondary" className="gap-1">
+                                <Award className="h-3 w-3" />
+                                {t('membership.benefit4Title') || 'Priority Results'}
+                            </Badge>
+                        </div>
+                        <div className="flex items-center justify-center gap-2">
+                            <span className="text-sm text-muted-foreground">{t('membership.priceLabel') || 'Only'}</span>
+                            <span className="text-3xl font-bold text-yellow-600">{t('membership.price') || 'Rp 10.000'}</span>
+                            <span className="text-muted-foreground">{t('membership.period') || '/month'}</span>
+                        </div>
+                    </CardContent>
+                </Card>
+
                 {/* Product Form */}
                 <Card className="max-w-3xl mx-auto">
                     <CardHeader>
-                        <CardTitle>List a New Product</CardTitle>
+                        <CardTitle>{t('sell.productFormTitle') || 'List a New Product'}</CardTitle>
                         <CardDescription>
-                            Fill in the details below to list your product. All fields marked with * are required.
+                            {t('sell.productFormDesc') || 'Fill in the details below to list your product. All fields marked with * are required.'}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
