@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"time"
 
 	"msme-marketplace/internal/database"
 	"msme-marketplace/internal/models"
@@ -148,13 +149,28 @@ func (h *WebhookHandler) TriggerOrderConfirmation(order models.Order, sellerID p
 
 	fmt.Printf("[Webhook] Triggering order_confirmation to centralized URL for seller %s\n", sellerID.Hex())
 
+	usersCollection := database.GetDB().Collection("users")
+	var buyer models.User
+	var seller models.User
+	usersCollection.FindOne(context.Background(), bson.M{"_id": order.Buyer}).Decode(&buyer)
+	usersCollection.FindOne(context.Background(), bson.M{"_id": sellerID}).Decode(&seller)
+
 	payload := map[string]interface{}{
 		"event":     "order.created",
-		"timestamp": "2026-02-17T00:00:00Z",
+		"timestamp": time.Now().Format(time.RFC3339),
 		"data": map[string]interface{}{
-			"orderId":     order.ID.Hex(),
-			"buyer":       map[string]string{"name": "Customer"},
-			"seller":      map[string]string{"id": sellerID.Hex()},
+			"orderId": order.ID.Hex(),
+			"buyer": map[string]string{
+				"id":    buyer.ID.Hex(),
+				"name":  buyer.Name,
+				"email": buyer.Email,
+			},
+			"seller": map[string]string{
+				"id":           seller.ID.Hex(),
+				"name":         seller.Name,
+				"email":        seller.Email,
+				"businessName": seller.BusinessName,
+			},
 			"totalAmount": order.TotalAmount,
 			"status":      order.Status,
 		},
