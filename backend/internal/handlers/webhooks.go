@@ -155,6 +155,11 @@ func (h *WebhookHandler) TriggerOrderConfirmation(order models.Order, sellerID p
 	usersCollection.FindOne(context.Background(), bson.M{"_id": order.Buyer}).Decode(&buyer)
 	usersCollection.FindOne(context.Background(), bson.M{"_id": sellerID}).Decode(&seller)
 
+	businessName := ""
+	if seller.BusinessName != nil {
+		businessName = *seller.BusinessName
+	}
+
 	payload := map[string]interface{}{
 		"event":     "order.created",
 		"timestamp": time.Now().Format(time.RFC3339),
@@ -169,7 +174,7 @@ func (h *WebhookHandler) TriggerOrderConfirmation(order models.Order, sellerID p
 				"id":           seller.ID.Hex(),
 				"name":         seller.Name,
 				"email":        seller.Email,
-				"businessName": seller.BusinessName,
+				"businessName": businessName,
 			},
 			"totalAmount": order.TotalAmount,
 			"status":      order.Status,
