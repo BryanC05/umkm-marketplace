@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import SocialLinks from './pages/SocialLinks';
 import Home from './pages/new-ui/Index';
 import Products from './pages/new-ui/Products';
 import ProductDetail from './pages/new-ui/ProductDetail';
@@ -92,6 +93,7 @@ function App() {
               <Route path="/forum/:id" element={<ThreadDetail />} />
               <Route path="/saved-products" element={<SavedProducts />} />
               <Route path="/automation" element={<Automation />} />
+              <Route path="/social-links" element={<SocialLinks />} />
               <Route path="/logo-generator" element={<LogoGenerator />} />
               <Route path="/admin/membership" element={<AdminMembership />} />
               <Route path="/notifications" element={<Notifications />} />
