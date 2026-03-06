@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
-	"msme/internal/config"
-	"msme/internal/models"
+	"msme-marketplace/internal/database"
+	"msme-marketplace/internal/models"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -75,7 +76,7 @@ func InstagramCallback(c *gin.Context) {
 	}
 
 	// Make request to exchange code for token
-	tokenResponse, err := config.MakeRequest("POST", tokenURL, tokenPayload)
+	tokenResponse, err := makeHTTPRequest("POST", tokenURL, tokenPayload)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to exchange code for token"})
 		return
@@ -121,7 +122,7 @@ func InstagramCallback(c *gin.Context) {
 	}
 
 	// Check if this account is already connected
-	collection := config.GetDB().Collection("users")
+	collection := database.GetDB().Collection("users")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -217,7 +218,7 @@ func InstagramDisconnect(c *gin.Context) {
 		return
 	}
 
-	collection := config.GetDB().Collection("users")
+	collection := database.GetDB().Collection("users")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -275,7 +276,7 @@ func InstagramStatus(c *gin.Context) {
 		return
 	}
 
-	collection := config.GetDB().Collection("users")
+	collection := database.GetDB().Collection("users")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -323,7 +324,7 @@ func InstagramSetDefault(c *gin.Context) {
 		return
 	}
 
-	collection := config.GetDB().Collection("users")
+	collection := database.GetDB().Collection("users")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -386,7 +387,7 @@ func InstagramSetPostPreference(c *gin.Context) {
 			return
 		}
 
-		collection := config.GetDB().Collection("users")
+		collection := database.GetDB().Collection("users")
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
@@ -409,7 +410,7 @@ func InstagramSetPostPreference(c *gin.Context) {
 		return
 	}
 
-	collection := config.GetDB().Collection("users")
+	collection := database.GetDB().Collection("users")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -453,7 +454,7 @@ func GetInstagramPostPreference(c *gin.Context) {
 		return
 	}
 
-	collection := config.GetDB().Collection("users")
+	collection := database.GetDB().Collection("users")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -489,7 +490,7 @@ func getLongLivedToken(shortLivedToken string) (string, error) {
 		shortLivedToken,
 	)
 
-	response, err := config.MakeRequest("GET", url, nil)
+	response, err := makeHTTPRequest("GET", url, nil)
 	if err != nil {
 		return "", err
 	}
@@ -512,7 +513,7 @@ func getInstagramUserInfo(accessToken string) (string, string, error) {
 		accessToken,
 	)
 
-	response, err := config.MakeRequest("GET", url, nil)
+	response, err := makeHTTPRequest("GET", url, nil)
 	if err != nil {
 		return "", "", err
 	}
@@ -566,4 +567,40 @@ func DetectPlatform(url string) string {
 	}
 
 	return "website"
+}
+
+// makeHTTPRequest is a helper function to make HTTP requests
+func makeHTTPRequest(method, url string, payload map[string]string) ([]byte, error) {
+	var reqBody io.Reader
+	if payload != nil {
+		formData := ""
+		for key, value := range payload {
+			if formData != "" {
+				formData += "&"
+			}
+			formData += key + "=" + value
+		}
+		reqBody = strings.NewReader(formData)
+	}
+
+	req, err := http.NewRequest(method, url, reqBody)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return body, nil
 }

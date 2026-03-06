@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"msme/internal/config"
-	"msme/internal/models"
+	"msme-marketplace/internal/database"
+	"msme-marketplace/internal/models"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -63,7 +63,7 @@ func UpdateSocialLinks(c *gin.Context) {
 		return
 	}
 
-	collection := config.GetDB().Collection("users")
+	collection := database.GetDB().Collection("users")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -117,7 +117,7 @@ func GetSocialLinks(c *gin.Context) {
 		return
 	}
 
-	collection := config.GetDB().Collection("users")
+	collection := database.GetDB().Collection("users")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -173,7 +173,7 @@ func AddSocialLink(c *gin.Context) {
 		return
 	}
 
-	collection := config.GetDB().Collection("users")
+	collection := database.GetDB().Collection("users")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -263,7 +263,7 @@ func RemoveSocialLink(c *gin.Context) {
 		return
 	}
 
-	collection := config.GetDB().Collection("users")
+	collection := database.GetDB().Collection("users")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
