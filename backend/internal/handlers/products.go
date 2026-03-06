@@ -328,19 +328,20 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 	}
 
 	var req struct {
-		Name            string               `json:"name" binding:"required"`
-		Description     string               `json:"description" binding:"required"`
-		Price           float64              `json:"price" binding:"required"`
-		Category        string               `json:"category" binding:"required"`
-		Stock           int                  `json:"stock"`
-		Unit            string               `json:"unit"`
-		Images          []string             `json:"images"`
-		Tags            []string             `json:"tags"`
-		CurrentLocation models.Location      `json:"currentLocation"`
-		HasVariants     bool                 `json:"hasVariants"`
-		Variants        []models.Variant     `json:"variants"`
-		OptionGroups    []models.OptionGroup `json:"optionGroups"`
-		PostToInstagram bool                 `json:"postToInstagram"`
+		Name             string               `json:"name" binding:"required"`
+		Description      string               `json:"description" binding:"required"`
+		Price            float64              `json:"price" binding:"required"`
+		Category         string               `json:"category" binding:"required"`
+		Stock            int                  `json:"stock"`
+		Unit             string               `json:"unit"`
+		Images           []string             `json:"images"`
+		Tags             []string             `json:"tags"`
+		CurrentLocation  models.Location      `json:"currentLocation"`
+		HasVariants      bool                 `json:"hasVariants"`
+		Variants         []models.Variant     `json:"variants"`
+		OptionGroups     []models.OptionGroup `json:"optionGroups"`
+		PostToInstagram  bool                 `json:"postToInstagram"`
+		InstagramCaption string               `json:"instagramCaption"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -446,7 +447,7 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 
 	// Trigger Instagram posting if enabled
 	if req.PostToInstagram {
-		go triggerInstagramPost(product, user)
+		go triggerInstagramPost(product, user, req.InstagramCaption)
 	}
 
 	c.JSON(201, product)
@@ -630,7 +631,7 @@ func (h *ProductHandler) GetCategoryCounts(c *gin.Context) {
 }
 
 // triggerInstagramPost triggers the n8n webhook for Instagram posting
-func triggerInstagramPost(product models.Product, user models.User) {
+func triggerInstagramPost(product models.Product, user models.User, caption string) {
 	n8nWebhookURL := os.Getenv("N8N_WEBHOOK_URL")
 	if n8nWebhookURL == "" {
 		fmt.Println("N8N_WEBHOOK_URL not set, skipping Instagram post")
@@ -661,6 +662,7 @@ func triggerInstagramPost(product models.Product, user models.User) {
 		"productLink":  productLink,
 		"productImage": "",
 		"preference":   preference,
+		"caption":      caption,
 	}
 
 	// Add first product image if available
