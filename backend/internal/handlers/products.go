@@ -674,7 +674,16 @@ func triggerInstagramPost(product models.Product, user models.User, caption stri
 
 	if len(product.Images) > 0 && product.Images[0] != "" {
 		if strings.HasPrefix(product.Images[0], "http") {
+			// External URL (e.g., from test script)
 			imageURL = product.Images[0]
+		} else if strings.HasPrefix(product.Images[0], "/") {
+			// Relative path - prepend server base URL
+			// Get the server base URL from the request or use default
+			serverURL := os.Getenv("SERVER_URL")
+			if serverURL == "" {
+				serverURL = "https://umkm-marketplace-production.up.railway.app"
+			}
+			imageURL = serverURL + product.Images[0]
 		}
 	}
 	payload["productImage"] = imageURL
