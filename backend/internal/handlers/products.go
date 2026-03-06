@@ -634,7 +634,7 @@ func (h *ProductHandler) GetCategoryCounts(c *gin.Context) {
 
 // triggerInstagramPost triggers the n8n webhook for Instagram posting
 func triggerInstagramPost(product models.Product, user models.User, caption string) {
-	n8nWebhookURL := os.Getenv("N8N_WEBHOOK_URL")
+	n8nWebhookURL := strings.TrimSpace(os.Getenv("N8N_WEBHOOK_URL"))
 	if n8nWebhookURL == "" {
 		fmt.Println("N8N_WEBHOOK_URL not set, skipping Instagram post")
 		return
@@ -693,12 +693,12 @@ func triggerInstagramPost(product models.Product, user models.User, caption stri
 			defaultAccount = updatedUser.InstagramAccounts[0]
 		}
 
-		payload["instagramUserID"] = defaultAccount.InstagramUserID
-		payload["accessToken"] = defaultAccount.AccessToken
+		payload["instagramUserID"] = strings.TrimSpace(defaultAccount.InstagramUserID)
+		payload["accessToken"] = strings.TrimSpace(defaultAccount.AccessToken)
 	} else {
-		// Use platform TroliToko account
-		payload["instagramUserID"] = os.Getenv("IG_ACCOUNT_ID")
-		payload["accessToken"] = os.Getenv("IG_ACCOUNT_TOKEN")
+		// Use platform TroliToko account — TrimSpace to remove any trailing newlines from env vars
+		payload["instagramUserID"] = strings.TrimSpace(os.Getenv("IG_ACCOUNT_ID"))
+		payload["accessToken"] = strings.TrimSpace(os.Getenv("IG_ACCOUNT_TOKEN"))
 	}
 
 	// Send webhook to n8n
