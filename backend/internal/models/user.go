@@ -38,6 +38,13 @@ type User struct {
 	PaymentProof       *string    `bson:"paymentProof" json:"paymentProof"`
 	PaymentSubmittedAt *time.Time `bson:"paymentSubmittedAt" json:"paymentSubmittedAt"`
 
+	// Social Media Links
+	SocialLinks      []SocialLink `bson:"socialLinks" json:"socialLinks"`           // Profile links
+	StoreSocialLinks []SocialLink `bson:"storeSocialLinks" json:"storeSocialLinks"` // Store links (separate from profile)
+
+	// Instagram Accounts
+	InstagramAccounts []InstagramAccount `bson:"instagramAccounts" json:"instagramAccounts"`
+
 	CreatedAt time.Time `bson:"createdAt" json:"createdAt"`
 	UpdatedAt time.Time `bson:"updatedAt" json:"updatedAt"`
 }
@@ -69,4 +76,19 @@ type GeneratedLogo struct {
 	FilePath  string             `bson:"filePath" json:"filePath"`
 	CreatedAt time.Time          `bson:"createdAt" json:"createdAt"`
 	ExpiresAt time.Time          `bson:"expiresAt" json:"expiresAt"`
+}
+
+// InstagramAccount represents a connected Instagram account
+type InstagramAccount struct {
+	InstagramUserID string    `bson:"instagramUserID" json:"instagramUserID"`
+	Username        string    `bson:"username" json:"username"`
+	AccessToken     string    `bson:"accessToken" json:"-"` // Encrypted, never expose to API
+	IsDefault       bool      `bson:"isDefault" json:"isDefault"`
+	ConnectedAt     time.Time `bson:"connectedAt" json:"connectedAt"`
+}
+
+// SocialLink represents a social media link
+type SocialLink struct {
+	Platform string `bson:"platform" json:"platform"` // instagram, tiktok, facebook, twitter, youtube, whatsapp, website
+	URL      string `bson:"url" json:"url"`
 }

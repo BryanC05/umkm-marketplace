@@ -94,6 +94,19 @@ func main() {
 			// Membership routes
 			users.GET("/membership/status", userHandler.GetMembershipStatus)
 			users.POST("/membership/payment", userHandler.SubmitMembershipPayment)
+
+			// Instagram routes
+			users.GET("/instagram/status", handlers.InstagramStatus)
+			users.GET("/instagram/connect", handlers.InstagramConnect)
+			users.GET("/instagram/callback", handlers.InstagramCallback)
+			users.POST("/instagram/disconnect", handlers.InstagramDisconnect)
+			users.POST("/instagram/set-default", handlers.InstagramSetDefault)
+
+			// Social links routes
+			users.GET("/social-links", handlers.GetSocialLinks)
+			users.PUT("/social-links", handlers.UpdateSocialLinks)
+			users.POST("/social-links", handlers.AddSocialLink)
+			users.DELETE("/social-links", handlers.RemoveSocialLink)
 		}
 
 		// Admin routes for membership management
@@ -109,6 +122,7 @@ func main() {
 		api.GET("/users/sellers/count", userHandler.GetSellersCount)
 		api.GET("/users/nearby-sellers", userHandler.GetNearbySellers)
 		api.GET("/users/seller/:id", userHandler.GetSellerByID)
+		api.GET("/users/:id/social-links", handlers.GetSocialLinks)
 		api.GET("/navigation/route", navigationHandler.GetRoute)
 
 		products := api.Group("/products")

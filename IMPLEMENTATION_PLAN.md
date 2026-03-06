@@ -329,43 +329,48 @@ else
 
 ### Backend (Go)
 
-| File | Changes |
-|------|---------|
-| `internal/models/user.go` | Add `InstagramAccounts`, `SocialLinks`, `StoreSocialLinks` fields |
-| `internal/models/instagram.go` | New - Instagram model |
-| `internal/handlers/instagram.go` | New - OAuth, connect, disconnect, status handlers |
-| `internal/handlers/social.go` | New - Social links CRUD handlers |
-| `cmd/server/main.go` | Register new routes |
+| File | Changes | Status |
+|------|---------|--------|
+| `internal/models/user.go` | Add `InstagramAccounts`, `SocialLinks`, `StoreSocialLinks` fields | ✅ COMPLETED |
+| `internal/models/integrated in user.go` | InstagramAccount & SocialLink models | ✅ COMPLETED |
+| `internal/handlers/instagram.go` | New - OAuth, connect, disconnect, status handlers | ✅ COMPLETED |
+| `internal/handlers/social.go` | New - Social links CRUD handlers | ✅ COMPLETED |
+| `cmd/server/main.go` | Register new routes | ✅ COMPLETED |
+| `.env` | Add INSTAGRAM_APP_ID, INSTAGRAM_APP_SECRET, INSTAGRAM_REDIRECT_URI | ✅ COMPLETED |
+| `.env.example` | Add all Instagram env variables | ✅ COMPLETED |
 
 ### Mobile (React Native/Expo)
 
-| File | Changes |
-|------|---------|
-| `src/screens/seller/InstagramScreen.js` | New - Connect/disconnect Instagram |
-| `src/screens/seller/AddProductScreen.js` | Add Instagram toggle |
-| `src/screens/profile/SocialLinksScreen.js` | New - Manage social links |
-| `src/screens/profile/ProfileScreen.js` | Add social icons row |
-| `src/screens/seller/StoreScreen.js` | Add social icons (with fallback) |
-| `src/navigation/AppNavigator.js` | Add routes |
-| `src/i18n/en.js` | Add translations |
-| `src/i18n/id.js` | Add translations |
+| File | Changes | Status |
+|------|---------|--------|
+| `src/screens/seller/InstagramScreen.js` | New - Connect/disconnect Instagram | ⏳ PENDING |
+| `src/screens/seller/AddProductScreen.js` | Add Instagram toggle | ⏳ PENDING |
+| `src/screens/profile/SocialLinksScreen.js` | New - Manage social links | ⏳ PENDING |
+| `src/screens/profile/ProfileScreen.js` | Add social icons row | ⏳ PENDING |
+| `src/screens/seller/StoreScreen.js` | Add social icons (with fallback) | ⏳ PENDING |
+| `src/navigation/AppNavigator.js` | Add routes | ⏳ PENDING |
+| `src/i18n/en.js` | Add translations | ⏳ PENDING |
+| `src/i18n/id.js` | Add translations | ⏳ PENDING |
 
 ## 4.2 API Endpoints Summary
 
 ### Instagram
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/users/instagram/status` | List connected accounts |
-| GET | `/api/users/instagram/connect` | Get OAuth URL |
-| GET | `/api/users/instagram/callback` | OAuth callback |
-| POST | `/api/users/instagram/disconnect` | Remove account |
-| POST | `/api/users/instagram/set-default` | Set default |
+| Method | Endpoint | Description | Status |
+|--------|----------|-------------|--------|
+| GET | `/api/users/instagram/status` | List connected accounts | ✅ COMPLETED |
+| GET | `/api/users/instagram/connect` | Get OAuth URL | ✅ COMPLETED |
+| GET | `/api/users/instagram/callback` | OAuth callback | ✅ COMPLETED |
+| POST | `/api/users/instagram/disconnect` | Remove account | ✅ COMPLETED |
+| POST | `/api/users/instagram/set-default` | Set default | ✅ COMPLETED |
 
 ### Social Links
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/users/:id` | Get user (includes social links) |
-| PUT | `/api/users/social-links` | Update social links |
+| Method | Endpoint | Description | Status |
+|--------|----------|-------------|--------|
+| GET | `/api/users/social-links` | Get current user's social links | ✅ COMPLETED |
+| GET | `/api/users/:id/social-links` | Get public user's social links | ✅ COMPLETED |
+| PUT | `/api/users/social-links` | Update social links (both profile & store) | ✅ COMPLETED |
+| POST | `/api/users/social-links` | Add single social link | ✅ COMPLETED |
+| DELETE | `/api/users/social-links?platform=instagram` | Remove social link | ✅ COMPLETED |
 
 ## 4.3 Translation Keys
 
@@ -485,30 +490,52 @@ maxLinksReached: 'Maksimal 5 tautan diperbolehkan',
 
 # Part 6: Implementation Priority
 
-## Phase 1: Backend Foundation
-1. Update User model with new fields
-2. Create Instagram handlers
-3. Create Social links handlers
-4. Register routes
+## Phase 1: Backend Foundation ✅ COMPLETED
+1. ✅ Update User model with new fields
+2. ✅ Create Instagram handlers
+3. ✅ Create Social links handlers
+4. ✅ Register routes
 
-## Phase 2: Mobile - Social Links
+## Phase 2: Mobile - Social Links ⏳ PENDING
 1. Add social icons to Profile screen
 2. Create SocialLinksScreen
 3. Add icons to Store screen with fallback
 4. Add translations
 
-## Phase 3: Mobile - Instagram Connection
+## Phase 3: Mobile - Instagram Connection ⏳ PENDING
 1. Create InstagramScreen
 2. Implement OAuth flow
 3. Add toggle to AddProductScreen
 4. Persist toggle state
 
-## Phase 4: Integration
+## Phase 4: Integration ⏳ PENDING
 1. Connect backend to n8n webhook
 2. Test end-to-end flow
 3. Add error handling & notifications
 
 ---
+
+## Implementation Notes
+
+### Instagram OAuth Setup Required
+Before the Instagram features work, you need to:
+1. Go to [Meta for Developers](https://developers.facebook.com/)
+2. Create an App → Add Instagram product
+3. Get `INSTAGRAM_APP_ID` and `INSTAGRAM_APP_SECRET`
+4. Set `INSTAGRAM_REDIRECT_URI` to your callback URL
+5. Add these to your `.env` file
+
+### Current .env Configuration
+```
+# Already in .env (for n8n platform posting):
+IG_ACCESS_TOKEN=...
+IG_ACCOUNT_ID=...
+
+# Need to add (for user OAuth):
+INSTAGRAM_APP_ID=your_app_id
+INSTAGRAM_APP_SECRET=your_app_secret
+INSTAGRAM_REDIRECT_URI=https://your-domain.com/api/users/instagram/callback
+```
 
 # Appendix: Notes
 
@@ -540,6 +567,6 @@ maxLinksReached: 'Maksimal 5 tautan diperbolehkan',
 ---
 
 **Document Version:** 1.0  
-**Created:** March 2026  
-**Last Updated:** March 2026  
+**Created:** 5th March 2026  
+**Last Updated:** 5th March 2026  
 **Status:** Ready for Implementation
