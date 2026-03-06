@@ -673,19 +673,51 @@ func triggerInstagramPost(product models.Product, user models.User, caption stri
 	imageURL := fallbackImage
 
 	if len(product.Images) > 0 && product.Images[0] != "" {
-		if strings.HasPrefix(product.Images[0], "http") {
+		imagePath := product.Images[0]
+		fmt.Printf("[Instagram] Processing image path: %s\n", imagePath)
+
+		if strings.HasPrefix(imagePath, "http") {
 			// External URL (e.g., from test script)
-			imageURL = product.Images[0]
-		} else if strings.HasPrefix(product.Images[0], "/") {
-			// Relative path - prepend server base URL
-			// Get the server base URL from the request or use default
+			imageURL = imagePath
+			fmt.Printf("[Instagram] Using external URL: %s\n", imageURL)
+		} else if strings.HasPrefix(imagePath, "/") {
+			// Relative path with leading slash - prepend server base URL
 			serverURL := os.Getenv("SERVER_URL")
 			if serverURL == "" {
-				serverURL = "https://umkm-marketplace-production.up.railway.app"
+				// Try to get from BACKEND_URL as alternative
+				serverURL = os.Getenv("BACKEND_URL")
 			}
-			imageURL = serverURL + product.Images[0]
+			if serverURL == "" {
+				// Default fallback for production
+				serverURL = "https://trolitoko.online"
+			}
+			imageURL = serverURL + imagePath
+			fmt.Printf("[Instagram] Using relative path with SERVER_URL: %s\n", imageURL)
+		} else if strings.HasPrefix(imagePath, "uploads") {
+			// Relative path without leading slash - prepend server base URL
+			serverURL := os.Getenv("SERVER_URL")
+			if serverURL == "" {
+				serverURL = os.Getenv("BACKEND_URL")
+			}
+			if serverURL == "" {
+				serverURL = "https://trolitoko.online"
+			}
+			imageURL = serverURL + "/" + imagePath
+			fmt.Printf("[Instagram] Using uploads path with SERVER_URL: %s\n", imageURL)
+		} else {
+			// Try as filename - assume it's in /uploads/products/
+			serverURL := os.Getenv("SERVER_URL")
+			if serverURL == "" {
+				serverURL = os.Getenv("BACKEND_URL")
+			}
+			if serverURL == "" {
+				serverURL = "https://trolitoko.online"
+			}
+			imageURL = serverURL + "/uploads/products/" + imagePath
+			fmt.Printf("[Instagram] Using filename with SERVER_URL: %s\n", imageURL)
 		}
 	}
+	fmt.Printf("[Instagram] Final image URL: %s\n", imageURL)
 	payload["productImage"] = imageURL
 
 	// If preference is "own", get the user's Instagram account token
