@@ -3,10 +3,12 @@ package handlers
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -680,41 +682,28 @@ func triggerInstagramPost(product models.Product, user models.User, caption stri
 			// External URL (e.g., from test script)
 			imageURL = imagePath
 			fmt.Printf("[Instagram] Using external URL: %s\n", imageURL)
-		} else if strings.HasPrefix(imagePath, "/") {
-			// Relative path with leading slash - prepend server base URL
-			serverURL := os.Getenv("SERVER_URL")
-			if serverURL == "" {
-				// Try to get from BACKEND_URL as alternative
-				serverURL = os.Getenv("BACKEND_URL")
-			}
-			if serverURL == "" {
-				// Default fallback for production
-				serverURL = "https://trolitoko.online"
-			}
-			imageURL = serverURL + imagePath
-			fmt.Printf("[Instagram] Using relative path with SERVER_URL: %s\n", imageURL)
-		} else if strings.HasPrefix(imagePath, "uploads") {
-			// Relative path without leading slash - prepend server base URL
-			serverURL := os.Getenv("SERVER_URL")
-			if serverURL == "" {
-				serverURL = os.Getenv("BACKEND_URL")
-			}
-			if serverURL == "" {
-				serverURL = "https://trolitoko.online"
-			}
-			imageURL = serverURL + "/" + imagePath
-			fmt.Printf("[Instagram] Using uploads path with SERVER_URL: %s\n", imageURL)
 		} else {
-			// Try as filename - assume it's in /uploads/products/
-			serverURL := os.Getenv("SERVER_URL")
-			if serverURL == "" {
-				serverURL = os.Getenv("BACKEND_URL")
+			// Local file - try to upload to ImgBB for Instagram compatibility
+			imgBBURL := uploadToImgBB(imagePath)
+			if imgBBURL != "" {
+				imageURL = imgBBURL
+				fmt.Printf("[Instagram] Using ImgBB URL: %s\n", imageURL)
+			} else {
+				// Fallback to local URL
+				serverURL := os.Getenv("SERVER_URL")
+				if serverURL == "" {
+					serverURL = os.Getenv("BACKEND_URL")
+				}
+				if serverURL == "" {
+					serverURL = "https://trolitoko.online"
+				}
+				if strings.HasPrefix(imagePath, "/") {
+					imageURL = serverURL + imagePath
+				} else {
+					imageURL = serverURL + "/" + imagePath
+				}
+				fmt.Printf("[Instagram] Using local URL (ImgBB failed): %s\n", imageURL)
 			}
-			if serverURL == "" {
-				serverURL = "https://trolitoko.online"
-			}
-			imageURL = serverURL + "/uploads/products/" + imagePath
-			fmt.Printf("[Instagram] Using filename with SERVER_URL: %s\n", imageURL)
 		}
 	}
 	fmt.Printf("[Instagram] Final image URL: %s\n", imageURL)
@@ -762,4 +751,65 @@ func triggerInstagramPost(product models.Product, user models.User, caption stri
 		debugPayload, _ := json.MarshalIndent(payload, "", "  ")
 		fmt.Printf("[Webhook Error] Payload sent: %s\n", string(debugPayload))
 	}
+}
+
+// uploadToImgBB uploads an image to ImgBB and returns the public URL
+func uploadToImgBB(imagePath string) string {
+	imgBBAPIKey := os.Getenv("IMGBB_API_KEY")
+	if imgBBAPIKey == "" {
+		fmt.Println("[ImgBB] API key not set, skipping upload")
+		return ""
+	}
+
+	// Clean up the path - remove leading slash if present
+	cleanPath := strings.TrimPrefix(imagePath, "/")
+	filePath := "." + string(os.PathSeparator) + cleanPath
+
+	// Check if file exists
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		fmt.Printf("[ImgBB] File not found: %s\n", filePath)
+		return ""
+	}
+
+	// Read the file
+	fileData, err := os.ReadFile(filePath)
+	if err != nil {
+		fmt.Printf("[ImgBB] Failed to read file: %v\n", err)
+		return ""
+	}
+
+	// Encode to base64
+	base64Data := base64.StdEncoding.EncodeToString(fileData)
+
+	// Prepare the request
+	imgBBURL := "https://api.imgbb.com/1/upload"
+	formData := url.Values{}
+	formData.Set("key", imgBBAPIKey)
+	formData.Set("image", base64Data)
+
+	// Send the request
+	resp, err := http.PostForm(imgBBURL, formData)
+	if err != nil {
+		fmt.Printf("[ImgBB] Failed to upload: %v\n", err)
+		return ""
+	}
+	defer resp.Body.Close()
+
+	// Parse the response
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		fmt.Printf("[ImgBB] Failed to parse response: %v\n", err)
+		return ""
+	}
+
+	// Check if successful
+	if data, ok := result["data"].(map[string]interface{}); ok {
+		if url, ok := data["url"].(string); ok {
+			fmt.Printf("[ImgBB] Upload successful: %s\n", url)
+			return url
+		}
+	}
+
+	fmt.Printf("[ImgBB] Upload failed: %v\n", result)
+	return ""
 }
