@@ -1,68 +1,60 @@
-# N8N Instagram Binary Upload Setup - Exact Settings
+# N8N Instagram Binary Upload - FIXED
 
-## Node 1: Download Image (NEW - Add before Upload to IG)
+## Problem
+Error: "This operation expects the node's input data to contain a binary file 'image', but none was found"
 
-Add an **HTTP Request** node with these exact settings:
+This means the download node isn't saving the image as binary properly.
 
-```
-Method: GET
-URL: {{ $json.body.productImage }}
-Response Content: Binary File
-Binary Property: image
-```
+## Solution: Use n8n's Built-in Binary Data Mode
 
-**Screenshot settings:**
-- Method: GET
-- URL: `{{ $json.body.productImage }}`
-- ▼ Response Content: Binary File
-- Binary Property: `image`
+Instead of downloading manually, use n8n's binary data handling:
 
-## Node 2: Upload to IG (MODIFY your existing node)
+### Option A: Use Binary Mode in Upload Node
+
+Modify your Upload to IG node to use Binary Mode:
 
 ```
 Method: POST
 URL: https://graph.facebook.com/v18.0/{{ $json.body.instagramUserID }}/media
+Body Content Type: Binary
+Input Binary Field: (the field name from webhook)
+```
+
+Wait - this won't work because the webhook doesn't send binary data.
+
+### Option B: Use "HTTP Request" Tool Correctly
+
+For the Download node, you need to set:
+
+```
+Method: GET
+URL: {{ $json.body.productImage }}
+Response Content: Binary File  ← This is the key setting!
+Binary Property: image  ← And this!
+```
+
+After setting "Response Content: Binary File", a new field appears called "Binary Property". Set it to `image`.
+
+**Then for the Upload node:**
+```
 Body Content Type: Multipart Form
 ```
 
-**Form Data (click "Add Field"):**
+In the Form Data, for the `media` field:
+- Type: Binary
+- Value: `image` (this must match the Binary Property from the download node!)
 
-| Field | Type | Value |
-|-------|------|-------|
-| media | Binary | `image` (select from dropdown) |
-| caption | String | `{{ $json.body.productName + "\n\nPrice: " + $json.body.productPrice + "\nAvailable at: " + $json.body.storeName + "\nLink: " + $json.body.productLink }}` |
-| access_token | String | `{{ $json.body.accessToken }}` |
+### Option C: Alternative - Use a Simpler Approach
 
-**Important:**
-1. For `media` field, click the dropdown and select **Binary**
-2. Then select property: **image**
-3. Make sure Body Content Type is **Multipart Form** NOT "Form URL Encoded"
+If binary upload still doesn't work, let's use an external image hosting service instead. This is more reliable.
 
-## Node 3: Publish (keep existing)
+## Let me check what's happening
 
-```
-Method: POST  
-URL: https://graph.facebook.com/v18.0/{{ $json.body.instagramUserID }}/media_publish
-Body Content Type: Form URL Encoded
-```
+The issue might be that the image URL from your backend isn't accessible. Can you check what URL is being sent?
 
-**Body Fields:**
-| Name | Value |
-|------|-------|
-| creation_id | `{{ $json.id }}` |
-| access_token | `{{ $json.body.accessToken }}` |
+Look at the webhook payload - what is `productImage` set to?
 
-## Visual Workflow
+It should be something like:
+`https://trolitoko.online/uploads/products/filename.jpg`
 
-```
-[Webhook] → [HTTP Request: Download Image] → [HTTP Request: Upload to IG] → [HTTP Request: Publish]
-```
-
-## Troubleshooting
-
-**Error "No binary property":**
-- Make sure Node 1 Response is set to "Binary File"
-- Make sure Binary Property is "image"
-
-**Error "Invalid image":**
-- Try adding `media_type: IMAGE` in Form Data
+If that's blank or invalid, the download will fail.
