@@ -422,6 +422,39 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 		unit = req.Unit
 	}
 
+	// Process base64 images from mobile app to actual files
+	var processedImages []string
+	for _, imgStr := range req.Images {
+		if strings.HasPrefix(imgStr, "data:image/") {
+			parts := strings.SplitN(imgStr, ",", 2)
+			if len(parts) == 2 {
+				mimePart := parts[0]
+				b64Data := parts[1]
+
+				imgBytes, err := base64.StdEncoding.DecodeString(b64Data)
+				if err == nil {
+					ext := ".jpg"
+					if strings.Contains(mimePart, "image/png") {
+						ext = ".png"
+					} else if strings.Contains(mimePart, "image/webp") {
+						ext = ".webp"
+					}
+
+					filename := userObjID.Hex() + "-" + time.Now().Format("20060102-150405") + "-" + fmt.Sprintf("%d", time.Now().UnixNano()%10000) + ext
+					relativePath := "uploads/products/" + filename
+					filePath := "./" + relativePath
+
+					os.MkdirAll("uploads/products", 0755)
+					if err := os.WriteFile(filePath, imgBytes, 0644); err == nil {
+						processedImages = append(processedImages, "/"+relativePath)
+						continue
+					}
+				}
+			}
+		}
+		processedImages = append(processedImages, imgStr)
+	}
+
 	product := models.Product{
 		Name:         req.Name,
 		Description:  req.Description,
@@ -429,7 +462,7 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 		Category:     req.Category,
 		Stock:        req.Stock,
 		Unit:         unit,
-		Images:       req.Images,
+		Images:       processedImages,
 		Seller:       userObjID,
 		BusinessID:   user.BusinessID, // Attach business if user has one
 		Location:     productLocation,
@@ -480,24 +513,59 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 	}
 
 	if imagesRaw, ok := updates["images"]; ok {
-		switch typed := imagesRaw.(type) {
-		case []interface{}:
-			if len(typed) > h.MaxImageCount {
-				c.JSON(400, gin.H{
-					"message":       "Too many images",
-					"maxImageCount": h.MaxImageCount,
-				})
-				return
+		var imgStrs []string
+
+		if slice, ok := imagesRaw.([]interface{}); ok {
+			for _, item := range slice {
+				if str, ok := item.(string); ok {
+					imgStrs = append(imgStrs, str)
+				}
 			}
-		case []string:
-			if len(typed) > h.MaxImageCount {
-				c.JSON(400, gin.H{
-					"message":       "Too many images",
-					"maxImageCount": h.MaxImageCount,
-				})
-				return
-			}
+		} else if slice, ok := imagesRaw.([]string); ok {
+			imgStrs = slice
 		}
+
+		if len(imgStrs) > h.MaxImageCount {
+			c.JSON(400, gin.H{
+				"message":       "Too many images",
+				"maxImageCount": h.MaxImageCount,
+			})
+			return
+		}
+
+		// Process base64 from mobile app edits
+		var processedImages []string
+		for _, imgStr := range imgStrs {
+			if strings.HasPrefix(imgStr, "data:image/") {
+				parts := strings.SplitN(imgStr, ",", 2)
+				if len(parts) == 2 {
+					mimePart := parts[0]
+					b64Data := parts[1]
+
+					imgBytes, err := base64.StdEncoding.DecodeString(b64Data)
+					if err == nil {
+						ext := ".jpg"
+						if strings.Contains(mimePart, "image/png") {
+							ext = ".png"
+						} else if strings.Contains(mimePart, "image/webp") {
+							ext = ".webp"
+						}
+
+						filename := userObjID.Hex() + "-" + time.Now().Format("20060102-150405") + "-" + fmt.Sprintf("%d", time.Now().UnixNano()%10000) + ext
+						relativePath := "uploads/products/" + filename
+						filePath := "./" + relativePath
+
+						os.MkdirAll("uploads/products", 0755)
+						if err := os.WriteFile(filePath, imgBytes, 0644); err == nil {
+							processedImages = append(processedImages, "/"+relativePath)
+							continue
+						}
+					}
+				}
+			}
+			processedImages = append(processedImages, imgStr)
+		}
+		updates["images"] = processedImages
 	}
 
 	collection := database.GetDB().Collection("products")
