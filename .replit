@@ -1,3 +1,9 @@
-language = "go"
-run = "cd backend && go run ./cmd/server"
-build = "cd backend && go build -o server ./cmd/server"
+language = "bash"
+
+run = "sh run.sh"
+
+[deployment]
+deploymentTarget = "autoscale"
+build = ["sh", "-c", "sh build.sh"]
+run = ["sh", "-c", "sh run.sh"]
+ignorePorts = false

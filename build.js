@@ -1,32 +1,42 @@
-// Build script for Replit deployment
-// Builds both the Go backend and the Vite frontend
+// Build script for Replit deployment.
+// Produces the Go backend binary and the frontend static bundle.
 
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-console.log('🚀 Starting build...');
+function run(command, options = {}) {
+  execSync(command, {
+    stdio: 'inherit',
+    env: { ...process.env, GO111MODULE: 'on' },
+    ...options,
+  });
+}
+
+console.log('Starting build...');
 
 try {
-  // Build Go backend
-  console.log('📦 Building Go backend...');
-  execSync('cd backend && go build -o server ./cmd/server', { 
-    stdio: 'inherit',
-    env: { ...process.env, GO111MODULE: 'on' }
+  console.log('Building Go backend...');
+  run('go build -o server ./cmd/server', {
+    cwd: path.join(__dirname, 'backend'),
   });
-  console.log('✅ Go backend built successfully');
+  console.log('Go backend built successfully');
 
-  // Build frontend
-  console.log('📦 Building frontend...');
-  if (fs.existsSync('frontend')) {
-    execSync('cd frontend && npm install && npm run build', { 
-      stdio: 'inherit'
-    });
-    console.log('✅ Frontend built successfully');
+  const frontendDir = path.join(__dirname, 'frontend');
+  if (fs.existsSync(frontendDir)) {
+    console.log('Building frontend...');
+
+    const installCommand = fs.existsSync(path.join(frontendDir, 'package-lock.json'))
+      ? 'npm ci'
+      : 'npm install';
+
+    run(installCommand, { cwd: frontendDir });
+    run('npm run build', { cwd: frontendDir });
+    console.log('Frontend built successfully');
   }
 
-  console.log('🎉 Build completed successfully!');
+  console.log('Build completed successfully');
 } catch (error) {
-  console.error('❌ Build failed:', error.message);
+  console.error('Build failed:', error.message);
   process.exit(1);
 }

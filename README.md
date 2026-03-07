@@ -297,6 +297,28 @@ npm run build
 
 2. Deploy the `dist` folder to Railway, Vercel, or any static hosting
 
+### Deploying to Replit
+
+Replit deployment must build the Go binary first, then run the compiled binary. Do not use `go run ./cmd/server` as the deployment run command, because the autoscale runtime container may not include the Go toolchain.
+
+Use these commands in the Replit deployment UI if it does not automatically read `.replit`:
+
+```bash
+Build command: sh build.sh
+Run command: sh run.sh
+```
+
+This repository also includes [`replit.nix`](./replit.nix) so the Replit build environment installs Go and Node before the deployment commands run.
+
+Required production environment variables:
+
+- `PORT`
+- `MONGODB_URI`
+- `JWT_SECRET`
+- `NODE_ENV=production`
+
+Optional variables such as `CLAID_API_KEY`, `GOOGLEMAP_API_KEY`, Instagram credentials, and webhook URLs can be added as needed for the related features.
+
 ### Recommended Free Tier Stack
 
 For cost-effective deployment, this stack handles production workloads:
