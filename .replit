@@ -1,0 +1,9 @@
+language = "nodejs"
+run = "node run.js"
+build = "node build.js"
+
+[gitHubImport]
+requiredFiles = [".replit", "build.js", "run.js"]
+
+[nix]
+channel = "stable-22_11"
