@@ -170,6 +170,12 @@ export default {
     sellerMode: 'Mode Penjual',
     logout: 'Keluar',
     logoutConfirm: 'Apakah Anda yakin ingin keluar?',
+    // Seller Menu
+    sellerMenu: 'Menu Penjual',
+    productTracker: 'Pelacakan Produk',
+    automations: 'Otomasi',
+    myAccount: 'Akun Saya',
+    notifications: 'Notifikasi',
     profileUpdated: 'Profil berhasil diperbarui',
     orderHistory: 'Riwayat Pesanan',
     messages: 'Pesan',
