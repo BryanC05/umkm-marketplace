@@ -301,7 +301,7 @@ function Projects() {
                 {projects.map((project) => (
                   <div
                     key={project._id}
-                    className="bg-card rounded-lg border overflow-hidden hover:shadow-lg transition-shadow group"
+                    className="bg-gray-100 dark:bg-gray-800 rounded-lg border overflow-hidden hover:shadow-lg transition-shadow group"
                   >
                     {/* Project Image */}
                     <div className="h-40 bg-gradient-to-br from-primary/20 to-primary/5 relative overflow-hidden">
