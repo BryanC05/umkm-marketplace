@@ -924,7 +924,116 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         marginLeft: 12,
     },
+    fabButton: {
+        width: 58,
+        height: 58,
+        borderRadius: 29,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: colors.primary,
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.4,
+        shadowRadius: 12,
+        elevation: 12,
+        marginTop: -24,
+        borderWidth: 3,
+        borderColor: colors.card,
+    },
+    fabOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+    },
+    fabMenu: {
+        position: 'absolute',
+        bottom: 100,
+        left: 0,
+        right: 0,
+        padding: 16,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+    },
+    fabMenuItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        borderRadius: 12,
+        marginBottom: 8,
+    },
+    fabMenuText: {
+        fontSize: 16,
+        fontWeight: '600',
+        marginLeft: 12,
+    },
 });
+
+// Floating Action Button Component
+function FloatingActionButton({ navigation }) {
+    const { colors } = useThemeStore();
+    const { t } = useLanguageStore();
+    const [showMenu, setShowMenu] = useState(false);
+    const [isPressed, setIsPressed] = useState(false);
+    const parentNav = useNavigation();
+    const nav = navigation || parentNav;
+
+    const menuItems = [
+        { key: 'addProduct', label: t.addProduct || 'Add Product', icon: 'pricetag-outline', screen: 'AddProduct' },
+        { key: 'addProject', label: t.addProject || 'Add Project', icon: 'folder-outline', screen: 'AddProject' },
+    ];
+
+    const handleSelect = (item) => {
+        setShowMenu(false);
+        if (nav?.navigate) {
+            nav.navigate('Add', { screen: item.screen, params: { reset: true } });
+        }
+    };
+
+    return (
+        <>
+            <TouchableOpacity
+                style={[
+                    styles.fabButton, 
+                    { backgroundColor: colors.primary },
+                    { transform: [{ scale: isPressed ? 0.92 : 1 }] }
+                ]}
+                onPress={() => setShowMenu(true)}
+                onPressIn={() => setIsPressed(true)}
+                onPressOut={() => setIsPressed(false)}
+                activeOpacity={0.9}
+            >
+                <Ionicons name="add" size={28} color={colors.card} />
+            </TouchableOpacity>
+
+            <Modal
+                visible={showMenu}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowMenu(false)}
+            >
+                <TouchableOpacity 
+                    style={styles.fabOverlay} 
+                    activeOpacity={1}
+                    onPress={() => setShowMenu(false)}
+                >
+                    <View style={[styles.fabMenu, { backgroundColor: colors.card }]}>
+                        {menuItems.map((item) => (
+                            <TouchableOpacity
+                                key={item.key}
+                                style={styles.fabMenuItem}
+                                onPress={() => handleSelect(item)}
+                            >
+                                <Ionicons name={item.icon} size={22} color={colors.primary} />
+                                <Text style={[styles.fabMenuText, { color: colors.text }]}>
+                                    {item.label}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </TouchableOpacity>
+            </Modal>
+        </>
+    );
+}
 
 // Main Tab Navigator
 export default function AppNavigator() {
@@ -1020,16 +1129,19 @@ export default function AppNavigator() {
                 })}
                 sceneContainerStyle={{ backgroundColor: colors.background }}
             >
-                {/* Spacer for center alignment - creates space in middle */}
+                {/* FAB Button - Center */}
                 <Tab.Screen
-                    name="Spacer"
-                    component={HomeStackNavigator}
+                    name="FAB"
                     options={{
                         tabBarLabel: '',
-                        tabBarIcon: () => null,
-                        tabBarButton: () => <View style={{ flex: 1, minWidth: 60 }} />,
+                        tabBarIcon: ({ focused }) => (
+                            <FloatingActionButton navigation={navigation} />
+                        ),
+                        tabBarButton: () => null,
                     }}
-                />
+                >
+                    {() => null}
+                </Tab.Screen>
                 <Tab.Screen name="Home" component={HomeStackNavigator} options={{ tabBarLabel: t.tabHome }} />
                 <Tab.Screen 
                     name="Products" 
@@ -1038,7 +1150,15 @@ export default function AppNavigator() {
                         tabBarLabel: t.tabProducts,
                     }} 
                 />
-                <Tab.Screen name="Add" component={AddStackNavigator} options={{ tabBarLabel: t.tabAdd }} />
+                {/* Add tab is now accessible via FAB */}
+                <Tab.Screen 
+                    name="Add" 
+                    component={AddStackNavigator}
+                    options={{
+                        tabBarLabel: '',
+                        tabBarButton: () => null,
+                    }}
+                />
                 <Tab.Screen name="Profile" component={ProfileStackNavigator} options={{ tabBarLabel: t.tabProfile }} />
                 {/* Hidden Cart - not shown in tab bar */}
                 <Tab.Screen

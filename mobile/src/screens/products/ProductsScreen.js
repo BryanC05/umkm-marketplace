@@ -27,12 +27,23 @@ export default function ProductsScreen({ navigation, route }) {
     const [category, setCategory] = useState(initialCategory);
     const [sortBy, setSortBy] = useState('newest');
     const [showSort, setShowSort] = useState(false);
+    const [activeFilter, setActiveFilter] = useState('all');
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const searchTimeoutRef = useRef(null);
 
     const categories = language === 'id' ? CATEGORIES_ID : CATEGORIES_EN;
     const sortOptions = language === 'id' ? SORT_OPTIONS_ID : SORT_OPTIONS_EN;
+
+    // Quick filter options
+    const filterOptions = [
+        { id: 'all', name: language === 'id' ? 'Semua' : 'All', icon: 'apps' },
+        { id: 'price-low', name: language === 'id' ? 'Harga Rendah' : 'Price ↑', icon: 'arrow-down' },
+        { id: 'price-high', name: language === 'id' ? 'Harga Tinggi' : 'Price ↓', icon: 'arrow-up' },
+        { id: 'rating', name: language === 'id' ? 'Rating 4+' : '⭐ 4+', icon: 'star' },
+        { id: 'nearby', name: language === 'id' ? 'Dekat Saya' : '📍 Near Me', icon: 'location' },
+        { id: 'new', name: language === 'id' ? 'Terbaru' : 'New', icon: 'time' },
+    ];
 
     const fetchProducts = useCallback(async (pageNum = 1, append = false) => {
         try {
@@ -43,6 +54,13 @@ export default function ProductsScreen({ navigation, route }) {
             };
             if (searchQuery) params.search = searchQuery;
             if (category && category !== 'all') params.category = category;
+
+            // Apply quick filters
+            if (activeFilter === 'price-low') params.sort = 'price-asc';
+            else if (activeFilter === 'price-high') params.sort = 'price-desc';
+            else if (activeFilter === 'rating') { params.minRating = 4; params.sort = 'rating'; }
+            else if (activeFilter === 'new') params.sort = 'newest';
+            else if (activeFilter === 'nearby') params.sort = 'distance';
 
             const response = await api.get('/products', { params });
             const newProducts = response.data.products || [];
@@ -61,7 +79,7 @@ export default function ProductsScreen({ navigation, route }) {
             setLoading(false);
             setLoadingMore(false);
         }
-    }, [searchQuery, category, sortBy]);
+    }, [searchQuery, category, sortBy, activeFilter]);
 
     useEffect(() => {
         setLoading(true);
@@ -208,6 +226,29 @@ export default function ProductsScreen({ navigation, route }) {
             color: '#fff',
             fontWeight: '600',
         },
+        filterChipsContainer: {
+            paddingBottom: 12,
+        },
+        filterRow: {
+            paddingHorizontal: 16,
+            gap: 8,
+        },
+        filterChip: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            borderRadius: 16,
+            backgroundColor: colors.card,
+            borderWidth: 1,
+            borderColor: colors.primary + '40',
+        },
+        filterChipText: {
+            fontSize: 12,
+            color: colors.primary,
+            fontWeight: '500',
+        },
         empty: { 
             alignItems: 'center', 
             paddingTop: 60 
@@ -301,6 +342,38 @@ export default function ProductsScreen({ navigation, route }) {
                     </TouchableOpacity>
                 )}
             />
+
+            {/* Quick Filter Chips */}
+            <View style={styles.filterChipsContainer}>
+                <FlatList
+                    data={filterOptions}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    keyExtractor={(item) => item.id}
+                    contentContainerStyle={styles.filterRow}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity
+                            style={[
+                                styles.filterChip,
+                                activeFilter === item.id && { backgroundColor: colors.primary, borderColor: colors.primary }
+                            ]}
+                            onPress={() => { setActiveFilter(item.id); setLoading(true); fetchProducts(1); }}
+                        >
+                            <Ionicons 
+                                name={item.icon} 
+                                size={14} 
+                                color={activeFilter === item.id ? '#fff' : colors.primary} 
+                            />
+                            <Text style={[
+                                styles.filterChipText,
+                                activeFilter === item.id && { color: '#fff' }
+                            ]}>
+                                {item.name}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+                />
+            </View>
         </View>
     );
 

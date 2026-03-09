@@ -1771,6 +1771,8 @@ export default {
     searchProducts: 'Search products...',
     noProducts: 'No products',
     adjustFilters: 'Try adjusting your search filters',
+    expand: 'Expand',
+    collapse: 'Collapse',
     heroBadge: 'INDONESIAN MSME MARKETPLACE',
     heroTitle: 'Discover Products',
     heroHighlight: 'Best Local',

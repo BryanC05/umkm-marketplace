@@ -2060,6 +2060,8 @@ export default {
     searchProducts: 'Cari produk...',
     noProducts: 'Tidak ada produk',
     adjustFilters: 'Coba sesuaikan filter pencarian',
+    expand: 'Perluas',
+    collapse: 'Tutup',
     heroBadge: 'MARKETPLACE UMKM INDONESIA',
     heroTitle: 'Temukan Produk',
     heroHighlight: 'Lokal Terbaik',

@@ -33,6 +33,21 @@ export default function HomeScreen({ navigation }) {
     const [nearbyLoading, setNearbyLoading] = useState(true);
     const [userLocation, setUserLocation] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+    
+    // Collapsible sections state
+    const [collapsedSections, setCollapsedSections] = useState({
+        nearby: false,
+        categories: false,
+        featured: false,
+        forum: false,
+    });
+
+    const toggleSection = (section) => {
+        setCollapsedSections(prev => ({
+            ...prev,
+            [section]: !prev[section]
+        }));
+    };
 
     const allCategories = language === 'id' ? CATEGORIES_ID : CATEGORIES_EN;
     const categories = allCategories.filter((c) => c.id !== 'all');
@@ -167,6 +182,32 @@ export default function HomeScreen({ navigation }) {
             textAlign: 'center',
             maxWidth: '90%',
             alignSelf: 'center',
+        },
+        collapsibleHeader: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingHorizontal: 20,
+            paddingVertical: 12,
+        },
+        collapsibleTitle: {
+            fontSize: 16,
+            fontWeight: '700',
+            color: colors.text,
+        },
+        collapsibleToggle: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+            borderRadius: 16,
+            backgroundColor: colors.card,
+        },
+        collapsibleToggleText: {
+            fontSize: 12,
+            color: colors.textSecondary,
+            fontWeight: '500',
         },
         searchContainer: {
             flexDirection: 'row',
@@ -510,20 +551,66 @@ export default function HomeScreen({ navigation }) {
                         <Ionicons name="arrow-forward" size={18} color="#fff" />
                     </TouchableOpacity>
                 </View>
+
+                {/* Quick Actions Row */}
+                <View style={styles.quickActionsRow}>
+                    <TouchableOpacity 
+                        style={[styles.quickActionBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+                        onPress={() => navigation.navigate('ProductsTab', { screen: 'Products', params: { category: 'all' } })}
+                    >
+                        <Ionicons name="grid-outline" size={20} color={colors.primary} />
+                        <Text style={[styles.quickActionText, { color: colors.text }]}>Categories</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                        style={[styles.quickActionBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+                        onPress={() => navigation.navigate('NearbySellers')}
+                    >
+                        <Ionicons name="location-outline" size={20} color={colors.primary} />
+                        <Text style={[styles.quickActionText, { color: colors.text }]}>Nearby</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                        style={[styles.quickActionBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+                        onPress={() => navigation.navigate('ProductsTab', { screen: 'Products', params: { sort: 'popular' } })}
+                    >
+                        <Ionicons name="star-outline" size={20} color={colors.primary} />
+                        <Text style={[styles.quickActionText, { color: colors.text }]}>Featured</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                        style={[styles.quickActionBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+                        onPress={() => navigation.navigate('ProductsTab', { screen: 'Products', params: { filter: 'discount' } })}
+                    >
+                        <Ionicons name="pricetag-outline" size={20} color={colors.primary} />
+                        <Text style={[styles.quickActionText, { color: colors.text }]}>Deals</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
 
-            {/* Nearby Sellers Mini Section */}
+            {/* Nearby Sellers Section - Collapsible */}
             <View style={styles.nearbyMapSection}>
-                <View style={styles.nearbyMapCard}>
+                <TouchableOpacity 
+                    style={styles.collapsibleHeader} 
+                    onPress={() => toggleSection('nearby')}
+                >
+                    <View style={styles.nearbyMapTitleRow}>
+                        <Ionicons name="location" size={18} color={colors.primary} />
+                        <Text style={styles.collapsibleTitle}>{t('nearbySellersTitle')}</Text>
+                    </View>
+                    <View style={styles.collapsibleToggle}>
+                        <Text style={styles.collapsibleToggleText}>
+                            {collapsedSections.nearby ? t('expand') : t('collapse')}
+                        </Text>
+                        <Ionicons 
+                            name={collapsedSections.nearby ? 'chevron-down' : 'chevron-up'} 
+                            size={16} 
+                            color={colors.textSecondary} 
+                        />
+                    </View>
+                </TouchableOpacity>
+                
+                {!collapsedSections.nearby && (
+                    <View style={styles.nearbyMapCard}>
                     <View style={styles.nearbyMapHeader}>
                         <View>
-                            <View style={styles.nearbyMapTitleRow}>
-                                <Ionicons name="location" size={16} color={colors.primary} />
-                                <Text style={styles.nearbyMapLabel}>{t('nearbySellersLabel')}</Text>
-                            </View>
-                            <Text style={styles.nearbyMapTitle}>
-                                {t('nearbySellersTitle')}
-                            </Text>
                             <Text style={styles.nearbyMapSubtitle}>
                                 {nearbySellers.length} {t('nearbySellersCount')}
                             </Text>
@@ -586,6 +673,7 @@ export default function HomeScreen({ navigation }) {
                         </View>
                     )}
                 </View>
+                )}
             </View>
 
             {categories.filter((cat) => (categoryCounts[cat.id] || 0) > 0).length > 0 && (
