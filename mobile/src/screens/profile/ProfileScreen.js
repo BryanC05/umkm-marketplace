@@ -286,7 +286,7 @@ export default function ProfileScreen({ navigation, route }) {
         { icon: 'notifications-outline', label: t.notifications || 'Notifications', onPress: () => navigation.navigate('Notifications'), color: '#f43f5e', badge: unreadNotifCount > 0 ? (unreadNotifCount > 9 ? '9+' : String(unreadNotifCount)) : null },
         { icon: 'heart-outline', label: t.savedProducts || 'Saved Products', onPress: () => navigation.navigate('Wishlist'), color: '#ef4444' },
         { icon: 'receipt-outline', label: t.orderHistory || 'Order History', onPress: () => navigation.navigate('Orders'), color: '#14b8a6' },
-        { icon: 'location-outline', label: t.nearbySellers || 'Nearby Sellers', onPress: () => navigation.navigate('Home', { screen: 'NearbySellers' }), color: '#ef4444' },
+        { icon: 'location-outline', label: t.nearbySellers || 'Nearby Sellers', onPress: () => navigation.navigate('NearbySellers'), color: '#ef4444' },
         { icon: 'color-palette-outline', label: t.logoGenerator || 'Logo Generator', onPress: () => navigation.navigate('LogoGenerator'), color: '#8b5cf6' },
         { icon: 'storefront-outline', label: t.sellerDashboard || 'Seller Dashboard', onPress: () => navigation.navigate('SellerDashboard'), color: '#16a34a' },
         { icon: 'chatbubbles-outline', label: t.forum || 'Forum', onPress: () => navigation.navigate('Forum'), color: '#8b5cf6' },
