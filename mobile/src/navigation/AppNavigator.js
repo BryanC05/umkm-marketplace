@@ -102,17 +102,353 @@ function HomeStackNavigator() {
                 />
                 <HomeStack.Screen
                     name="NearbySellers"
-component={NearbySellersScreen}
+                    component={NearbySellersScreen}
+                    options={{ headerShown: false }}
+                />
+            </HomeStack.Navigator>
+        </View>
+    );
+}
+
+function ProductsStackNavigator() {
+    const { colors } = useThemeStore();
+    const { t, languageVersion } = useLanguageStore();
+
+    const ProductsWrapper = ({ navigation: nav, route }) => {
+        React.useEffect(() => {
+            if (route?.params?.reset) {
+                nav.setParams({ reset: undefined });
+                nav.popToTop();
+            }
+        }, [nav, route?.params?.reset]);
+
+        return (
+            <View style={{ flex: 1 }}>
+                <ProductsScreen navigation={nav} route={route} />
+                <FloatingCartButton navigation={nav} />
+            </View>
+        );
+    };
+
+    return (
+        <ProductsStack.Navigator
+            screenOptions={{
+                contentStyle: { backgroundColor: colors.background },
+                animation: 'slide_from_right',
+            }}
+        >
+            <ProductsStack.Screen
+                name="Products"
+                component={ProductsWrapper}
+                options={{
+                    title: t.navProducts,
+                    headerStyle: { backgroundColor: colors.card },
+                    headerTitleStyle: { fontWeight: '700', fontSize: 18, color: colors.text },
+                    headerShadowVisible: false,
+                    headerTintColor: colors.text,
+                }}
+            />
+            <ProductsStack.Screen
+                name="ProductDetail"
+                component={ProductDetailScreen}
                 options={{ headerShown: false }}
             />
-            <ProfileStack.Screen
-                name="Notifications"
-                component={NotificationsScreen}
+            <ProductsStack.Screen
+                name="MapView"
+                component={MapViewScreen}
                 options={{ headerShown: false }}
+            />
+            <ProductsStack.Screen
+                name="BusinessDetails"
+                component={BusinessDetailsScreen}
+                options={{ headerShown: false }}
+            />
+        </ProductsStack.Navigator>
+    );
+}
+
+// Separate Projects Stack Navigator (kept for reference but not used in tabs)
+function ProjectsStackNavigator() {
+    const { colors } = useThemeStore();
+    const { t } = useLanguageStore();
+
+    return (
+        <ProjectsStack.Navigator
+            screenOptions={{
+                contentStyle: { backgroundColor: colors.background },
+                animation: 'slide_from_right',
+            }}
+        >
+            <ProjectsStack.Screen
+                name="ProjectsMain"
+                component={ProjectsScreen}
+                options={{
+                    title: t.projects,
+                    headerStyle: { backgroundColor: colors.card },
+                    headerTitleStyle: { fontWeight: '700', fontSize: 18, color: colors.text },
+                    headerShadowVisible: false,
+                    headerTintColor: colors.text,
+                }}
+            />
+            <ProjectsStack.Screen
+                name="ProjectDetail"
+                component={ProjectDetailScreen}
+                options={{ headerShown: false }}
+            />
+        </ProjectsStack.Navigator>
+    );
+}
+
+function CartStackNavigator() {
+    const { colors } = useThemeStore();
+    const { t, languageVersion } = useLanguageStore();
+    return (
+        <CartStack.Navigator
+            screenOptions={{
+                contentStyle: { backgroundColor: colors.background },
+                animation: 'slide_from_right',
+            }}
+        >
+            <CartStack.Screen
+                name="CartMain"
+                component={CartScreen}
+                options={{
+                    title: t.navCart,
+                    headerStyle: { backgroundColor: colors.card },
+                    headerTitleStyle: { fontWeight: '700', fontSize: 18, color: colors.text },
+                    headerShadowVisible: false,
+                    headerTintColor: colors.text,
+                }}
+            />
+        </CartStack.Navigator>
+    );
+}
+
+function AddStackNavigator() {
+    const { colors } = useThemeStore();
+    return (
+        <AddStack.Navigator
+            screenOptions={{
+                contentStyle: { backgroundColor: colors.background },
+                animation: 'slide_from_right',
+            }}
+        >
+            <AddStack.Screen
+                name="AddProduct"
+                component={AddProductScreen}
+                options={{ headerShown: false }}
+            />
+            <AddStack.Screen
+                name="Instagram"
+                component={InstagramScreen}
+                options={{ headerShown: false }}
+            />
+        </AddStack.Navigator>
+    );
+}
+
+function DeliveryStackNavigator() {
+    const { colors } = useThemeStore();
+    const { t, languageVersion } = useLanguageStore();
+    return (
+        <DeliveryStack.Navigator
+            screenOptions={{
+                contentStyle: { backgroundColor: colors.background },
+                animation: 'slide_from_right',
+            }}
+        >
+            <DeliveryStack.Screen
+                name="DeliveryHub"
+                component={DeliveryHubScreen}
+                options={{ headerShown: false }}
+            />
+        </DeliveryStack.Navigator>
+    );
+}
+
+function ProfileStackNavigator() {
+    const { colors } = useThemeStore();
+    const { t, languageVersion } = useLanguageStore();
+    return (
+        <ProfileStack.Navigator
+            screenOptions={{
+                contentStyle: { backgroundColor: colors.background },
+                animation: 'slide_from_right',
+            }}
+        >
+            <ProfileStack.Screen
+                name="ProfileMain"
+                component={ProfileScreen}
+                options={({ route }) => ({
+                    title: route.params?.userId ? t.navProfile : t.navProfile,
+                    headerStyle: { backgroundColor: colors.card },
+                    headerTitleStyle: { fontWeight: '700', fontSize: 18, color: colors.text },
+                    headerShadowVisible: false,
+                    headerTintColor: colors.text,
+                })}
+            />
+            <ProfileStack.Screen
+                name="Orders"
+                component={OrdersScreen}
+                options={{
+                    title: t.navOrders,
+                    headerStyle: { backgroundColor: colors.card },
+                    headerTitleStyle: { fontWeight: '700', fontSize: 18, color: colors.text },
+                    headerShadowVisible: false,
+                    headerTintColor: colors.text,
+                }}
+            />
+            <ProfileStack.Screen
+                name="Forum"
+                component={ForumScreen}
+                options={{
+                    title: t.navForum,
+                    headerStyle: { backgroundColor: colors.card },
+                    headerTitleStyle: { fontWeight: '700', fontSize: 18, color: colors.text },
+                    headerShadowVisible: false,
+                    headerTintColor: colors.text,
+                }}
+            />
+            <ProfileStack.Screen
+                name="ThreadDetail"
+                component={ThreadDetailScreen}
+                options={{
+                    title: t.navDiscussion,
+                    headerStyle: { backgroundColor: colors.card },
+                    headerTitleStyle: { fontWeight: '600', fontSize: 16, color: colors.text },
+                    headerShadowVisible: false,
+                    headerTintColor: colors.text,
+                }}
+            />
+
+            {/* Seller Screens */}
+            <ProfileStack.Screen
+                name="SellerDashboard"
+                component={SellerDashboardScreen}
+                options={{
+                    headerShown: false,
+                }}
+            />
+            <ProfileStack.Screen
+                name="AddProduct"
+                component={AddProductScreen}
+                options={{
+                    headerShown: false,
+                }}
+            />
+            <ProfileStack.Screen
+                name="MyProducts"
+                component={MyProductsScreen}
+                options={{
+                    headerShown: false,
+                }}
+            />
+            <ProfileStack.Screen
+                name="LogoGenerator"
+                component={LogoGeneratorScreen}
+                options={{
+                    headerShown: false,
+                }}
+            />
+            <ProfileStack.Screen
+                name="Automation"
+                component={AutomationScreen}
+                options={{
+                    headerShown: false,
+                }}
+            />
+            <ProfileStack.Screen
+                name="SocialLinks"
+                component={SocialLinksScreen}
+                options={{
+                    headerShown: false,
+                }}
+            />
+            <ProfileStack.Screen
+                name="StoreSocialLinks"
+                component={SocialLinksScreen}
+                options={{
+                    headerShown: false,
+                }}
+            />
+            <ProfileStack.Screen
+                name="Instagram"
+                component={InstagramScreen}
+                options={{
+                    headerShown: false,
+                }}
+            />
+            <ProfileStack.Screen
+                name="MapView"
+                component={MapViewScreen}
+                options={{
+                    headerShown: false,
+                }}
             />
             <ProfileStack.Screen
                 name="NearbySellers"
                 component={NearbySellersScreen}
+                options={{
+                    headerShown: false,
+                }}
+            />
+            <ProfileStack.Screen
+                name="BusinessDetails"
+                component={BusinessDetailsScreen}
+                options={{
+                    headerShown: false,
+                }}
+            />
+            <ProfileStack.Screen
+                name="Wishlist"
+                component={WishlistScreen}
+                options={{
+                    headerShown: false,
+                }}
+            />
+            <ProfileStack.Screen
+                name="LiveTracking"
+                component={LiveTrackingMap}
+                options={{
+                    headerShown: false,
+                }}
+            />
+            <ProfileStack.Screen
+                name="Messages"
+                component={MessagesScreen}
+                options={{
+                    title: t.navMessages,
+                    headerStyle: { backgroundColor: colors.card },
+                    headerTitleStyle: { fontWeight: '700', fontSize: 18, color: colors.text },
+                    headerShadowVisible: false,
+                    headerTintColor: colors.text,
+                }}
+            />
+            <ProfileStack.Screen
+                name="Chat"
+                component={ChatScreen}
+                options={({ route }) => ({
+                    title: route.params?.otherUser?.name || t.navChat,
+                    headerStyle: { backgroundColor: colors.card },
+                    headerTitleStyle: { fontWeight: '600', fontSize: 16, color: colors.text },
+                    headerShadowVisible: false,
+                    headerTintColor: colors.text,
+                })}
+            />
+            <ProfileStack.Screen
+                name="AdminMembership"
+                component={AdminMembershipScreen}
+                options={{
+                    title: 'Membership Approvals',
+                    headerStyle: { backgroundColor: colors.card },
+                    headerTitleStyle: { fontWeight: '700', fontSize: 18, color: colors.text },
+                    headerShadowVisible: false,
+                    headerTintColor: colors.text,
+                }}
+            />
+            <ProfileStack.Screen
+                name="Notifications"
+                component={NotificationsScreen}
                 options={{ headerShown: false }}
             />
         </ProfileStack.Navigator>
