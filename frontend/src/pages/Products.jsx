@@ -45,7 +45,7 @@ const normalizeProductsPayload = (payload) => {
 };
 
 const Products = () => {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -58,13 +58,13 @@ const Products = () => {
   const [priceRange, setPriceRange] = useState({ min: "", max: "" });
   const [activeFilter, setActiveFilter] = useState("all");
 
-  // Quick filter options
+  // Quick filter options - use translation
   const filterOptions = [
-    { id: 'all', name: 'Semua', nameEn: 'All', icon: 'apps' },
-    { id: 'price-low', name: 'Harga Rendah', nameEn: 'Price ↑', icon: 'arrow-up' },
-    { id: 'price-high', name: 'Harga Tinggi', nameEn: 'Price ↓', icon: 'arrow-down' },
-    { id: 'rating', name: 'Rating 4+', nameEn: '⭐ 4+', icon: 'star' },
-    { id: 'new', name: 'Terbaru', nameEn: 'New', icon: 'time' },
+    { id: 'all', nameEn: t('products.all') || 'All', nameId: 'Semua' },
+    { id: 'price-low', nameEn: 'Price ↑', nameId: 'Harga Rendah' },
+    { id: 'price-high', nameEn: 'Price ↓', nameId: 'Harga Tinggi' },
+    { id: 'rating', nameEn: '⭐ 4+', nameId: 'Rating 4+' },
+    { id: 'new', nameEn: 'New', nameId: 'Terbaru' },
   ];
 
   // Categories matching the seeded data
@@ -165,7 +165,7 @@ const Products = () => {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
             <Input
               type="search"
-              placeholder="Cari produk..."
+              placeholder={t('products.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 bg-muted border-border text-foreground placeholder:text-muted-foreground"
@@ -230,7 +230,7 @@ const Products = () => {
                   : 'bg-muted text-muted-foreground hover:bg-muted/80'
               }`}
             >
-              {filter.nameEn}
+              {language === 'id' ? filter.nameId : filter.nameEn}
             </button>
           ))}
         </div>

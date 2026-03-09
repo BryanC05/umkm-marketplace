@@ -132,7 +132,7 @@ const Home = () => {
                 <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
                 <Input
                   type="search"
-                  placeholder="Cari produk, toko, atau kategori..."
+                  placeholder={t('products.searchPlaceholder') || "Cari produk, toko, atau kategori..."}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-12 h-14 text-base bg-muted border-border text-foreground placeholder:text-muted-foreground rounded-lg"
