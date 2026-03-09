@@ -25,6 +25,7 @@ export default {
     tabProducts: 'Products',
     tabCart: 'Cart',
     tabAdd: 'Add',
+    addProject: 'Add Project',
     tabProfile: 'Profile',
     navProducts: 'Products',
     navCart: 'My Cart',

@@ -112,7 +112,7 @@ export default function HomeScreen({ navigation }) {
     };
 
     const handleSearch = () => {
-        navigation.navigate('ProductsTab', { screen: 'Products', params: { search: searchQuery } });
+        navigation.navigate('Browse', { screen: 'Products', params: { search: searchQuery } });
     };
 
     const styles = {
@@ -592,7 +592,7 @@ export default function HomeScreen({ navigation }) {
                 <View style={styles.categorySection}>
                     <View style={styles.sectionHeader}>
                         <Text style={styles.sectionTitle}>{t('categories')}</Text>
-                        <TouchableOpacity onPress={() => navigation.navigate('ProductsTab')}>
+                        <TouchableOpacity onPress={() => navigation.navigate('Browse')}>
                             <Text style={styles.seeAll}>{t('seeAllLower')}</Text>
                         </TouchableOpacity>
                     </View>
@@ -604,7 +604,7 @@ export default function HomeScreen({ navigation }) {
                                 <TouchableOpacity
                                     key={cat.id}
                                     style={styles.catCard}
-                                    onPress={() => navigation.navigate('ProductsTab', { screen: 'Products', params: { category: cat.id } })}
+                                    onPress={() => navigation.navigate('Browse', { screen: 'Products', params: { category: cat.id, reset: true } })}
                                 >
                                     <Text style={styles.catIcon}>{cat.icon}</Text>
                                     <Text style={styles.catName}>{cat.name}</Text>
@@ -618,7 +618,7 @@ export default function HomeScreen({ navigation }) {
             <View style={styles.productsSection}>
                 <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>{t('featuredProducts')}</Text>
-                    <TouchableOpacity onPress={() => navigation.navigate('ProductsTab')}>
+                    <TouchableOpacity onPress={() => navigation.navigate('Browse')}>
                         <Text style={styles.seeAll}>{t('seeAllLower')}</Text>
                     </TouchableOpacity>
                 </View>

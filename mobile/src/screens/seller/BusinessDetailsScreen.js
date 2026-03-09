@@ -129,7 +129,7 @@ export default function BusinessDetailsScreen() {
     const renderProduct = ({ item }) => (
         <TouchableOpacity
             style={styles.productCard}
-            onPress={() => navigation.navigate('ProductsTab', {
+            onPress={() => navigation.navigate('Browse', {
                 screen: 'ProductDetail',
                 params: { productId: item._id }
             })}

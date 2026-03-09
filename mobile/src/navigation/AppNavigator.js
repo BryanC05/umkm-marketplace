@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import {
     View,
@@ -50,10 +51,13 @@ import NotificationsScreen from '../screens/notifications/NotificationsScreen';
 import WishlistScreen from '../screens/wishlist/WishlistScreen';
 import SocialLinksScreen from '../screens/profile/SocialLinksScreen';
 import ProjectsScreen from '../screens/projects/ProjectsScreen';
+import AddProjectScreen from '../screens/projects/AddProjectScreen';
+import ProjectDetailScreen from '../screens/projects/ProjectDetailScreen';
 
 const Tab = createBottomTabNavigator();
 const HomeStack = createNativeStackNavigator();
 const ProductsStack = createNativeStackNavigator();
+const ProjectsStack = createNativeStackNavigator();
 const CartStack = createNativeStackNavigator();
 const AddStack = createNativeStackNavigator();
 const ProfileStack = createNativeStackNavigator();
@@ -170,7 +174,44 @@ function ProductsStackNavigator() {
                     headerTintColor: colors.text,
                 }}
             />
+            <ProductsStack.Screen
+                name="ProjectDetail"
+                component={ProjectDetailScreen}
+                options={{ headerShown: false }}
+            />
         </ProductsStack.Navigator>
+    );
+}
+
+// Separate Projects Stack Navigator (kept for reference but not used in tabs)
+function ProjectsStackNavigator() {
+    const { colors } = useThemeStore();
+    const { t } = useLanguageStore();
+
+    return (
+        <ProjectsStack.Navigator
+            screenOptions={{
+                contentStyle: { backgroundColor: colors.background },
+                animation: 'slide_from_right',
+            }}
+        >
+            <ProjectsStack.Screen
+                name="ProjectsMain"
+                component={ProjectsScreen}
+                options={{
+                    title: t.projects,
+                    headerStyle: { backgroundColor: colors.card },
+                    headerTitleStyle: { fontWeight: '700', fontSize: 18, color: colors.text },
+                    headerShadowVisible: false,
+                    headerTintColor: colors.text,
+                }}
+            />
+            <ProjectsStack.Screen
+                name="ProjectDetail"
+                component={ProjectDetailScreen}
+                options={{ headerShown: false }}
+            />
+        </ProjectsStack.Navigator>
     );
 }
 
@@ -211,6 +252,11 @@ function AddStackNavigator() {
             <AddStack.Screen
                 name="AddProduct"
                 component={AddProductScreen}
+                options={{ headerShown: false }}
+            />
+            <AddStack.Screen
+                name="AddProject"
+                component={AddProjectScreen}
                 options={{ headerShown: false }}
             />
             <AddStack.Screen
@@ -468,7 +514,7 @@ function FloatingCartButton({ navigation }) {
                 shadowRadius: 8,
                 elevation: 8,
             }}
-            onPress={() => navigation.navigate('CartTab', { screen: 'CartMain' })}
+            onPress={() => navigation.navigate('Cart', { screen: 'CartMain' })}
         >
             <Ionicons name="cart" size={24} color={colors.white} />
             <View style={{
@@ -491,40 +537,89 @@ function FloatingCartButton({ navigation }) {
     );
 }
 
-// Products/Projects Dropdown Button Component
-function ProductsTabButton({ navigation, isFocused }) {
+// Browse Tab Button (Combined Products/Projects)
+function BrowseTabButton({ navigation, isFocused, route }) {
     const { colors } = useThemeStore();
     const { t } = useLanguageStore();
     const [showDropdown, setShowDropdown] = useState(false);
+    const [lastVisited, setLastVisited] = useState('products');
+    const [currentPage, setCurrentPage] = useState('products');
+    const parentNav = useNavigation();
+    const nav = navigation || parentNav;
+
+    const navigateToScreen = (screenName) => {
+        // Navigate to nested screen using: TabName -> ScreenName
+        nav.navigate({
+            name: 'Browse',
+            params: { screen: screenName }
+        });
+    };
 
     const menuItems = [
         { 
             key: 'products', 
             label: t.tabProducts || 'Products', 
             icon: 'grid-outline',
+            target: 'products',
             screen: 'Products' 
         },
         { 
             key: 'projects', 
             label: t.projects || 'Projects', 
             icon: 'folder-outline',
-            screen: 'Projects' 
+            target: 'projects',
+            targetTab: 'Projects' 
         },
     ];
 
     const handleSelect = (item) => {
         setShowDropdown(false);
-        navigation.navigate('ProductsTab', { screen: item.screen });
+        setLastVisited(item.target);
+        const screenName = item.target === 'projects' ? 'Projects' : 'Products';
+        navigateToScreen(screenName);
     };
+
+    const getLabel = () => {
+        if (isFocused) {
+            return currentPage === 'projects' ? (t.projects || 'Projects') : (t.tabProducts || 'Products');
+        }
+        return lastVisited === 'projects' ? (t.projects || 'Projects') : (t.tabProducts || 'Products');
+    };
+
+    const getIcon = () => {
+        const iconName = lastVisited === 'projects' ? 'folder' : 'grid';
+        const iconNameOutline = lastVisited === 'projects' ? 'folder-outline' : 'grid-outline';
+        return isFocused ? iconName : iconNameOutline;
+    };
+
+    React.useEffect(() => {
+        const state = nav?.getState();
+        if (state) {
+            const currentRoute = state.routes[state.index];
+            if (currentRoute?.name === 'Projects') {
+                setCurrentPage('projects');
+            } else if (currentRoute?.name === 'Products') {
+                setCurrentPage('products');
+            }
+        }
+    }, [nav]);
 
     return (
         <>
             <TouchableOpacity
                 style={styles.productsTabButton}
-                onPress={() => setShowDropdown(true)}
+                onLongPress={() => setShowDropdown(true)}
+                delayLongPress={500}
+                onPress={() => {
+                    if (lastVisited === 'projects') {
+                        navigateToScreen('Projects');
+                    } else {
+                        navigateToScreen('Products');
+                    }
+                }}
             >
                 <Ionicons 
-                    name={isFocused ? 'grid' : 'grid-outline'} 
+                    name={getIcon()} 
                     size={22} 
                     color={isFocused ? colors.primary : colors.textSecondary} 
                 />
@@ -533,14 +628,111 @@ function ProductsTabButton({ navigation, isFocused }) {
                         styles.productsTabLabel, 
                         { color: isFocused ? colors.primary : colors.textSecondary }
                     ]}
+                    numberOfLines={1}
                 >
-                    {t.tabProducts || 'Products'}
+                    {getLabel()}
                 </Text>
+            </TouchableOpacity>
+
+            <Modal
+                visible={showDropdown}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowDropdown(false)}
+            >
+                <TouchableOpacity 
+                    style={styles.dropdownOverlay} 
+                    activeOpacity={1}
+                    onPress={() => setShowDropdown(false)}
+                >
+                    <View style={[styles.dropdownMenu, { backgroundColor: colors.card }]}>
+                        {menuItems.map((item) => (
+                            <TouchableOpacity
+                                key={item.key}
+                                style={styles.dropdownItem}
+                                onPress={() => handleSelect(item)}
+                            >
+                                <Ionicons name={item.icon} size={20} color={colors.text} />
+                                <Text style={[styles.dropdownItemText, { color: colors.text }]}>
+                                    {item.label}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </TouchableOpacity>
+            </Modal>
+        </>
+    );
+}
+
+// Add Tab Button (Combined Add Product/Add Project)
+function AddTabButton({ navigation, isFocused, route }) {
+    const { colors } = useThemeStore();
+    const { t } = useLanguageStore();
+    const [showDropdown, setShowDropdown] = useState(false);
+    const [lastVisited, setLastVisited] = useState('product');
+    const parentNav = useNavigation();
+    const nav = navigation || parentNav;
+
+    const menuItems = [
+        { 
+            key: 'addProduct', 
+            label: t.addProduct || 'Add Product', 
+            icon: 'pricetag-outline',
+            target: 'product',
+            screen: 'AddProduct' 
+        },
+        { 
+            key: 'addProject', 
+            label: t.addProject || 'Add Project', 
+            icon: 'folder-outline',
+            target: 'project',
+            screen: 'AddProject' 
+        },
+    ];
+
+    const handleSelect = (item) => {
+        setShowDropdown(false);
+        setLastVisited(item.target);
+        if (nav?.navigate) {
+            nav.navigate('Add', { screen: item.screen, params: { reset: true } });
+        }
+    };
+
+    const getLabel = () => {
+        return lastVisited === 'project' ? (t.addProject || 'Add Project') : (t.addProduct || 'Add Product');
+    };
+
+    return (
+        <>
+            <TouchableOpacity
+                style={styles.productsTabButton}
+                onLongPress={() => setShowDropdown(true)}
+                delayLongPress={500}
+                onPress={() => {
+                    if (nav?.navigate) {
+                        if (lastVisited === 'project') {
+                            nav.navigate('Add', { screen: 'AddProject', params: { reset: true } });
+                        } else {
+                            nav.navigate('Add', { screen: 'AddProduct', params: { reset: true } });
+                        }
+                    }
+                }}
+            >
                 <Ionicons 
-                    name="chevron-down" 
-                    size={14} 
+                    name={isFocused ? 'add-circle' : 'add-circle-outline'} 
+                    size={22} 
                     color={isFocused ? colors.primary : colors.textSecondary} 
                 />
+                <Text 
+                    style={[
+                        styles.productsTabLabel, 
+                        { color: isFocused ? colors.primary : colors.textSecondary }
+                    ]}
+                    numberOfLines={1}
+                >
+                    {getLabel()}
+                </Text>
             </TouchableOpacity>
 
             <Modal
@@ -813,32 +1005,35 @@ const badgeStyles = StyleSheet.create({
 
 const styles = StyleSheet.create({
     productsTabButton: {
-        flexDirection: 'row',
+        flexDirection: 'column',
         alignItems: 'center',
+        justifyContent: 'center',
         paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 8,
+        paddingVertical: 6,
+        minWidth: 60,
     },
     productsTabLabel: {
         fontSize: 11,
-        fontWeight: '600',
-        marginHorizontal: 4,
+        fontWeight: '500',
+        marginTop: 4,
     },
     dropdownOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.3)',
-        justifyContent: 'center',
+        justifyContent: 'flex-end',
         alignItems: 'center',
+        paddingBottom: 85,
     },
     dropdownMenu: {
-        borderRadius: 12,
+        borderRadius: 16,
         padding: 8,
-        minWidth: 180,
-        elevation: 5,
+        minWidth: 200,
+        marginBottom: 10,
+        elevation: 8,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
     },
     dropdownItem: {
         flexDirection: 'row',
@@ -870,23 +1065,13 @@ export default function AppNavigator() {
                         const currentScreenName = currentRoute?.state?.routes?.[currentRoute?.state?.index]?.name;
                         const isFocused = tabNavigation.isFocused();
                         
-                        // If already on Products tab and not on Products screen, reset to Products
-                        if (route.name === 'ProductsTab') {
-                            if (isFocused && currentScreenName !== 'Products') {
-                                tabNavigation.navigate('ProductsTab', { 
-                                    screen: 'Products', 
-                                    params: { reset: true },
-                                    merge: true 
-                                });
-                            } else if (isFocused) {
-                                tabNavigation.navigate('ProductsTab', { screen: 'Products', params: { reset: true } });
-                            } else {
-                                defaultHandler();
-                            }
+                        // If on Browse tab and tapping when already focused, reset to Products
+                        if (route.name === 'Browse' && isFocused && currentScreenName !== 'Products') {
+                            tabNavigation.navigate('Browse', { screen: 'Products' });
+                        } else if (route.name === 'Browse' && isFocused) {
+                            defaultHandler();
                         } else if (isFocused) {
-                            // Handle other tabs similarly
-                            const screenName = route.name.replace('Tab', '');
-                            tabNavigation.navigate(route.name, { screen: screenName, params: { reset: true } });
+                            defaultHandler();
                         } else {
                             defaultHandler();
                         }
@@ -895,18 +1080,23 @@ export default function AppNavigator() {
                     tabBarIcon: ({ focused, color, size }) => {
                         let iconName;
                         switch (route.name) {
-                            case 'HomeTab': iconName = focused ? 'home' : 'home-outline'; break;
-                            case 'ProductsTab': iconName = focused ? 'grid' : 'grid-outline'; break;
-                            case 'DeliveryTab': iconName = focused ? 'bicycle' : 'bicycle-outline'; break;
-                            case 'AddTab': iconName = focused ? 'add-circle' : 'add-circle-outline'; break;
-                            case 'ProfileTab': iconName = focused ? 'person' : 'person-outline'; break;
+                            case 'Home': iconName = focused ? 'home' : 'home-outline'; break;
+                            case 'Browse': iconName = focused ? 'grid' : 'grid-outline'; break;
+                            case 'Delivery': iconName = focused ? 'bicycle' : 'bicycle-outline'; break;
+                            case 'Add': iconName = focused ? 'add-circle' : 'add-circle-outline'; break;
+                            case 'Profile': iconName = focused ? 'person' : 'person-outline'; break;
+                            case 'Spacer': iconName = 'ellipse'; break;
                             default: iconName = 'ellipse';
+                        }
+                        // Don't show icon for Spacer
+                        if (route.name === 'Spacer') {
+                            return null;
                         }
                         return (
                             <View>
                                 <Ionicons name={iconName} size={22} color={color} />
-                                {route.name === 'DeliveryTab' && <DeliveryBadge />}
-                                {route.name === 'ProfileTab' && <NotificationBadge />}
+                                {route.name === 'Delivery' && <DeliveryBadge />}
+                                {route.name === 'Profile' && <NotificationBadge />}
                             </View>
                         );
                     },
@@ -914,27 +1104,30 @@ export default function AppNavigator() {
                     tabBarInactiveTintColor: colors.textSecondary,
                     tabBarStyle: {
                         backgroundColor: colors.card,
-                        borderTopWidth: 1,
-                        borderTopColor: colors.border,
-                        height: 70,
-                        paddingTop: 6,
-                        paddingBottom: 20,
+                        borderTopWidth: 0,
+                        height: 75,
+                        paddingTop: 8,
+                        paddingBottom: 8,
+                        borderTopLeftRadius: 20,
+                        borderTopRightRadius: 20,
                         shadowColor: isDarkMode ? colors.primary : '#000',
-                        shadowOffset: { width: 0, height: -2 },
-                        shadowOpacity: isDarkMode ? 0.1 : 0.05,
-                        shadowRadius: 8,
-                        elevation: 5,
+                        shadowOffset: { width: 0, height: -4 },
+                        shadowOpacity: isDarkMode ? 0.15 : 0.08,
+                        shadowRadius: 12,
+                        elevation: 8,
                     },
                     tabBarItemStyle: {
                         flex: 1,
+                        flexDirection: 'column',
                         justifyContent: 'center',
                         alignItems: 'center',
-                        paddingHorizontal: 0,
+                        paddingHorizontal: 4,
+                        paddingVertical: 6,
                     },
                     tabBarLabelStyle: {
                         fontSize: 11,
-                        fontWeight: '600',
-                        marginTop: 2,
+                        fontWeight: '500',
+                        marginTop: 4,
                     },
                 })}
                 sceneContainerStyle={{ backgroundColor: colors.background }}
@@ -942,30 +1135,34 @@ export default function AppNavigator() {
                 {/* Spacer for center alignment - creates space in middle */}
                 <Tab.Screen
                     name="Spacer"
-                    component={HomeStackNavigator}
+                    component={View}
                     options={{
                         tabBarLabel: '',
                         tabBarIcon: () => null,
                         tabBarButton: () => <View style={{ flex: 1, minWidth: 60 }} />,
                     }}
                 />
-                <Tab.Screen name="HomeTab" component={HomeStackNavigator} options={{ tabBarLabel: t.tabHome }} />
+                <Tab.Screen name="Home" component={HomeStackNavigator} options={{ tabBarLabel: t.tabHome }} />
                 <Tab.Screen 
-                    name="ProductsTab" 
+                    name="Browse" 
                     component={ProductsStackNavigator} 
                     options={{ 
-                        tabBarLabel: t.tabProducts,
+                        tabBarLabel: t.tabBrowse || 'Browse',
                         tabBarButton: (props) => (
-                            <ProductsTabButton {...props} />
+                            <BrowseTabButton {...props} />
                         ),
                     }} 
                 />
-                
-                <Tab.Screen name="AddTab" component={AddStackNavigator} options={{ tabBarLabel: t.tabAdd }} />
-                <Tab.Screen name="ProfileTab" component={ProfileStackNavigator} options={{ tabBarLabel: t.tabProfile }} />
-                {/* Hidden CartTab - not shown in tab bar */}
+                <Tab.Screen name="Add" component={AddStackNavigator} options={{ 
+                    tabBarLabel: t.tabAdd,
+                    tabBarButton: (props) => (
+                        <AddTabButton {...props} />
+                    ),
+                }} />
+                <Tab.Screen name="Profile" component={ProfileStackNavigator} options={{ tabBarLabel: t.tabProfile }} />
+                {/* Hidden Cart - not shown in tab bar */}
                 <Tab.Screen
-                    name="CartTab"
+                    name="Cart"
                     component={CartStackNavigator}
                     options={{
                         tabBarLabel: t.tabCart,

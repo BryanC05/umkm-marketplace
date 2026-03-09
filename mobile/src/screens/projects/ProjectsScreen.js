@@ -15,7 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeStore } from '../../store/themeStore';
 import { useLanguageStore } from '../../store/languageStore';
-import api from '../../api';
+import api from '../../api/api';
 
 const categories = [
     { id: 'all', icon: 'folder-outline', labelKey: 'allProjects' },
@@ -33,15 +33,6 @@ export default function ProjectsScreen({ navigation }) {
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [showCreateModal, setShowCreateModal] = useState(false);
-    const [newProject, setNewProject] = useState({
-        name: '',
-        description: '',
-        link: '',
-        category: 'website',
-        tags: '',
-    });
-    const [creating, setCreating] = useState(false);
 
     useEffect(() => {
         fetchProjects();
@@ -68,38 +59,6 @@ export default function ProjectsScreen({ navigation }) {
         }
     };
 
-    const handleCreateProject = async () => {
-        if (!newProject.name.trim() || !newProject.link.trim()) {
-            Alert.alert(t.error || 'Error', 'Name and Link are required');
-            return;
-        }
-
-        try {
-            setCreating(true);
-            const projectData = {
-                ...newProject,
-                tags: newProject.tags.split(',').map(tag => tag.trim()).filter(Boolean),
-            };
-            
-            await api.post('/projects', projectData);
-            setShowCreateModal(false);
-            setNewProject({
-                name: '',
-                description: '',
-                link: '',
-                category: 'website',
-                tags: '',
-            });
-            fetchProjects();
-            Alert.alert(t.success || 'Success', 'Project created successfully!');
-        } catch (error) {
-            console.error('Failed to create project:', error);
-            Alert.alert(t.error || 'Error', 'Failed to create project');
-        } finally {
-            setCreating(false);
-        }
-    };
-
     const openProjectLink = async (url) => {
         try {
             await Linking.openURL(url);
@@ -120,7 +79,7 @@ export default function ProjectsScreen({ navigation }) {
     const renderProject = ({ item }) => (
         <TouchableOpacity
             style={[styles.projectCard, { backgroundColor: colors.card }]}
-            onPress={() => openProjectLink(item.link)}
+            onPress={() => navigation.navigate('ProjectDetail', { projectId: item._id })}
         >
             <View style={[styles.categoryIcon, { backgroundColor: colors.primary + '20' }]}>
                 <Ionicons name={getCategoryIcon(item.category)} size={24} color={colors.primary} />
@@ -144,7 +103,12 @@ export default function ProjectsScreen({ navigation }) {
                     </View>
                 )}
             </View>
-            <Ionicons name="open-outline" size={20} color={colors.textSecondary} />
+            <TouchableOpacity 
+                onPress={() => openProjectLink(item.link)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+                <Ionicons name="open-outline" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
         </TouchableOpacity>
     );
 
@@ -231,119 +195,15 @@ export default function ProjectsScreen({ navigation }) {
                 />
             )}
 
-            {/* FAB for Create */}
-            <TouchableOpacity
-                style={[styles.fab, { backgroundColor: colors.primary }]}
-                onPress={() => setShowCreateModal(true)}
-            >
-                <Ionicons name="add" size={28} color="#fff" />
-            </TouchableOpacity>
-
-            {/* Create Project Modal */}
-            <Modal
-                visible={showCreateModal}
-                animationType="slide"
-                transparent={true}
-                onRequestClose={() => setShowCreateModal(false)}
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
-                        <View style={styles.modalHeader}>
-                            <Text style={[styles.modalTitle, { color: colors.text }]}>{t.createProject}</Text>
-                            <TouchableOpacity onPress={() => setShowCreateModal(false)}>
-                                <Ionicons name="close" size={24} color={colors.text} />
-                            </TouchableOpacity>
-                        </View>
-
-                        <ScrollView showsVerticalScrollIndicator={false}>
-                            <Text style={[styles.inputLabel, { color: colors.text }]}>{t.projectName} *</Text>
-                            <TextInput
-                                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                                value={newProject.name}
-                                onChangeText={(text) => setNewProject({ ...newProject, name: text })}
-                                placeholder={t.projectName}
-                                placeholderTextColor={colors.textSecondary}
-                            />
-
-                            <Text style={[styles.inputLabel, { color: colors.text }]}>{t.projectDescription}</Text>
-                            <TextInput
-                                style={[styles.input, styles.textArea, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                                value={newProject.description}
-                                onChangeText={(text) => setNewProject({ ...newProject, description: text })}
-                                placeholder={t.projectDescription}
-                                placeholderTextColor={colors.textSecondary}
-                                multiline
-                                numberOfLines={3}
-                            />
-
-                            <Text style={[styles.inputLabel, { color: colors.text }]}>{t.projectLink} *</Text>
-                            <TextInput
-                                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                                value={newProject.link}
-                                onChangeText={(text) => setNewProject({ ...newProject, link: text })}
-                                placeholder="https://..."
-                                placeholderTextColor={colors.textSecondary}
-                                autoCapitalize="none"
-                                keyboardType="url"
-                            />
-
-                            <Text style={[styles.inputLabel, { color: colors.text }]}>{t.projectCategory}</Text>
-                            <View style={styles.categoryPicker}>
-                                {categories.slice(1).map((cat) => (
-                                    <TouchableOpacity
-                                        key={cat.id}
-                                        style={[
-                                            styles.categoryOption,
-                                            { 
-                                                backgroundColor: newProject.category === cat.id 
-                                                    ? colors.primary 
-                                                    : colors.background,
-                                                borderColor: colors.border
-                                            }
-                                        ]}
-                                        onPress={() => setNewProject({ ...newProject, category: cat.id })}
-                                    >
-                                        <Ionicons 
-                                            name={cat.icon} 
-                                            size={16} 
-                                            color={newProject.category === cat.id ? '#fff' : colors.text} 
-                                        />
-                                        <Text 
-                                            style={[
-                                                styles.categoryOptionText,
-                                                { color: newProject.category === cat.id ? '#fff' : colors.text }
-                                            ]}
-                                        >
-                                            {getCategoryLabel(cat.labelKey)}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-
-                            <Text style={[styles.inputLabel, { color: colors.text }]}>{t.projectTags}</Text>
-                            <TextInput
-                                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
-                                value={newProject.tags}
-                                onChangeText={(text) => setNewProject({ ...newProject, tags: text })}
-                                placeholder="tag1, tag2, tag3"
-                                placeholderTextColor={colors.textSecondary}
-                            />
-
-                            <TouchableOpacity
-                                style={[styles.submitButton, { backgroundColor: colors.primary }]}
-                                onPress={handleCreateProject}
-                                disabled={creating}
-                            >
-                                {creating ? (
-                                    <ActivityIndicator size="small" color="#fff" />
-                                ) : (
-                                    <Text style={styles.submitButtonText}>{t.createProject}</Text>
-                                )}
-                            </TouchableOpacity>
-                        </ScrollView>
-                    </View>
+            {/* Empty State */}
+            {projects.length === 0 && !loading && (
+                <View style={styles.emptyContainer}>
+                    <Ionicons name="folder-open-outline" size={64} color={colors.textSecondary} />
+                    <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                        {t.noProjects || 'No projects found'}
+                    </Text>
                 </View>
-            </Modal>
+            )}
         </View>
     );
 }
@@ -354,8 +214,8 @@ const styles = StyleSheet.create({
     },
     header: {
         paddingHorizontal: 16,
-        paddingTop: 50,
-        paddingBottom: 16,
+        paddingTop: 8,
+        paddingBottom: 12,
     },
     headerTitle: {
         fontSize: 24,
@@ -504,6 +364,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 10,
         fontSize: 16,
+        color: '#000000',
     },
     textArea: {
         minHeight: 80,

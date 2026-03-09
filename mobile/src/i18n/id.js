@@ -28,6 +28,7 @@ export default {
     tabProducts: 'Produk',
     tabCart: 'Keranjang',
     tabAdd: 'Tambah',
+    addProject: 'Tambah Proyek',
     tabProfile: 'Profil',
 
     // Navigation Headers

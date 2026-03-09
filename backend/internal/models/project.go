@@ -13,6 +13,7 @@ type Project struct {
 	Description string             `bson:"description" json:"description"`
 	Link        string             `bson:"link" json:"link"`
 	Image       string             `bson:"image,omitempty" json:"image,omitempty"`
+	Images      []string           `bson:"images,omitempty" json:"images,omitempty"`
 	Category    string             `bson:"category" json:"category"` // "website", "game", "app", "other"
 	UserID      primitive.ObjectID `bson:"userId" json:"userId"`
 	Username    string             `bson:"username" json:"username"`
@@ -28,6 +29,7 @@ type ProjectInput struct {
 	Description string   `json:"description" binding:"required,min=1,max=1000"`
 	Link        string   `json:"link" binding:"required,url"`
 	Image       string   `json:"image,omitempty"`
+	Images      []string `json:"images,omitempty"`
 	Category    string   `json:"category" binding:"required,oneof=website game app other"`
 	Tags        []string `json:"tags,omitempty"`
 	Username    string   `json:"username,omitempty"`

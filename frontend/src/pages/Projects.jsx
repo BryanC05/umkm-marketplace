@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Search, Plus, ExternalLink, Globe, Gamepad2, Smartphone, Folder, 
-  Clock, User, Tag, X, Loader2 
+  Clock, User, Tag, X, Loader2, Upload, Image as ImageIcon
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../hooks/useTranslation';
@@ -42,6 +42,9 @@ function Projects() {
     category: 'website',
     tags: '',
   });
+  const [projectImages, setProjectImages] = useState([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const fileInputRef = useRef(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['projects', selectedCategory, searchQuery],
@@ -70,6 +73,7 @@ function Projects() {
         category: 'website',
         tags: '',
       });
+      setProjectImages([]);
     },
     onError: (error) => {
       console.error('Failed to create project:', error);
@@ -86,11 +90,55 @@ function Projects() {
     },
   });
 
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+    
+    if (projectImages.length + files.length > 4) {
+      alert('Maximum 4 images allowed');
+      return;
+    }
+
+    setUploadingImages(true);
+    const newImages = [];
+
+    try {
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('image', file);
+        
+        const response = await api.post('/product-images/process', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+
+        if (response.data?.success && response.data?.image?.url) {
+          newImages.push({
+            id: Date.now() + Math.random(),
+            file: file,
+            preview: URL.createObjectURL(file),
+            url: response.data.image.url,
+          });
+        }
+      }
+      setProjectImages([...projectImages, ...newImages]);
+    } catch (error) {
+      console.error('Failed to upload images:', error);
+      alert('Failed to upload images');
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
+  const removeImage = (id) => {
+    setProjectImages(projectImages.filter(img => img.id !== id));
+  };
+
   const handleCreateProject = (e) => {
     e.preventDefault();
     const projectData = {
       ...newProject,
       tags: newProject.tags.split(',').map(tag => tag.trim()).filter(Boolean),
+      images: projectImages.map(img => img.url),
     };
     createProjectMutation.mutate(projectData);
   };
@@ -253,6 +301,51 @@ function Projects() {
                           className="mt-1"
                         />
                       </div>
+
+                      <div>
+                        <Label>Project Images (optional)</Label>
+                        <input
+                          type="file"
+                          ref={fileInputRef}
+                          onChange={handleImageUpload}
+                          accept="image/*"
+                          multiple
+                          className="hidden"
+                        />
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {projectImages.map((img) => (
+                            <div key={img.id} className="relative">
+                              <img 
+                                src={img.preview} 
+                                alt="Project preview" 
+                                className="w-20 h-20 object-cover rounded-lg"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeImage(img.id)}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          ))}
+                          {projectImages.length < 4 && (
+                            <button
+                              type="button"
+                              onClick={() => fileInputRef.current?.click()}
+                              disabled={uploadingImages}
+                              className="w-20 h-20 border-2 border-dashed rounded-lg flex items-center justify-center text-gray-400 hover:border-gray-300 hover:text-gray-500 disabled:opacity-50"
+                            >
+                              {uploadingImages ? (
+                                <Loader2 className="animate-spin" size={20} />
+                              ) : (
+                                <Upload size={20} />
+                              )}
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">Max 4 images</p>
+                      </div>
                       
                       <Button 
                         type="submit" 
@@ -313,9 +406,10 @@ function Projects() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {projects.map((project) => (
-                  <div
+                  <Link
                     key={project._id}
-                    className="bg-gray-100 dark:bg-gray-800 rounded-lg border overflow-hidden hover:shadow-lg transition-shadow group"
+                    to={`/projects/${project._id}`}
+                    className="bg-gray-100 dark:bg-gray-800 rounded-lg border overflow-hidden hover:shadow-lg transition-shadow group block"
                   >
                     {/* Project Image */}
                     <div className="h-40 bg-gradient-to-br from-primary/20 to-primary/5 relative overflow-hidden">
@@ -395,13 +489,14 @@ function Projects() {
                         href={project.link}
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
                         className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
                       >
                         <ExternalLink size={16} />
                         View Project
                       </a>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}
