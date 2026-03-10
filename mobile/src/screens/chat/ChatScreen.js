@@ -21,9 +21,17 @@ export default function ChatScreen({ route, navigation }) {
     const [message, setMessage] = useState('');
     const [roomId, setRoomId] = useState(initialRoomId);
     const [loading, setLoading] = useState(true);
+    const [isSending, setIsSending] = useState(false);
     const socketRef = useRef(null);
     const flatListRef = useRef(null);
     const user = useAuthStore((s) => s.user);
+    const isMountedRef = useRef(true);
+
+    // Track mounted state
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => { isMountedRef.current = false; };
+    }, []);
 
     // Set title with subtitle
     useEffect(() => {
@@ -44,43 +52,53 @@ export default function ChatScreen({ route, navigation }) {
         });
     }, [otherUser, productName, navigation, colors]);
 
-    // Create room immediately if we have sellerId but no roomId
+    // Create room or fetch messages when roomId changes
     useEffect(() => {
-        const createRoomIfNeeded = async () => {
-            // Only create room if we don't have one and we have a sellerId
-            if (!roomId && sellerId) {
+        const initChat = async () => {
+            console.log('[ChatScreen] initChat - roomId:', roomId, 'sellerId:', sellerId);
+            
+            let currentRoomId = roomId;
+
+            // If no roomId but we have sellerId, create a room
+            if (!currentRoomId && sellerId) {
                 try {
+                    console.log('[ChatScreen] Creating room with sellerId:', sellerId);
                     const roomRes = await api.post('/chat/rooms/direct', { sellerId });
-                    if (roomRes.data?._id) {
-                        setRoomId(roomRes.data._id);
+                    console.log('[ChatScreen] Room created:', roomRes.data);
+                    
+                    if (roomRes.data?._id && isMountedRef.current) {
+                        currentRoomId = roomRes.data._id;
+                        setRoomId(currentRoomId);
                     }
                 } catch (error) {
-                    console.error('Failed to create chat room:', error);
-                    setLoading(false);
+                    console.error('[ChatScreen] Failed to create chat room:', error.response || error);
+                    if (isMountedRef.current) setLoading(false);
+                    return;
                 }
-            } else if (roomId) {
-                // If we already have a roomId, just set loading to false
+            }
+
+            // If we have a roomId now, fetch messages
+            if (currentRoomId) {
+                try {
+                    console.log('[ChatScreen] Fetching messages for room:', currentRoomId);
+                    const msgResponse = await api.get(`/chat/rooms/${currentRoomId}/messages`);
+                    console.log('[ChatScreen] Messages received:', msgResponse.data?.length || 0);
+                    if (isMountedRef.current) {
+                        setMessages((msgResponse.data || []).reverse());
+                    }
+                } catch (error) {
+                    console.error('[ChatScreen] Failed to init chat:', error.response || error);
+                }
+            } else {
+                console.log('[ChatScreen] No roomId available, skipping message fetch');
+            }
+
+            if (isMountedRef.current) {
                 setLoading(false);
             }
         };
-        createRoomIfNeeded();
-    }, [sellerId, roomId]);
-
-    // Fetch initial messages if we already have a roomId
-    useEffect(() => {
-        const initChat = async () => {
-            if (roomId) {
-                try {
-                    const msgResponse = await api.get(`/chat/rooms/${roomId}/messages`);
-                    setMessages((msgResponse.data || []).reverse());
-                } catch (error) {
-                    console.error('Failed to init chat:', error);
-                }
-            }
-            setLoading(false);
-        };
         initChat();
-    }, [roomId]);
+    }, [sellerId]); // Only run when sellerId changes, not roomId
 
     // Socket.io connection
     useEffect(() => {
@@ -115,38 +133,61 @@ export default function ChatScreen({ route, navigation }) {
     }, [roomId]);
 
     const sendMessage = async () => {
-        if (!message.trim()) return;
+        if (!message.trim() || isSending) return;
 
+        console.log('[ChatScreen] sendMessage - roomId:', roomId, 'sellerId:', sellerId);
+        
+        setIsSending(true);
+        
         try {
             let currentRoomId = roomId;
 
             // If we don't have a room yet, create one now with the seller
             if (!currentRoomId && sellerId) {
+                console.log('[ChatScreen] Creating room before send with sellerId:', sellerId);
                 const roomRes = await api.post('/chat/rooms/direct', { sellerId });
+                console.log('[ChatScreen] Room for send:', roomRes.data);
                 currentRoomId = roomRes.data._id;
-                setRoomId(currentRoomId);
+                if (isMountedRef.current) {
+                    setRoomId(currentRoomId);
+                }
             }
 
-            if (!currentRoomId) return; // Still failed to get a room
+            if (!currentRoomId) {
+                console.error('[ChatScreen] No roomId available for sending');
+                setIsSending(false);
+                return;
+            }
 
+            console.log('[ChatScreen] Sending message to room:', currentRoomId);
             const response = await api.post(`/chat/rooms/${currentRoomId}/messages`, {
                 content: message.trim(),
             });
 
+            console.log('[ChatScreen] Message sent:', response.data);
             const newMsg = response.data;
-            setMessages((prev) => [newMsg, ...prev]);
+            
+            if (isMountedRef.current) {
+                setMessages((prev) => [newMsg, ...prev]);
+            }
 
             // Emit via socket for real-time delivery
-            if (socketRef.current) {
+            if (socketRef.current && socketRef.current.connected) {
                 socketRef.current.emit('send-message', {
                     roomId: currentRoomId,
                     message: newMsg,
                 });
             }
 
-            setMessage('');
+            if (isMountedRef.current) {
+                setMessage('');
+            }
         } catch (error) {
-            console.error('Failed to send message:', error);
+            console.error('[ChatScreen] Failed to send message:', error.response || error);
+        } finally {
+            if (isMountedRef.current) {
+                setIsSending(false);
+            }
         }
     };
 
@@ -243,9 +284,9 @@ export default function ChatScreen({ route, navigation }) {
                     maxLength={1000}
                 />
                 <TouchableOpacity
-                    style={[styles.sendBtn, !message.trim() && styles.sendBtnDisabled]}
+                    style={[styles.sendBtn, (!message.trim() || isSending) && styles.sendBtnDisabled]}
                     onPress={sendMessage}
-                    disabled={!message.trim()}
+                    disabled={!message.trim() || isSending}
                 >
                     <Ionicons name="send" size={20} color="#fff" />
                 </TouchableOpacity>
