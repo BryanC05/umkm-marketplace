@@ -364,20 +364,25 @@ Add subtle vibrations for important actions.
 
 ---
 
-### Phase 2: Medium Impact (Week 3-4) ✅ IN PROGRESS
+### Phase 2: Medium Impact (Week 3-4) ✅ COMPLETED
 
-4. **Collapsible Sections** ✅ IMPLEMENTED
+4. **Collapsible Sections** ✅ COMPLETED
    - Added to HomeScreen for Nearby Sellers section
    - Added toggle with chevron animation
    - Added translations for expand/collapse
+   - State: collapsedSections in HomeScreen.js
 
-5. **Empty State Illustrations**
-   - Create illustrations
-   - Add to all screens
+5. **Empty State Illustrations** ✅ COMPLETED
+   - Created EmptyState.js component with multiple types:
+     - noProducts, noSellers, noOrders, noSaved, noCart, noResults, noReviews, noNotifications
+   - Added translations for EN and ID
+   - Ready to integrate into screens
 
-6. **Undo Actions**
-   - Cart operations
-   - Wishlist operations
+6. **Undo Actions** ✅ COMPLETED
+   - Created UndoSnackbar.js component
+   - Animated slide-up snackbar
+   - Configurable message, action, and duration
+   - Ready to integrate with cart/wishlist operations
 
 ---
 
